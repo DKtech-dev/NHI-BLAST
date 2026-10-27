@@ -767,6 +767,7 @@ not external benchmarks or an audit.
 | Version | `src/nhi_blast/__init__.py`, `pyproject.toml`, `tests/golden/fx07-console.txt` | Bumped to 0.2.0; the console golden header updated; JSON schema `nhi-blast-report/1.0` unchanged |
 | Local gates | pytest, ruff check, ruff format, mypy strict, schema check | 419 passed, 1 skipped in 15.27 s (the skip is the Windows real-symlink privilege case); ruff clean and 113 files formatted; mypy strict clean over 71 source files; `scripts/gen_schema.py --check` exit 0 |
 | 0.2.0 build check | hatchling build to a temporary directory; `scripts/check_artifacts.py` | Wheel 92 files and 1,366,403 bytes; sdist 242 files; proprietary metadata present; no 0.2.0 artifact published. Exact sdist bytes are not pinned because documentation edits change the archive |
+| Clean install (0.2.0 wheel) | Fresh venv, `pip install -c requirements.lock`; `version` and `scan` | `nhi-blast 0.2.0`; `fx07-incident` produced JSON (36,953 bytes), SARIF (26,486 bytes) and HTML (858,222 bytes); exit 0 |
 | Visibility | `gh repo edit --visibility public`; anonymous HTTP request | `visibility: public`; the repository and the `v0.1.1` release page return HTTP 200 without authentication |
 | Secret scanning | `gh api` repository security settings | Secret scanning and push protection enabled; 0 open secret-scanning alerts; validity checks and non-provider patterns remain disabled at the account level |
 | CodeQL | `code-scanning/default-setup` and `code-scanning/analyses` | Default setup configured for Actions and Python; analyses on `e00cf81` reported 1 Python result (`py/bad-tag-filter`), fixed in the test helper; analyses on `d26dd14` report 0 results for both languages and 0 open alerts |
@@ -775,6 +776,7 @@ not external benchmarks or an audit.
 | Remote CI (public repository) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40515346396 | Package job and all six test jobs passed on `ubuntu-latest` and `windows-latest`, Python 3.12–3.14: `420 passed` each, coverage 86.73–86.74%; slow suite `2 passed` in every job |
 | Remote advisory audit (public repository) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40515346468 | Passed: both lock audits, Bandit, OSV-Scanner and the secret scan |
 | Remote CodeQL | https://github.com/DKtech-dev/nhi-blast/actions/runs/40515346395 | Analyze (actions) and Analyze (python) passed; 0 results and 0 open alerts |
+| Evidence commit verification | CI 40515887344, audit 40515887316, CodeQL 40515887763 on `074f2ce` | All passed; CodeQL still reported 0 open alerts |
 | Dependabot | Pull request #1 | `actions/setup-python` 7.0.0 → 7.1.0 pinned by SHA; all eight checks green; squash-merged as `0d86433` |
 | Private vulnerability reporting | `gh api` PUT and GET | Enabled; `SECURITY.md` directs reports there; secret-scanning and Dependabot alert counts are both 0 |
 
