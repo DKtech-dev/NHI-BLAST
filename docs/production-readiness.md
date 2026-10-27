@@ -10,6 +10,11 @@ package-index upload, deployment or SaaS was performed. The independent human se
 audit has not been performed and is not claimed; it remains the one open assurance gate
 and is disclosed in `docs/security-audit.md` and `docs/external-audit-package.md`.
 
+The source tree on `main` is version 0.2.0 under a proprietary, all-rights-reserved
+licence, and the repository is public as of 2026-10-27. No 0.2.0 artifact has been
+published; `0.1.0` and `0.1.1` remain the published GitHub Releases and remain under
+the MIT License they were distributed with.
+
 This page is the release-gate record. It states what was actually executed on the
 recorded environments and what remains open. The milestone history is in
 `docs/implementation-status.md`; the requirement mapping is in
@@ -24,7 +29,7 @@ recorded environments and what remains open. The milestone history is in
 | Remote OS and Python | GitHub Actions `ubuntu-latest` and `windows-latest`; CPython 3.12, 3.13 and 3.14 |
 | Local Python | CPython 3.12.14 primary; 3.13.17 and 3.14.7 in isolated environments |
 | Machine | 12th Gen Intel Core i5-12450H, 15.7 GiB RAM, local SSD |
-| Repository | `DKtech-dev/nhi-blast`, private, branch `main` |
+| Repository | `DKtech-dev/nhi-blast`, public since 2026-10-27, branch `main` |
 | Runtime dependencies | `requirements.lock` exact versions |
 | Development dependencies | `requirements-dev.lock` exact versions |
 | Distribution published | `nhi_blast-0.1.1-py3-none-any.whl` and `nhi_blast-0.1.1.tar.gz`; SHA-256 values are in the release's `SHA256SUMS` asset, not embedded here because this document is packaged in the sdist |
@@ -87,7 +92,8 @@ suite, so the local Windows skip does not appear there.
 | Remote CI execution | The defined matrix runs green on GitHub-hosted runners | 0.1.1 run 40509205221: package job and all six test jobs passed | Pass |
 | Linux execution | The suite runs on Linux | 0.1.1 Ubuntu jobs for Python 3.12, 3.13 and 3.14 passed, including the symlink security test and the performance tests | Pass |
 | Internal security audit | Manual review and third-party automated scanners | Completed 2026-10-27; no high/critical finding open; report in `docs/security-audit.md` | Pass (internal) |
-| Repository security settings | Least-privilege automation and protected main branch | Workflow token read-only; SHA pinning required; Dependabot alerts and security updates enabled; `protect-main` ruleset blocks deletion and non-fast-forward pushes | Pass |
+| Repository security settings | Least-privilege automation, protected main branch and platform security features | Workflow token read-only; SHA pinning required; Dependabot alerts and security updates enabled; `protect-main` ruleset blocks deletion and non-fast-forward pushes; secret scanning and push protection enabled with 0 open alerts; CodeQL default setup configured on 2026-10-27; private vulnerability reporting enabled | Pass |
+| Visibility and licensing | Public repository; proprietary licence for this source tree; published releases keep their original terms | `gh api` on 2026-10-27 reports `visibility: public`; package metadata reports `License-Expression: LicenseRef-Proprietary` and ships `LICENSE` and `NOTICE`; `v0.1.0` and `v0.1.1` assets are unchanged and remain MIT | Pass |
 | Independent audit | External human security review | None performed and none claimed; package prepared in `docs/external-audit-package.md` | Not claimed |
 | Publication (0.1.0) | GitHub Release with wheel, sdist and SHA-256 sums | `v0.1.0` published 2026-10-27 from commit `0269100`; all three assets were re-downloaded and verified against `SHA256SUMS`; no package-index upload, deployment or SaaS | Published |
 | Publication (0.1.1) | GitHub Release with wheel, sdist and SHA-256 sums | `v0.1.1` published 2026-10-27 from commit `c702d9d` after green CI run 40509205221 and audit run 40509205137; the wheel, sdist and `SHA256SUMS` were re-downloaded and all checksums verified | Published |
@@ -97,13 +103,18 @@ suite, so the local Windows skip does not appear there.
 1. **Independent audit.** No external human reviewer has assessed the project. This is
    disclosed in every readiness claim and is the main residual assurance gap. The
    external audit package defines the target, materials and focus areas.
-2. **GitHub Advanced Security features.** Secret scanning and CodeQL are unavailable on
-   this private repository without Advanced Security. Gitleaks, TruffleHog, OSV,
-   pip-audit, Bandit and Semgrep provide compensating coverage locally and in the
-   advisory workflow.
-3. **Cross-machine reproducibility.** Three builds on one toolchain are identical.
+2. **Platform security features.** The repository is public and now has GitHub secret
+   scanning with push protection and CodeQL default setup. Validity checks and
+   non-provider secret patterns remain disabled at the account level, so they are not
+   claimed. Gitleaks, TruffleHog, OSV, pip-audit, Bandit and Semgrep continue to
+   provide compensating coverage locally and in the advisory workflow.
+3. **Forking cannot be disabled.** GitHub does not allow a public repository to prevent
+   forking. The proprietary licence restricts use and copying, but it is a legal term,
+   not a technical control; forks and copies can still be created through GitHub's
+   functionality and remain subject to the licence.
+4. **Cross-machine reproducibility.** Three builds on one toolchain are identical.
    Independent rebuilds on other machines are not claimed.
-4. **Platform coverage.** Runtime testing covers Windows 11 and Ubuntu GitHub runners.
+5. **Platform coverage.** Runtime testing covers Windows 11 and Ubuntu GitHub runners.
    Other platforms are untested.
 
 The browser/axe pass, three-build comparison, corpus and soak are single-environment
@@ -115,7 +126,10 @@ The maintainer authorized publication as GitHub Release assets. Version `0.1.0` 
 published on 2026-10-27 from commit `0269100`; version `0.1.1` was published the same
 day from commit `c702d9d` with the annotated tag `v0.1.1`. The wheel, sdist and
 `SHA256SUMS` were downloaded again after publication and verified. Any later source or
-artifact change requires a fresh gate run before it can be described as released.
+artifact change requires a fresh gate run before it can be described as released. The
+repository was made public and the source tree relicensed as proprietary 0.2.0 on
+2026-10-27; those changes do not alter the published 0.1.0 and 0.1.1 releases, which
+remain under the MIT License. No 0.2.0 artifact has been published.
 Every statement must keep the distinction between internal verification and independent
 audit. The tool's own analysis is evidence-honest by
 design: it reports potential authority, conditional survival and rotation order. This

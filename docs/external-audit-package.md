@@ -11,9 +11,11 @@ tool results and residual risk, and it states its own limits.
 ## 1. Review target
 
 - Project: NHI-Blast, version `0.1.1`, tag `v0.1.1` (the `v0.1.0` materials remain
-  available for comparison).
-- Repository: `DKtech-dev/nhi-blast` (private). Access is granted by the maintainer
-  through the hosting forge.
+  available for comparison). The source tree on `main` is 0.2.0 under a proprietary
+  licence and has not been released; reviewers who prefer the exact released code
+  should use the `v0.1.1` tag, which is the MIT-licensed release.
+- Repository: `DKtech-dev/nhi-blast`, public at
+  https://github.com/DKtech-dev/nhi-blast since 2026-10-27.
 - Language and runtime: Python 3.12+; no runtime network access.
 - Artifacts: `nhi_blast-0.1.1-py3-none-any.whl`,
   `nhi_blast-0.1.1.tar.gz` and `SHA256SUMS`, attached to the `v0.1.1` release.
@@ -117,8 +119,8 @@ audit until that report exists.
 
 ## 7. Reporting and disclosure
 
-Report vulnerabilities privately through the hosting forge's security-advisory
-mechanism as described in `SECURITY.md`. Do not open a public issue. The project has
+Report vulnerabilities privately through GitHub private vulnerability reporting on the
+repository, as described in `SECURITY.md`. Do not open a public issue. The project has
 no bug bounty and no formal SLA.
 
 ## 8. What remains unverified

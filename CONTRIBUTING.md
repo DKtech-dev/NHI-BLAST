@@ -116,5 +116,9 @@ see `docs/release.md` for the release procedure.
 
 ## Licence
 
-By contributing you agree that your contribution is licensed under the MIT License in
-`LICENSE`.
+This repository is proprietary and all rights are reserved; see `LICENSE`. The project
+does not accept unsolicited external contributions. Do not submit code, documentation
+or other content unless the maintainer has agreed in writing beforehand to the terms,
+including a transfer or assignment of rights sufficient for the maintainer to use and
+relicense the contribution. Opening a pull request does not grant the project a
+licence, and the maintainer is not obliged to review or merge it.

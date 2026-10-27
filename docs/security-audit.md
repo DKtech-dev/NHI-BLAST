@@ -6,11 +6,13 @@ automated scanners. No external human reviewer has assessed this codebase, and n
 independent audit is claimed. The package prepared for such a review is
 `docs/external-audit-package.md`.
 
-This report covers the source tree that became release `v0.1.1` in the private
-repository `DKtech-dev/nhi-blast`, and carries forward the audit of `v0.1.0` where the
-control or evidence is unchanged. It records what was executed, what was found, and
-what remains unverified. It is written to the same evidence standard the tool applies
-to its own reports: absence of a finding is not proof of absence.
+This report covers the source tree that became release `v0.1.1` in the repository
+`DKtech-dev/nhi-blast`. The repository was private while the audit was performed and was
+made public on 2026-10-27, after the 0.1.1 release; the source tree on `main` is now
+0.2.0 under a proprietary licence. The report carries forward the audit of `v0.1.0`
+where the control or evidence is unchanged. It records what was executed, what was
+found, and what remains unverified. It is written to the same evidence standard the tool
+applies to its own reports: absence of a finding is not proof of absence.
 
 ## 1. Scope
 
@@ -188,18 +190,21 @@ content are the tracked-history scan, the clean-export scan and the artifact sca
 
 | Setting | State on 2026-10-27 |
 | --- | --- |
-| Visibility | Private |
+| Visibility | Public since 2026-10-27 (private during the audit and the 0.1.0/0.1.1 releases) |
 | Default workflow token permissions | Read-only; pull-request approval disabled |
 | Actions policy | All actions allowed, **SHA pinning required** |
-| Dependabot alerts | Enabled |
+| Dependabot alerts | Enabled; 0 open alerts on 2026-10-27 |
 | Dependabot security updates | Enabled |
 | Branch ruleset `protect-main` | Active: deletion and non-fast-forward pushes blocked for `refs/heads/main` |
-| Secret scanning | Unavailable: the API returns "Secret scanning is not available for this repository" for this private repository without GitHub Advanced Security |
-| Code scanning | Not configured; CodeQL for private repositories requires GitHub Advanced Security |
+| Secret scanning | Enabled; 0 open alerts on 2026-10-27 |
+| Secret scanning push protection | Enabled |
+| Secret scanning validity checks | Disabled at the account level; not claimed |
+| Secret scanning non-provider patterns | Disabled at the account level; not claimed |
+| Code scanning | CodeQL default setup configured on 2026-10-27 for Actions and Python |
+| Private vulnerability reporting | Enabled; `SECURITY.md` directs reporters to it |
 | Two-factor authentication | Not verifiable through the authenticated API response; not claimed |
 
-Secret scanning and code scanning being unavailable is a platform-plan limitation, not a
-claim that the repository is free of secrets or flaws. Gitleaks, TruffleHog, OSV,
+The platform scanners reduce but do not eliminate risk. Gitleaks, TruffleHog, OSV,
 pip-audit, Bandit and Semgrep provide compensating coverage in local runs and in the
 advisory workflow.
 
@@ -216,8 +221,10 @@ advisory workflow.
 4. **No build provenance or signature.** Release authenticity rests on the GitHub
    account, TLS and published SHA-256 sums, not on a signed attestation or Sigstore
    bundle.
-5. **Private-repository platform features are limited.** GitHub secret scanning and
-   CodeQL are unavailable without Advanced Security, as recorded above.
+5. **Public repository exposure.** The repository is public, so the source can be
+   viewed, downloaded and forked through GitHub. The proprietary licence restricts use
+   and copying, but it is a legal term and not a technical control. Secret-scanning
+   validity checks and non-provider patterns remain disabled at the account level.
 6. **Third-party action trust.** CI actions are pinned to full commit SHAs and SHA
    pinning is enforced, but their upstream code was not independently reviewed.
 7. **Model scope.** Findings describe potential authority from static inputs. They do

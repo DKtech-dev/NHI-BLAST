@@ -35,7 +35,14 @@ class _TagCollector(HTMLParser):
 
 
 def _scripts(document: str) -> list[tuple[str, str]]:
-    return re.findall(r"<script([^>]*)>(.*?)</script>", document, re.DOTALL)
+    return re.findall(r"<script([^>]*)>(.*?)</script>", document, re.DOTALL | re.IGNORECASE)
+
+
+def test_script_extractor_matches_any_letter_case() -> None:
+    assert _scripts('<SCRIPT src="x"></SCRIPT><script>y</script>') == [
+        (' src="x"', ""),
+        ("", "y"),
+    ]
 
 
 def test_html_has_required_sections_and_stays_under_size_target() -> None:

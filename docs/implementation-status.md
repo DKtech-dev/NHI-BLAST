@@ -4,7 +4,8 @@ Living record of what is actually built and verified. Every row must correspond 
 command that was run, with its real result. When a gate is not met, it says so.
 
 Last updated: 2026-10-27
-Overall verdict: **0.1.1 RELEASED; 0.1.0 remains available.**
+Overall verdict: **0.1.1 RELEASED; 0.1.0 remains available; `main` is a public,
+proprietary 0.2.0 source tree with no published 0.2.0 artifact.**
 M0–M8 are implemented and verified locally and in remote CI, including packaging,
 clean-environment installation, documentation, CI policy, dependency and secret audits,
 three-build reproducibility, Python 3.12/3.13/3.14 suites on Ubuntu and Windows, a
@@ -14,8 +15,10 @@ Lighthouse, html-validate and design-inspector verification. Version 0.1.0 was
 published on 2026-10-27 from commit `0269100`; version 0.1.1 was published the same day
 from commit `c702d9d` as the GitHub Release `v0.1.1`, after green CI run 40509205221 and
 audit run 40509205137, with all assets re-downloaded and verified against `SHA256SUMS`.
-The independent human audit has not been performed and is not claimed; it is the one
-open assurance gate.
+On 2026-10-27 the repository was made public and the source tree was relicensed as
+proprietary 0.2.0 in commit `e00cf81`; the published 0.1.0 and 0.1.1 releases remain
+MIT. The independent human audit has not been performed and is not claimed; it is the
+one open assurance gate.
 
 ## Environment used for every recorded result
 
@@ -25,7 +28,7 @@ open assurance gate.
 | Python | 3.12.14 (`C:/Cyber/.venv/Scripts/python.exe`); also 3.13.17 and 3.14.7 in isolated environments for the final matrix |
 | pip | 26.2.2 |
 | CLI dependencies | Typer 0.20.1, Click 8.4.2 (Click pinned below 8.5 because Typer imports deprecated `click.utils` shims and tests treat warnings as errors) |
-| Repository state | private GitHub repository `DKtech-dev/nhi-blast`, branch `main`; commits pushed and CI/audit workflows active |
+| Repository state | public GitHub repository `DKtech-dev/nhi-blast` since 2026-10-27, branch `main`; commits pushed and CI/audit workflows active |
 
 Commands (run from `C:/Cyber`):
 
@@ -718,7 +721,7 @@ not external benchmarks or an audit.
 | Advisory workflow | https://github.com/DKtech-dev/nhi-blast/actions/runs/40432137192 | Passed: pip-audit on both locks, Bandit, hash-verified OSV-Scanner 2.7.0 and gitleaks 8.30.1; workflow also runs weekly |
 | Internal audit | Commands and versions in `docs/security-audit.md` | zizmor 1.31.1: 0 findings; actionlint 1.7.12: 0; Semgrep 1.182.1: 2 triaged false positives; Bandit 1.9.4: 0 medium/high, 11 low triaged; pip-audit 2.10.1: 0; OSV 2.7.0: 0 across 60 instances; Grype 0.121.0: 0 on both SBOMs; pip-licenses: 41 packages, no strong copyleft; gitleaks: 0 in history; TruffleHog 3.99.7: 0 in 96 MB; 42 pins with minimum age 15 days and none yanked |
 | Audit fixes | Commits on `main` | Checkout credential persistence removed; broken pip-audit invocation fixed; tomlkit held inside the age policy; fixture identity materialised for clean checkouts; console-script path resolved with `sysconfig`; Python 3.14 JSON test broadened without relaxing the facts check; editable build helper pinned |
-| Repository settings | `gh api` on 2026-10-27 | Default workflow token read-only; SHA pinning required; Dependabot alerts and security updates enabled; `protect-main` ruleset blocks deletion and non-fast-forward pushes; secret scanning and CodeQL unavailable without Advanced Security |
+| Repository settings | `gh api` on 2026-10-27 | Default workflow token read-only; SHA pinning required; Dependabot alerts and security updates enabled; `protect-main` ruleset blocks deletion and non-fast-forward pushes. After the repository was made public, secret scanning and push protection were enabled, CodeQL default setup was configured, and private vulnerability reporting was enabled; validity checks and non-provider patterns remained disabled at the account level |
 | New traceability tests | `pytest tests/test_docs.py tests/test_report_security.py` | 13 passed: assumption registry integrity and documentation match; report templates reject proof/guarantee/exploitability/takeover wording |
 
 ### 2026-10-27 — publication record
@@ -756,16 +759,34 @@ not external benchmarks or an audit.
 | Clean installs | wheel, wheel with `[hcl]`, sdist | All six commands exit 0; fx10 parses HCL with the extra (14 nodes) and reports `D-TF-HCL-UNAVAILABLE` without it (8 nodes); repeated installed-wheel scans are byte-identical |
 | Publication | GitHub Release `v0.1.1` | Published 2026-10-27 from commit `c702d9d`; annotated tag `v0.1.1`; wheel, sdist and `SHA256SUMS` re-downloaded and all checksums verified |
 
+### 2026-10-27 — public repository and proprietary 0.2.0 source
+
+| Check | Command / run | Actual result |
+| --- | --- | --- |
+| Licence | `LICENSE`, `NOTICE`, `pyproject.toml` | MIT replaced with an all-rights-reserved proprietary licence for this source tree and future releases; the published 0.1.0 and 0.1.1 releases remain MIT; built metadata reports `License-Expression: LicenseRef-Proprietary` with `License-File: LICENSE` and `NOTICE` |
+| Version | `src/nhi_blast/__init__.py`, `pyproject.toml`, `tests/golden/fx07-console.txt` | Bumped to 0.2.0; the console golden header updated; JSON schema `nhi-blast-report/1.0` unchanged |
+| Local gates | pytest, ruff check, ruff format, mypy strict, schema check | 419 passed, 1 skipped in 27.46 s (the skip is the Windows real-symlink privilege case); ruff clean and 113 files formatted; mypy strict clean over 71 source files; `scripts/gen_schema.py --check` exit 0 |
+| 0.2.0 build check | hatchling build to a temporary directory; `scripts/check_artifacts.py` | Wheel 92 files and 1,366,403 bytes; sdist 242 files and 2,258,924 bytes; proprietary metadata present; no 0.2.0 artifact published |
+| Visibility | `gh repo edit --visibility public`; anonymous HTTP request | `visibility: public`; the repository and the `v0.1.1` release page return HTTP 200 without authentication |
+| Secret scanning | `gh api` repository security settings | Secret scanning and push protection enabled; 0 open secret-scanning alerts; validity checks and non-provider patterns remain disabled at the account level |
+| CodeQL | `code-scanning/default-setup` and `code-scanning/analyses` | Default setup configured for Actions and Python; analyses on `e00cf81`: Actions 0 results, Python 1 result (`py/bad-tag-filter` in `tests/test_html.py`) |
+| CodeQL fix | `tests/test_html.py` | The script extractor used by CSP and injection assertions is now case-insensitive, with `test_script_extractor_matches_any_letter_case` as regression coverage |
+| Dependabot | Pull request #1 | `actions/setup-python` 7.0.0 → 7.1.0 pinned by SHA; all eight checks green; squash-merged as `0d86433` |
+| Private vulnerability reporting | `gh api` PUT and GET | Enabled; `SECURITY.md` directs reports there |
+
 ## Next action
 
 No implementation or publication task remains for 0.1.1. Remote CI, Linux execution,
 advisory automation, the internal audit and the authorized 0.1.0 and 0.1.1 GitHub
-Releases are complete. The remaining actions are:
+Releases are complete. The repository was made public and the source tree relicensed as
+proprietary 0.2.0 on 2026-10-27; no 0.2.0 artifact has been published. The remaining
+actions are:
 
 1. **Independent human audit.** This cannot be supplied by the implementation agent.
    `docs/external-audit-package.md` defines the target and materials; until a reviewer
    completes a report, the project must not be described as independently audited.
-2. **Release maintenance.** Review Dependabot updates after `0.1.1`, refresh the lock
-   files on a deliberate cadence, and re-run the full gate set before any later
-   release. Secret scanning and CodeQL remain unavailable on the private repository
-   unless GitHub Advanced Security is enabled.
+2. **Release maintenance.** Review Dependabot updates, refresh the lock files on a
+   deliberate cadence, and re-run the full gate set before any later release. Platform
+   secret scanning, push protection, CodeQL default setup and private vulnerability
+   reporting are enabled; secret-scanning validity checks and non-provider patterns
+   remain disabled at the account level and are not claimed.
