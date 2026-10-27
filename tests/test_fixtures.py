@@ -135,3 +135,10 @@ def test_fixture_matches_reviewed_expectations(fixtures_dir: Path, name: str) ->
 def test_fixture_inventory_is_complete(fixtures_dir: Path) -> None:
     directories = {path.name for path in fixtures_dir.glob("fx*") if path.is_dir()}
     assert directories == set(EXPECTATIONS)
+
+
+def test_fixture_identity_is_rebuilt_for_every_fixture(fixtures_dir: Path) -> None:
+    for name in sorted(EXPECTATIONS):
+        config = (fixtures_dir / name / ".git" / "config").read_text(encoding="utf-8")
+        expected = "acme/scale" if name == "fx15-scale-smoke" else "acme/shop"
+        assert f"url = https://github.com/{expected}.git" in config

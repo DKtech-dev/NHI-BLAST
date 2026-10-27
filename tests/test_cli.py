@@ -6,7 +6,7 @@ import json
 import os
 import shutil
 import subprocess
-import sys
+import sysconfig
 from pathlib import Path
 
 import pytest
@@ -284,7 +284,7 @@ def test_scan_no_color_flag_is_accepted() -> None:
 
 def test_installed_console_script_runs() -> None:
     name = "nhi-blast.exe" if os.name == "nt" else "nhi-blast"
-    executable = Path(sys.executable).with_name(name)
+    executable = Path(sysconfig.get_path("scripts")) / name
     assert executable.is_file(), f"console script was not installed at {executable}"
 
     completed = subprocess.run(
