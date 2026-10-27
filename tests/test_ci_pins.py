@@ -89,9 +89,22 @@ def test_audit_workflow_is_scheduled_and_scans_both_locks() -> None:
         "requirements.lock",
         "requirements-dev.lock",
         ".gitleaks.toml",
+        "python -m pip_audit -r requirements.lock",
+        "python -m pip_audit -r requirements-dev.lock",
     ):
         assert required in text, required
     assert text.count("sha256sum -c -") == 2
+    assert "python -m pip-audit" not in text
+
+
+def test_no_build_isolation_never_combines_with_editable_installs() -> None:
+    # Editable metadata generation imports the backend's editables helper, which
+    # the locked build toolchain does not provide to an isolated-disabled build.
+    for path in _workflow_paths():
+        text, _ = _load_workflow(path)
+        for line in text.splitlines():
+            if "--no-build-isolation" in line:
+                assert " -e " not in line, f"{path.name}: editable install: {line}"
 
 
 def test_dependabot_tracks_python_and_actions_weekly() -> None:

@@ -34,9 +34,9 @@ jobs:
       - name: Install audit tooling
         run: python -m pip install --require-hashes -r requirements-audit.lock
       - name: Audit runtime lock
-        run: python -m pip-audit -r requirements.lock
+        run: python -m pip_audit -r requirements.lock
       - name: Audit development lock
-        run: python -m pip-audit -r requirements-dev.lock
+        run: python -m pip_audit -r requirements-dev.lock
       - name: Static application security scan
         run: python -m bandit -q -r src -ll
       - name: OSV dependency scan

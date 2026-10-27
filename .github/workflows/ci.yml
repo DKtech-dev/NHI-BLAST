@@ -47,7 +47,7 @@ jobs:
       - name: Install locked toolchain
         run: |
           python -m pip install -c requirements-dev.lock hatchling
-          python -m pip install -c requirements-dev.lock --no-build-isolation -e ".[dev,rich,hcl]"
+          python -m pip install -c requirements-dev.lock --no-build-isolation ".[dev,rich,hcl]"
       - name: Lint
         run: python -m ruff check src tests scripts
       - name: Format
