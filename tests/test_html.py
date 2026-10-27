@@ -34,14 +34,46 @@ class _TagCollector(HTMLParser):
         self.tags.append((tag, dict(attrs)))
 
 
-def _scripts(document: str) -> list[tuple[str, str]]:
-    return re.findall(r"<script([^>]*)>(.*?)</script\s*>", document, re.DOTALL | re.IGNORECASE)
+class _ScriptCollector(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=False)
+        self.scripts: list[tuple[dict[str, str | None], str]] = []
+        self._current: tuple[dict[str, str | None], list[str]] | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "script":
+            self._current = (dict(attrs), [])
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "script":
+            self._flush()
+
+    def handle_data(self, data: str) -> None:
+        if self._current is not None:
+            self._current[1].append(data)
+
+    def close(self) -> None:
+        super().close()
+        self._flush()
+
+    def _flush(self) -> None:
+        if self._current is not None:
+            attributes, parts = self._current
+            self.scripts.append((attributes, "".join(parts)))
+            self._current = None
 
 
-def test_script_extractor_matches_any_letter_case_and_end_tag_spacing() -> None:
-    assert _scripts('<SCRIPT src="x"></SCRIPT ><script>y</script>') == [
-        (' src="x"', ""),
-        ("", "y"),
+def _scripts(document: str) -> list[tuple[dict[str, str | None], str]]:
+    collector = _ScriptCollector()
+    collector.feed(document)
+    collector.close()
+    return collector.scripts
+
+
+def test_script_extractor_matches_browser_tag_syntax() -> None:
+    assert _scripts('<SCRIPT src="x"></SCRIPT\t\n bar><script>y</script>') == [
+        ({"src": "x"}, ""),
+        ({}, "y"),
     ]
 
 
@@ -77,7 +109,7 @@ def test_csp_hashes_every_inline_script_and_forbids_inline_execution() -> None:
 
     assert len(scripts) == 5
     for attrs, body in scripts:
-        assert "src=" not in attrs
+        assert "src" not in attrs
         digest = base64.b64encode(hashlib.sha256(body.encode("utf-8")).digest()).decode("ascii")
         assert f"'sha256-{digest}'" in policy
     script_src = next(part for part in policy.split(";") if part.strip().startswith("script-src"))
