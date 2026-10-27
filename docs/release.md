@@ -1,11 +1,10 @@
 # Release procedure
 
 This document describes how a release is prepared and checked. Version `0.1.1` is
-prepared for distribution as GitHub Release assets (wheel, sdist and SHA-256 sums);
-there is no package-index upload or deployment. `0.1.0` remains the last published
-release until the `0.1.1` assets are uploaded and verified. The current gate results
-and run URLs are in `docs/production-readiness.md`. No independent human audit has
-been performed.
+published as GitHub Release assets (wheel, sdist and SHA-256 sums); there is no
+package-index upload or deployment. `0.1.1` is the current release and `0.1.0` remains
+available for comparison. The current gate results and run URLs are in
+`docs/production-readiness.md`. No independent human audit has been performed.
 
 ## Preconditions
 
@@ -47,10 +46,10 @@ python scripts/check_artifacts.py dist
 ```
 
 The artifact checker requires exactly one wheel and one sdist. It verifies that the
-wheel contains all eight platform data files and the three vendored report assets
-plus `MANIFEST.json`, that runtime metadata excludes test tooling, and that neither
-artifact contains caches, the private research cache, scratch files or the local
-output directory.
+wheel contains all eight platform data files, the three vendored report scripts, both
+embedded fonts, `OFL.txt` and `MANIFEST.json`, that runtime metadata excludes test
+tooling, and that neither artifact contains caches, the private research cache, scratch
+files or the local output directory.
 
 ## 3. Verify installation in a clean environment
 
@@ -129,7 +128,8 @@ rebuild. Do not ship a build that bypassed a failing test.
 ## 6. After release
 
 - Update `docs/implementation-status.md` and `docs/production-readiness.md` with the
-  published version, date and artifact digests.
+  published version, date, tag commit and release URL. Keep digests in the release's
+  `SHA256SUMS` asset, not inside documents packaged in the sdist.
 - Open follow-up items for known limitations that were accepted for this release.
 - Keep the previous release artifacts available for incident response.
 - Record any data-file staleness warnings so the next release refreshes primary

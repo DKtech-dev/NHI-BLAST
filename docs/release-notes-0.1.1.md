@@ -1,10 +1,11 @@
 # NHI-Blast 0.1.1
 
-Prepared for release on 2026-10-27 as a GitHub Release with the wheel, sdist and
-`SHA256SUMS`. No package-index upload, deployment or SaaS was performed. This is a
-report-focused patch; the analysis pipeline, CLI commands, JSON schema
-(`nhi-blast-report/1.0`) and SARIF 2.1.0 output are unchanged from 0.1.0. The release
-record and asset verification are appended after publication.
+Released on 2026-10-27 as the GitHub Release
+[`v0.1.1`](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.1) with the wheel,
+sdist and `SHA256SUMS`. No package-index upload, deployment or SaaS was performed.
+This is a report-focused patch; the analysis pipeline, CLI commands, JSON schema
+(`nhi-blast-report/1.0`) and SARIF 2.1.0 output are unchanged from 0.1.0. All three
+assets were re-downloaded after publication and verified against `SHA256SUMS`.
 
 ## What changed
 
@@ -35,7 +36,7 @@ Recorded on Windows 11 (10.0.26200, x64), CPython 3.12.14, unless a GitHub Actio
 is cited. The complete release-gate record is in `docs/production-readiness.md`.
 
 - Full suite: 418 passed, 1 skipped (a real Windows symlink needs an unheld privilege;
-  Linux CI executes it). Remote CI run 40508195834 passed the package job and all six
+  Linux CI executes it). Remote CI run 40509205221 passed the package job and all six
   test jobs on Ubuntu and Windows for Python 3.12–3.14: `417 passed, 2 deselected`
   plus `2 passed` for the slow suite, 0 skipped, coverage 86.73–86.74%.
 - Adversarial suite: 37 passed, 1 skipped. Golden: 2 passed. Performance: 2 passed

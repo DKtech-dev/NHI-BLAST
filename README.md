@@ -21,16 +21,16 @@ as reachable authority; they feed a separate `potential` set. The tool does not 
 proof of compromise, exploitability or takeover, and it never prints a credential
 value.
 
-> **Status: 0.1.1 release candidate.** The current published release is
-> [`v0.1.0`](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.0); 0.1.1
-> adds the redesigned offline HTML report and is prepared for its authorized GitHub
-> Release (wheel, sdist and SHA-256 sums) after the gates recorded in
-> [production readiness](docs/production-readiness.md). There is no package-index
-> upload or deployment. Remote CI passed on Ubuntu and Windows for Python 3.12, 3.13
-> and 3.14, advisory automation scans both locks and secrets on a schedule, and an
-> internal security audit is recorded in [security audit](docs/security-audit.md). An
-> independent human audit has **not** been performed and is not claimed. Read
-> [known limitations](docs/known-limitations.md) before relying on a report.
+> **Status: 0.1.1 published.** The current release is
+> [`v0.1.1`](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.1), which adds
+> the redesigned offline HTML report; [`v0.1.0`](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.0)
+> remains available. Both are GitHub Releases with wheel, sdist and `SHA256SUMS`; there
+> is no package-index upload or deployment. Remote CI passed on Ubuntu and Windows for
+> Python 3.12, 3.13 and 3.14, advisory automation scans both locks and secrets on a
+> schedule, and an internal security audit is recorded in
+> [security audit](docs/security-audit.md). An independent human audit has **not** been
+> performed and is not claimed. Read [known limitations](docs/known-limitations.md)
+> before relying on a report.
 
 ## Install from a source checkout
 

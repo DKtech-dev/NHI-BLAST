@@ -8,8 +8,9 @@ use semantic versioning from its first published release.
 
 Patch release focused on the offline HTML report. The analysis pipeline, CLI surface
 and report schemas are unchanged; JSON (`nhi-blast-report/1.0`) and SARIF 2.1.0 output
-from 0.1.0 remain compatible. Prepared for distribution as GitHub Release `v0.1.1`
-(wheel, sdist and SHA-256 sums). No package-index upload or deployment.
+from 0.1.0 remain compatible. Published as the GitHub Release
+[`v0.1.1`](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.1) (wheel, sdist
+and SHA-256 sums). No package-index upload or deployment.
 
 ### Changed
 

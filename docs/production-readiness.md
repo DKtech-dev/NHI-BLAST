@@ -1,16 +1,14 @@
 # Production readiness
 
-**Verdict: RELEASE READY for the authorized GitHub Releases distribution scope.** Every
-automated and internal gate below passes on the recorded environments, including the
-remote CI matrix on Linux and Windows. The independent human security audit has not
-been performed and is not claimed; it remains the one open assurance gate and is
-disclosed in `docs/security-audit.md` and `docs/external-audit-package.md`.
-Version 0.1.1 is the release candidate for this evidence record; publication to the
-private repository's GitHub Releases (wheel, sdist and `SHA256SUMS`) is the final
-authorized step and is recorded here after verification. Version 0.1.0 was published
-on 2026-10-27 as
-https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.0. No package-index upload,
-deployment or SaaS was performed.
+**Verdict: RELEASED for the authorized GitHub Releases distribution scope.** Every
+automated and internal gate below passed on the recorded environments, including the
+remote CI matrix on Linux and Windows. Version 0.1.1 was published on 2026-10-27 as
+https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.1 from commit `c702d9d`; all
+three assets were re-downloaded and verified against `SHA256SUMS`. Version 0.1.0
+remains available at https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.0. No
+package-index upload, deployment or SaaS was performed. The independent human security
+audit has not been performed and is not claimed; it remains the one open assurance gate
+and is disclosed in `docs/security-audit.md` and `docs/external-audit-package.md`.
 
 This page is the release-gate record. It states what was actually executed on the
 recorded environments and what remains open. The milestone history is in
@@ -29,15 +27,15 @@ recorded environments and what remains open. The milestone history is in
 | Repository | `DKtech-dev/nhi-blast`, private, branch `main` |
 | Runtime dependencies | `requirements.lock` exact versions |
 | Development dependencies | `requirements-dev.lock` exact versions |
-| Distribution under test | `nhi_blast-0.1.1-py3-none-any.whl` and `nhi_blast-0.1.1.tar.gz`; SHA-256 values are in `dist/SHA256SUMS` and the release assets, not embedded here because this document is packaged in the sdist |
+| Distribution published | `nhi_blast-0.1.1-py3-none-any.whl` and `nhi_blast-0.1.1.tar.gz`; SHA-256 values are in the release's `SHA256SUMS` asset, not embedded here because this document is packaged in the sdist |
 | UI tooling | Headless Chrome through CDP; axe-core 4.10.3; Lighthouse 13.5.0 (desktop and simulated mobile profiles); html-validate 11.17.0; design inspector at 1440, 768 and 390 px |
 
 ## Remote CI evidence
 
 | Workflow | Run | Result |
 | --- | --- | --- |
-| CI 0.1.1 (`ci.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40508195834 | Package job passed; all six test jobs passed with `417 passed, 2 deselected` plus `2 passed` for the slow suite, 0 skipped, and coverage 86.73–86.74% on Ubuntu and Windows, Python 3.12–3.14 |
-| Advisory audit 0.1.1 (`audit.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40508195866 | Passed: runtime and development lock audits, Bandit, OSV-Scanner and the secret scan |
+| CI 0.1.1 (`ci.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40509205221 | Package job passed; all six test jobs passed with `417 passed, 2 deselected` plus `2 passed` for the slow suite, 0 skipped, and coverage 86.73–86.74% on Ubuntu and Windows, Python 3.12–3.14 |
+| Advisory audit 0.1.1 (`audit.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40509205137 | Passed: runtime and development lock audits, Bandit, OSV-Scanner and the secret scan |
 | CI 0.1.0 (`ci.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40432137207 | Package job passed; all six test jobs passed with `404 passed` each and coverage 86.53–86.54% on Ubuntu and Windows, Python 3.12–3.14 |
 | Advisory audit 0.1.0 (`audit.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40432137192 | Passed: both lock files audited, Bandit, OSV-Scanner and gitleaks |
 | First fully green CI | https://github.com/DKtech-dev/nhi-blast/actions/runs/40427815113 | Package and six test jobs passed after the toolchain fixes |
@@ -53,7 +51,7 @@ suite, so the local Windows skip does not appear there.
 | --- | --- | --- | --- |
 | Specification implementation | M0–M7 pipeline and CLI complete | Implemented and exercised end to end; see `docs/implementation-status.md` | Pass |
 | Full test suite (local) | All tests pass; warnings are errors | 418 passed, 1 skipped in 23.23 s (the skip is the real-symlink case described below) | Pass |
-| Full test suite (remote) | Linux and Windows, Python 3.12–3.14 | 0.1.1 run 40508195834: every test job reported `417 passed, 2 deselected` plus `2 passed` for the slow suite and 0 skipped; coverage 86.73% (86.74% on Ubuntu 3.14); package job passed | Pass |
+| Full test suite (remote) | Linux and Windows, Python 3.12–3.14 | 0.1.1 run 40509205221: every test job reported `417 passed, 2 deselected` plus `2 passed` for the slow suite and 0 skipped; coverage 86.73% (86.74% on Ubuntu 3.14); package job passed | Pass |
 | Python 3.13 suite | Same suite on CPython 3.13 | Local 3.13.17: 416 passed, 1 skipped, 2 deselected plus 2 slow passed; remote 0.1.1 job passed | Pass |
 | Python 3.14 suite | Same suite on CPython 3.14 | Local 3.14.7: 416 passed, 1 skipped, 2 deselected plus 2 slow passed; remote 0.1.1 job passed | Pass |
 | Adversarial suite | Security-marked hostile-input tests pass | 37 passed, 1 skipped locally (real symlink creation requires a Windows privilege); the Linux CI job executes the skipped case | Pass |
@@ -77,7 +75,7 @@ suite, so the local Windows skip does not appear there.
 | Real-world corpus | Ten public repositories, including workflows and Terraform | 0 failures; 1,959 files, 163 workflow files, 101 Terraform files; 21 all-mutable-actions scenarios exactly matching 21 rank rows; 37 findings, 1,149 nodes, 2,181 edges, 451 diagnostics; max scan 1.92 s, max rank 1.82 s, max export 1.87 s | Pass (sample) |
 | Adversarial soak | Hostile and boundary inputs terminate within documented exit codes | 16 cases, 0 failures; hostile YAML, traversal, Terraform JSON/plan/HCL, 80-finding repository, bad config and CLI negatives all handled without traceback | Pass (sample) |
 | CI policy | Actions pinned to full SHAs; read-only token; locks used; no credential persistence | 12 policy tests pass; SHA pinning enforced by repository setting; checkout steps set `persist-credentials: false`; workflows are read-only and never use `pull_request_target` | Pass |
-| Advisory automation | Both locks and secrets scanned on a schedule | `audit.yml` runs on push, pull request and weekly cron; pip-audit on both locks, Bandit, hash-verified OSV-Scanner 2.7.0 and gitleaks 8.30.1; 0.1.1 run 40508195866 passed | Pass |
+| Advisory automation | Both locks and secrets scanned on a schedule | `audit.yml` runs on push, pull request and weekly cron; pip-audit on both locks, Bandit, hash-verified OSV-Scanner 2.7.0 and gitleaks 8.30.1; 0.1.1 run 40509205137 passed | Pass |
 | CLI exit codes | 0, 1, 2, 3 and 4 observed | 0 success and `--fail-on never`; 1 on `--fail-on critical`; 2 for bad selector/format/path/config; 3 for strict partial results; 4 covered by CLI tests | Pass |
 | HTML structure and accessibility | Language, title, headings, labels, skip link, table semantics, graph text alternative, no-script fallback | Static tests pass (24 report tests); CSP, escaping and inert-hostile-string tests pass; axe-core 4.10.3 reports 0 WCAG 2.2 AA violations on desktop dark, desktop light and mobile dark; the boot gate clears after hydration and the no-script override keeps the document visible | Pass |
 | Browser QA | Offline rendering, fonts, interactions, external requests | Headless Chrome at 1440×900, 768×1024 and 390×844: 0 overflow, 0 console/log errors, 0 external requests; both fonts loaded and Geist in use; scenario switching, graph zoom/fit, trace, table scroll and filters exercised | Pass |
@@ -86,13 +84,13 @@ suite, so the local Windows skip does not appear there.
 | Design inspector | Layout, typography and density checks at 1440, 768 and 390 px | 0 findings | Pass |
 | Documentation set | README, architecture, rules, assumptions, provenance, benchmark, limitations, release, security, audit, external audit package, contributing, changelog, NOTICE | Present; local-link, rule-coverage and assumption-registry tests pass | Pass |
 | Three-build reproducibility | Repeated clean builds produce identical artifact digests | Three consecutive builds from the same unmodified tree produced identical SHA-256 digests for both the wheel and the sdist; cross-machine and cross-toolchain byte reproducibility is not claimed | Pass (local) |
-| Remote CI execution | The defined matrix runs green on GitHub-hosted runners | 0.1.1 run 40508195834: package job and all six test jobs passed | Pass |
+| Remote CI execution | The defined matrix runs green on GitHub-hosted runners | 0.1.1 run 40509205221: package job and all six test jobs passed | Pass |
 | Linux execution | The suite runs on Linux | 0.1.1 Ubuntu jobs for Python 3.12, 3.13 and 3.14 passed, including the symlink security test and the performance tests | Pass |
 | Internal security audit | Manual review and third-party automated scanners | Completed 2026-10-27; no high/critical finding open; report in `docs/security-audit.md` | Pass (internal) |
 | Repository security settings | Least-privilege automation and protected main branch | Workflow token read-only; SHA pinning required; Dependabot alerts and security updates enabled; `protect-main` ruleset blocks deletion and non-fast-forward pushes | Pass |
 | Independent audit | External human security review | None performed and none claimed; package prepared in `docs/external-audit-package.md` | Not claimed |
 | Publication (0.1.0) | GitHub Release with wheel, sdist and SHA-256 sums | `v0.1.0` published 2026-10-27 from commit `0269100`; all three assets were re-downloaded and verified against `SHA256SUMS`; no package-index upload, deployment or SaaS | Published |
-| Publication (0.1.1) | GitHub Release with wheel, sdist and SHA-256 sums | Authorized for the private repository; the release is created from the verified commit after the recorded local gates and a green remote CI run, then the assets are re-downloaded and checked against `SHA256SUMS` | Pending final step |
+| Publication (0.1.1) | GitHub Release with wheel, sdist and SHA-256 sums | `v0.1.1` published 2026-10-27 from commit `c702d9d` after green CI run 40509205221 and audit run 40509205137; the wheel, sdist and `SHA256SUMS` were re-downloaded and all checksums verified | Published |
 
 ## Open gates and limitations
 
@@ -114,12 +112,12 @@ observations. They are not external benchmarks and not an independent audit.
 ## Release decision
 
 The maintainer authorized publication as GitHub Release assets. Version `0.1.0` was
-published on 2026-10-27 from commit `0269100`. Version `0.1.1` is prepared from the
-verified release commit; after a green remote CI run the annotated tag `v0.1.1`, wheel,
-sdist and `SHA256SUMS` are published, and the downloaded assets are checked against the
-sums. Any later source or artifact change requires a fresh gate run before it can be
-described as released. Every statement must keep the distinction between internal
-verification and independent audit. The tool's own analysis is evidence-honest by
+published on 2026-10-27 from commit `0269100`; version `0.1.1` was published the same
+day from commit `c702d9d` with the annotated tag `v0.1.1`. The wheel, sdist and
+`SHA256SUMS` were downloaded again after publication and verified. Any later source or
+artifact change requires a fresh gate run before it can be described as released.
+Every statement must keep the distinction between internal verification and independent
+audit. The tool's own analysis is evidence-honest by
 design: it reports potential authority, conditional survival and rotation order. This
 readiness document makes the same distinction about the project itself. Local and CI
 tests demonstrate behaviour on the recorded environments; they do not prove the absence

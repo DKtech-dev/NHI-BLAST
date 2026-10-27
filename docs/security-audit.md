@@ -153,7 +153,7 @@ results can be reproduced or superseded.
 | Secret scan (independent) | TruffleHog 3.99.7 | `trufflehog git file://C:/Cyber --no-verification` | 460 chunks and 2,320,652 bytes scanned; 0 verified and 0 unverified secrets |
 | Security tests | pytest | `pytest -q -m security` | 37 passed, 1 skipped (real symlink creation needs a Windows privilege; Linux CI runs it) |
 | Full suite (local) | pytest | `pytest -q` | 418 passed, 1 skipped |
-| Full suite (remote) | GitHub Actions | CI run on Ubuntu and Windows, Python 3.12–3.14 | 0.1.1 run 40508195834: `417 passed, 2 deselected` plus `2 passed` for the slow suite and 0 skipped per test job; package job passed; coverage 86.73–86.74% |
+| Full suite (remote) | GitHub Actions | CI run on Ubuntu and Windows, Python 3.12–3.14 | 0.1.1 run 40509205221: `417 passed, 2 deselected` plus `2 passed` for the slow suite and 0 skipped per test job; package job passed; coverage 86.73–86.74% |
 | Browser accessibility | axe-core 4.10.3 | Headless Chrome, desktop dark, desktop light, mobile dark | 0 WCAG 2.2 AA violations in all three views |
 | Browser network and console | CDP | Same run | 0 external requests, 0 console errors or warnings; both fonts loaded |
 | Performance and best practices | Lighthouse 13.5.0 | Desktop profile | 98 performance, 100 accessibility, 100 best-practices; CLS 0; simulated mobile 65/100/100 disclosed in testing |
@@ -167,10 +167,12 @@ content are the tracked-history scan, the clean-export scan and the artifact sca
 
 ## 6. Artifact and release verification
 
-- The final wheel (92 files) and sdist (242 files) were built from the release commit
-  and checked with `scripts/check_artifacts.py`, which enforces the file allowlist,
-  requires the embedded fonts, their `OFL.txt` and the vendor manifest, and excludes
-  caches, scratch trees, the private research cache and local output.
+- The final wheel (92 files) and sdist (242 files) were built from release commit
+  `c702d9d` and checked with `scripts/check_artifacts.py`, which enforces the file
+  allowlist, requires the embedded fonts, their `OFL.txt` and the vendor manifest, and
+  excludes caches, scratch trees, the private research cache and local output.
+- Both published assets were re-downloaded from GitHub Release `v0.1.1` and matched
+  `SHA256SUMS` exactly.
 - Three consecutive builds from the same tree and toolchain produced identical SHA-256
   digests. Cross-machine and cross-toolchain byte reproducibility is not claimed.
 - `dist/SHA256SUMS` records the digests of the frozen wheel and sdist. The digests are

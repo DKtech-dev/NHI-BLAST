@@ -19,7 +19,7 @@ Tests make no network calls and execute no scanned content.
 | Gate | Command | Result on 2026-10-27 |
 | --- | --- | --- |
 | Full suite | `./.venv/Scripts/python.exe -m pytest -q` | 418 passed, 1 skipped in 23.23 s |
-| Remote suite | GitHub Actions CI, Ubuntu and Windows, Python 3.12–3.14 | The 0.1.1 run 40508195834 passed the package job and all six test jobs: `417 passed, 2 deselected` plus `2 passed` for the slow suite, 0 skipped, coverage 86.73–86.74% |
+| Remote suite | GitHub Actions CI, Ubuntu and Windows, Python 3.12–3.14 | The 0.1.1 run 40509205221 passed the package job and all six test jobs: `417 passed, 2 deselected` plus `2 passed` for the slow suite, 0 skipped, coverage 86.73–86.74% |
 | Adversarial | `./.venv/Scripts/python.exe -m pytest -q -m security` | 37 passed, 1 skipped |
 | Golden | `./.venv/Scripts/python.exe -m pytest -q -m golden` | 2 passed |
 | Performance | `./.venv/Scripts/python.exe -m pytest -q -m slow` | 2 passed in 9.22 s |

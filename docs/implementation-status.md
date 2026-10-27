@@ -4,18 +4,18 @@ Living record of what is actually built and verified. Every row must correspond 
 command that was run, with its real result. When a gate is not met, it says so.
 
 Last updated: 2026-10-27
-Overall verdict: **0.1.1 RELEASE CANDIDATE; 0.1.0 remains the published release.**
+Overall verdict: **0.1.1 RELEASED; 0.1.0 remains available.**
 M0–M8 are implemented and verified locally and in remote CI, including packaging,
 clean-environment installation, documentation, CI policy, dependency and secret audits,
 three-build reproducibility, Python 3.12/3.13/3.14 suites on Ubuntu and Windows, a
 10-repository real-world corpus, an adversarial soak, real-browser/axe verification, an
 internal security audit with third-party scanners, and the 0.1.1 report redesign with
 Lighthouse, html-validate and design-inspector verification. Version 0.1.0 was
-published on 2026-10-27 from commit `0269100`. Version 0.1.1 is prepared from the
-verified release commit and is published to the authorized GitHub Release after a green
-remote CI run; the publication record is appended after asset verification. The
-independent human audit has not been performed and is not claimed; it is the one open
-assurance gate.
+published on 2026-10-27 from commit `0269100`; version 0.1.1 was published the same day
+from commit `c702d9d` as the GitHub Release `v0.1.1`, after green CI run 40509205221 and
+audit run 40509205137, with all assets re-downloaded and verified against `SHA256SUMS`.
+The independent human audit has not been performed and is not claimed; it is the one
+open assurance gate.
 
 ## Environment used for every recorded result
 
@@ -749,28 +749,23 @@ not external benchmarks or an audit.
 | Coverage gate | `scripts/check_coverage.py` | 86.67% overall; every enforced module ≥80%; lowest `report/explain.py` 83.78% |
 | Lint, format, types | ruff 0.15.22, mypy 1.20.2 strict | Clean; 113 files formatted; 71 source files typed |
 | Scanners | zizmor 1.31.1, actionlint 1.7.12, Semgrep 1.182.1, Bandit 1.9.4, pip-audit 2.10.1, Grype 0.121.0 | 0 findings in each; B105 skip documented; B101 assert removed; 0 vulnerabilities |
-| Remote CI | `ci.yml` run 40508195834 on Ubuntu and Windows, Python 3.12–3.14 | Package job passed; all six test jobs reported `417 passed, 2 deselected` plus `2 passed` for the slow suite, 0 skipped; coverage 86.73–86.74% |
-| Remote advisory audit | `audit.yml` run 40508195866 | Passed: both lock audits, Bandit, OSV-Scanner and secret scan |
+| Remote CI | `ci.yml` run 40509205221 on Ubuntu and Windows, Python 3.12–3.14 | Package job passed; all six test jobs reported `417 passed, 2 deselected` plus `2 passed` for the slow suite, 0 skipped; coverage 86.73–86.74% |
+| Remote advisory audit | `audit.yml` run 40509205137 | Passed: both lock audits, Bandit, OSV-Scanner and secret scan |
 | Secret scans | gitleaks 8.30.1 history and tree; TruffleHog 3.99.7 | 9 commits / 2.32 MB with no history leaks; 0 verified and 0 unverified TruffleHog secrets; 6 tree hits all triaged to AWS documentation examples inside the gitignored research cache and absent from tracked files |
 | Build and artifacts | three hatchling builds; `scripts/check_artifacts.py dist` | Identical wheel and sdist digests across three builds; wheel 92 files, sdist 242 files, including fonts, `OFL.txt` and vendor manifest |
 | Clean installs | wheel, wheel with `[hcl]`, sdist | All six commands exit 0; fx10 parses HCL with the extra (14 nodes) and reports `D-TF-HCL-UNAVAILABLE` without it (8 nodes); repeated installed-wheel scans are byte-identical |
-| Publication | GitHub Release `v0.1.1` | Pending the final annotated tag and asset upload; the publication record is appended after the assets are re-downloaded and verified against `SHA256SUMS` |
+| Publication | GitHub Release `v0.1.1` | Published 2026-10-27 from commit `c702d9d`; annotated tag `v0.1.1`; wheel, sdist and `SHA256SUMS` re-downloaded and all checksums verified |
 
 ## Next action
 
-No local implementation milestone remains. Remote CI, Linux execution, advisory
-automation, the internal audit and the authorized 0.1.0 GitHub Release are complete.
-The 0.1.1 report redesign has passed every local gate and both remote workflows on the
-release commit. The remaining actions are:
+No implementation or publication task remains for 0.1.1. Remote CI, Linux execution,
+advisory automation, the internal audit and the authorized 0.1.0 and 0.1.1 GitHub
+Releases are complete. The remaining actions are:
 
-1. **Publish 0.1.1.** The release commit is pushed and CI run 40508195834 plus audit
-   run 40508195866 are green. Create the annotated tag, upload the wheel, sdist and
-   `SHA256SUMS`, then re-download and verify the assets. This is the final step of the
-   current task.
-2. **Independent human audit.** This cannot be supplied by the implementation agent.
+1. **Independent human audit.** This cannot be supplied by the implementation agent.
    `docs/external-audit-package.md` defines the target and materials; until a reviewer
    completes a report, the project must not be described as independently audited.
-3. **Release maintenance.** Review Dependabot updates after `0.1.1`, refresh the lock
+2. **Release maintenance.** Review Dependabot updates after `0.1.1`, refresh the lock
    files on a deliberate cadence, and re-run the full gate set before any later
    release. Secret scanning and CodeQL remain unavailable on the private repository
    unless GitHub Advanced Security is enabled.
