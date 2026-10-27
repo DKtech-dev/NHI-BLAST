@@ -765,14 +765,18 @@ not external benchmarks or an audit.
 | --- | --- | --- |
 | Licence | `LICENSE`, `NOTICE`, `pyproject.toml` | MIT replaced with an all-rights-reserved proprietary licence for this source tree and future releases; the published 0.1.0 and 0.1.1 releases remain MIT; built metadata reports `License-Expression: LicenseRef-Proprietary` with `License-File: LICENSE` and `NOTICE` |
 | Version | `src/nhi_blast/__init__.py`, `pyproject.toml`, `tests/golden/fx07-console.txt` | Bumped to 0.2.0; the console golden header updated; JSON schema `nhi-blast-report/1.0` unchanged |
-| Local gates | pytest, ruff check, ruff format, mypy strict, schema check | 419 passed, 1 skipped in 27.46 s (the skip is the Windows real-symlink privilege case); ruff clean and 113 files formatted; mypy strict clean over 71 source files; `scripts/gen_schema.py --check` exit 0 |
-| 0.2.0 build check | hatchling build to a temporary directory; `scripts/check_artifacts.py` | Wheel 92 files and 1,366,403 bytes; sdist 242 files and 2,258,924 bytes; proprietary metadata present; no 0.2.0 artifact published |
+| Local gates | pytest, ruff check, ruff format, mypy strict, schema check | 419 passed, 1 skipped in 15.27 s (the skip is the Windows real-symlink privilege case); ruff clean and 113 files formatted; mypy strict clean over 71 source files; `scripts/gen_schema.py --check` exit 0 |
+| 0.2.0 build check | hatchling build to a temporary directory; `scripts/check_artifacts.py` | Wheel 92 files and 1,366,403 bytes; sdist 242 files; proprietary metadata present; no 0.2.0 artifact published. Exact sdist bytes are not pinned because documentation edits change the archive |
 | Visibility | `gh repo edit --visibility public`; anonymous HTTP request | `visibility: public`; the repository and the `v0.1.1` release page return HTTP 200 without authentication |
 | Secret scanning | `gh api` repository security settings | Secret scanning and push protection enabled; 0 open secret-scanning alerts; validity checks and non-provider patterns remain disabled at the account level |
-| CodeQL | `code-scanning/default-setup` and `code-scanning/analyses` | Default setup configured for Actions and Python; analyses on `e00cf81`: Actions 0 results, Python 1 result (`py/bad-tag-filter` in `tests/test_html.py`) |
+| CodeQL | `code-scanning/default-setup` and `code-scanning/analyses` | Default setup configured for Actions and Python; analyses on `e00cf81` reported 1 Python result (`py/bad-tag-filter`), fixed in the test helper; analyses on `d26dd14` report 0 results for both languages and 0 open alerts |
 | CodeQL fix | `tests/test_html.py` | The regex extractor behind the CSP and injection assertions was replaced with an `HTMLParser` collector that follows browser tag parsing, with `test_script_extractor_matches_browser_tag_syntax` as regression coverage |
+| Portability failure and fix | CI run 40514772712; commit `d26dd14` | The synthetic end-tag case failed only on `windows-latest` Python 3.12.10, whose `HTMLParser` rejects junk in end tags; the regression case now uses a whitespace-only end tag that every supported patch level accepts, and all seven jobs passed in run 40515346396 |
+| Remote CI (public repository) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40515346396 | Package job and all six test jobs passed on `ubuntu-latest` and `windows-latest`, Python 3.12–3.14: `420 passed` each, coverage 86.73–86.74%; slow suite `2 passed` in every job |
+| Remote advisory audit (public repository) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40515346468 | Passed: both lock audits, Bandit, OSV-Scanner and the secret scan |
+| Remote CodeQL | https://github.com/DKtech-dev/nhi-blast/actions/runs/40515346395 | Analyze (actions) and Analyze (python) passed; 0 results and 0 open alerts |
 | Dependabot | Pull request #1 | `actions/setup-python` 7.0.0 → 7.1.0 pinned by SHA; all eight checks green; squash-merged as `0d86433` |
-| Private vulnerability reporting | `gh api` PUT and GET | Enabled; `SECURITY.md` directs reports there |
+| Private vulnerability reporting | `gh api` PUT and GET | Enabled; `SECURITY.md` directs reports there; secret-scanning and Dependabot alert counts are both 0 |
 
 ## Next action
 

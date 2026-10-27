@@ -200,7 +200,7 @@ content are the tracked-history scan, the clean-export scan and the artifact sca
 | Secret scanning push protection | Enabled |
 | Secret scanning validity checks | Disabled at the account level; not claimed |
 | Secret scanning non-provider patterns | Disabled at the account level; not claimed |
-| Code scanning | CodeQL default setup configured on 2026-10-27 for Actions and Python |
+| Code scanning | CodeQL default setup configured on 2026-10-27 for Actions and Python; 0 results and 0 open alerts after the test-helper fix |
 | Private vulnerability reporting | Enabled; `SECURITY.md` directs reporters to it |
 | Two-factor authentication | Not verifiable through the authenticated API response; not claimed |
 
