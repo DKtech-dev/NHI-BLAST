@@ -770,7 +770,7 @@ not external benchmarks or an audit.
 | Visibility | `gh repo edit --visibility public`; anonymous HTTP request | `visibility: public`; the repository and the `v0.1.1` release page return HTTP 200 without authentication |
 | Secret scanning | `gh api` repository security settings | Secret scanning and push protection enabled; 0 open secret-scanning alerts; validity checks and non-provider patterns remain disabled at the account level |
 | CodeQL | `code-scanning/default-setup` and `code-scanning/analyses` | Default setup configured for Actions and Python; analyses on `e00cf81`: Actions 0 results, Python 1 result (`py/bad-tag-filter` in `tests/test_html.py`) |
-| CodeQL fix | `tests/test_html.py` | The script extractor used by CSP and injection assertions is now case-insensitive, with `test_script_extractor_matches_any_letter_case` as regression coverage |
+| CodeQL fix | `tests/test_html.py` | The script extractor used by CSP and injection assertions now matches any letter case and tolerates whitespace in end tags, with `test_script_extractor_matches_any_letter_case_and_end_tag_spacing` as regression coverage |
 | Dependabot | Pull request #1 | `actions/setup-python` 7.0.0 → 7.1.0 pinned by SHA; all eight checks green; squash-merged as `0d86433` |
 | Private vulnerability reporting | `gh api` PUT and GET | Enabled; `SECURITY.md` directs reports there |
 

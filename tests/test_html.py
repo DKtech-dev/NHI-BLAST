@@ -35,11 +35,11 @@ class _TagCollector(HTMLParser):
 
 
 def _scripts(document: str) -> list[tuple[str, str]]:
-    return re.findall(r"<script([^>]*)>(.*?)</script>", document, re.DOTALL | re.IGNORECASE)
+    return re.findall(r"<script([^>]*)>(.*?)</script\s*>", document, re.DOTALL | re.IGNORECASE)
 
 
-def test_script_extractor_matches_any_letter_case() -> None:
-    assert _scripts('<SCRIPT src="x"></SCRIPT><script>y</script>') == [
+def test_script_extractor_matches_any_letter_case_and_end_tag_spacing() -> None:
+    assert _scripts('<SCRIPT src="x"></SCRIPT ><script>y</script>') == [
         (' src="x"', ""),
         ("", "y"),
     ]
