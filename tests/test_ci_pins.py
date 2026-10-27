@@ -97,14 +97,14 @@ def test_audit_workflow_is_scheduled_and_scans_both_locks() -> None:
     assert "python -m pip-audit" not in text
 
 
-def test_no_build_isolation_never_combines_with_editable_installs() -> None:
+def test_no_build_isolation_installs_the_editable_helper() -> None:
     # Editable metadata generation imports the backend's editables helper, which
-    # the locked build toolchain does not provide to an isolated-disabled build.
-    for path in _workflow_paths():
-        text, _ = _load_workflow(path)
-        for line in text.splitlines():
-            if "--no-build-isolation" in line:
-                assert " -e " not in line, f"{path.name}: editable install: {line}"
+    # pip does not add when build isolation is disabled.
+    text, _ = _load_workflow(CI_WORKFLOW)
+    assert "--no-build-isolation -e " in text
+    assert "hatchling editables" in text
+    pins = dict(line.split("==", 1) for line in _lock_lines("requirements-dev.lock"))
+    assert pins["editables"] == "0.6"
 
 
 def test_dependabot_tracks_python_and_actions_weekly() -> None:

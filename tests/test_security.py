@@ -136,13 +136,15 @@ def test_deep_terraform_json_never_raises_recursion_error() -> None:
     assert _codes(result.diagnostics) == {"D-TF-EMPTY"}
 
 
-def test_json_nesting_beyond_decoder_limit_returns_diagnostic() -> None:
+def test_json_nesting_beyond_decoder_limit_returns_a_safe_diagnostic() -> None:
     text = "[" * 100_000 + "]" * 100_000
 
     result = parse_tf_json("deeper.json", text, limits=Limits())
 
     assert result.facts is None
-    assert _codes(result.diagnostics) == {"D-TF-PARSE"}
+    # CPython 3.14's decoder accepts nesting that earlier versions reject, so the
+    # safe outcome is either a parse diagnostic or the not-an-object diagnostic.
+    assert _codes(result.diagnostics) in ({"D-TF-PARSE"}, {"D-TF-FORMAT"})
 
 
 def test_malformed_terraform_shapes_are_skipped_not_fatal() -> None:
