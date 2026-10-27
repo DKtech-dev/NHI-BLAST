@@ -148,12 +148,12 @@ results can be reproduced or superseded.
 | SBOM vulnerability match | Grype 0.121.0 | `grype requirements-dev.txt` and `grype sbom:<dependency SBOM>` | 0 matches in both |
 | License inventory | pip-licenses 5.5.5 | Locked project packages, 41 packages | MIT 27, Apache-2.0 family 6, BSD 4, ISC 1, MPL-2.0 2, PSF-2.0 1; no GPL, AGPL, SSPL or proprietary licenses. Embedded fonts are OFL-1.1, shipped with `OFL.txt` |
 | Release age and yanks | PyPI JSON API | 42 unique pins across both locks | Minimum age 15 days; 0 yanked; 0 policy violations |
-| Secret scan (history) | gitleaks 8.30.1 | `gitleaks git . --redact --config .gitleaks.toml` | Result appended after the release commit |
-| Secret scan (tree) | gitleaks 8.30.1 | `gitleaks dir . --redact --config .gitleaks.toml` | Result appended after the release commit; ignored-cache hits are triaged separately |
-| Secret scan (independent) | TruffleHog 3.99.7 | `trufflehog git file://C:/Cyber --no-verification` | Result appended after the release commit |
+| Secret scan (history) | gitleaks 8.30.1 | `gitleaks git . --redact --config .gitleaks.toml` | 9 commits and 2.32 MB scanned; no leaks |
+| Secret scan (tree) | gitleaks 8.30.1 | `gitleaks dir . --redact --config .gitleaks.toml` | 96.51 MB scanned; 6 generic-api-key hits, all in the gitignored `docs/research/_cache/aws-operators*.raw` AWS documentation captures. Manual triage: each is a documentation `BinaryEquals` example key string, not a credential. No tracked or packaged file produced a hit |
+| Secret scan (independent) | TruffleHog 3.99.7 | `trufflehog git file://C:/Cyber --no-verification` | 460 chunks and 2,320,652 bytes scanned; 0 verified and 0 unverified secrets |
 | Security tests | pytest | `pytest -q -m security` | 37 passed, 1 skipped (real symlink creation needs a Windows privilege; Linux CI runs it) |
 | Full suite (local) | pytest | `pytest -q` | 418 passed, 1 skipped |
-| Full suite (remote) | GitHub Actions | CI run on Ubuntu and Windows, Python 3.12–3.14 | 0.1.0 run 40432137207: 404 passed per job and package job passed; the 0.1.1 run is recorded in `docs/production-readiness.md` after publication |
+| Full suite (remote) | GitHub Actions | CI run on Ubuntu and Windows, Python 3.12–3.14 | 0.1.1 run 40508195834: `417 passed, 2 deselected` plus `2 passed` for the slow suite and 0 skipped per test job; package job passed; coverage 86.73–86.74% |
 | Browser accessibility | axe-core 4.10.3 | Headless Chrome, desktop dark, desktop light, mobile dark | 0 WCAG 2.2 AA violations in all three views |
 | Browser network and console | CDP | Same run | 0 external requests, 0 console errors or warnings; both fonts loaded |
 | Performance and best practices | Lighthouse 13.5.0 | Desktop profile | 98 performance, 100 accessibility, 100 best-practices; CLS 0; simulated mobile 65/100/100 disclosed in testing |

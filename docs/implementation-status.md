@@ -744,25 +744,29 @@ not external benchmarks or an audit.
 | HTML validation | html-validate 11.17.0 | Clean |
 | Design inspector | 1440, 768 and 390 px | 0 findings |
 | Report tests | `pytest tests/test_html.py tests/test_report_security.py` | 24 report tests; CSP hashes five scripts, boot-gate/no-script ordering, font embedding, no external resources, inert hostile strings and secret-leak checks pass; `report/html.py` and `report/ui.py` at 100% coverage |
-| Full suite | `pytest -q` | 418 passed, 1 skipped in 16.56 s |
+| Full suite | `pytest -q` | 418 passed, 1 skipped in 23.23 s |
 | Python 3.13/3.14 | isolated environments | 416 passed, 1 skipped, 2 deselected plus 2 slow passed on each |
 | Coverage gate | `scripts/check_coverage.py` | 86.67% overall; every enforced module ≥80%; lowest `report/explain.py` 83.78% |
 | Lint, format, types | ruff 0.15.22, mypy 1.20.2 strict | Clean; 113 files formatted; 71 source files typed |
 | Scanners | zizmor 1.31.1, actionlint 1.7.12, Semgrep 1.182.1, Bandit 1.9.4, pip-audit 2.10.1, Grype 0.121.0 | 0 findings in each; B105 skip documented; B101 assert removed; 0 vulnerabilities |
+| Remote CI | `ci.yml` run 40508195834 on Ubuntu and Windows, Python 3.12–3.14 | Package job passed; all six test jobs reported `417 passed, 2 deselected` plus `2 passed` for the slow suite, 0 skipped; coverage 86.73–86.74% |
+| Remote advisory audit | `audit.yml` run 40508195866 | Passed: both lock audits, Bandit, OSV-Scanner and secret scan |
+| Secret scans | gitleaks 8.30.1 history and tree; TruffleHog 3.99.7 | 9 commits / 2.32 MB with no history leaks; 0 verified and 0 unverified TruffleHog secrets; 6 tree hits all triaged to AWS documentation examples inside the gitignored research cache and absent from tracked files |
 | Build and artifacts | three hatchling builds; `scripts/check_artifacts.py dist` | Identical wheel and sdist digests across three builds; wheel 92 files, sdist 242 files, including fonts, `OFL.txt` and vendor manifest |
 | Clean installs | wheel, wheel with `[hcl]`, sdist | All six commands exit 0; fx10 parses HCL with the extra (14 nodes) and reports `D-TF-HCL-UNAVAILABLE` without it (8 nodes); repeated installed-wheel scans are byte-identical |
-| Publication | GitHub Release `v0.1.1` | Prepared; the publication record is appended after the release is created and its assets are re-downloaded and verified against `SHA256SUMS` |
+| Publication | GitHub Release `v0.1.1` | Pending the final annotated tag and asset upload; the publication record is appended after the assets are re-downloaded and verified against `SHA256SUMS` |
 
 ## Next action
 
 No local implementation milestone remains. Remote CI, Linux execution, advisory
 automation, the internal audit and the authorized 0.1.0 GitHub Release are complete.
-The 0.1.1 report redesign has passed every local gate and is prepared for publication.
-The remaining actions are:
+The 0.1.1 report redesign has passed every local gate and both remote workflows on the
+release commit. The remaining actions are:
 
-1. **Publish 0.1.1.** Push the release commit, confirm the remote CI and advisory runs
-   are green, create the annotated tag, upload the wheel, sdist and `SHA256SUMS`, then
-   re-download and verify the assets. This is the final step of the current task.
+1. **Publish 0.1.1.** The release commit is pushed and CI run 40508195834 plus audit
+   run 40508195866 are green. Create the annotated tag, upload the wheel, sdist and
+   `SHA256SUMS`, then re-download and verify the assets. This is the final step of the
+   current task.
 2. **Independent human audit.** This cannot be supplied by the implementation agent.
    `docs/external-audit-package.md` defines the target and materials; until a reviewer
    completes a report, the project must not be described as independently audited.

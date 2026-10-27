@@ -35,7 +35,9 @@ Recorded on Windows 11 (10.0.26200, x64), CPython 3.12.14, unless a GitHub Actio
 is cited. The complete release-gate record is in `docs/production-readiness.md`.
 
 - Full suite: 418 passed, 1 skipped (a real Windows symlink needs an unheld privilege;
-  Linux CI executes it).
+  Linux CI executes it). Remote CI run 40508195834 passed the package job and all six
+  test jobs on Ubuntu and Windows for Python 3.12–3.14: `417 passed, 2 deselected`
+  plus `2 passed` for the slow suite, 0 skipped, coverage 86.73–86.74%.
 - Adversarial suite: 37 passed, 1 skipped. Golden: 2 passed. Performance: 2 passed
   (graph build plus scenario 1.57 s of a 5 s budget; rank 6.29 s of a 60 s budget).
 - Coverage: 86.67% overall line coverage; every enforced module at or above 80%;
@@ -62,6 +64,10 @@ is cited. The complete release-gate record is in `docs/production-readiness.md`.
   (`p/ci`, `p/python`): 0 findings. Bandit 1.9.4: 0 findings. pip-audit 2.10.1 and
   Grype 0.121.0: no known vulnerabilities. pip-licenses: only permissive and
   documented weak-copyleft licences, including the fonts' OFL-1.1.
+- Secret scans: gitleaks 8.30.1 found no leaks across 9 commits and 2.32 MB of
+  history; TruffleHog 3.99.7 reported 0 verified and 0 unverified secrets. Six
+  gitleaks tree hits were all triaged to AWS documentation examples inside the
+  gitignored research cache and are absent from tracked files and artifacts.
 
 ## Security and assurance limits
 

@@ -18,17 +18,17 @@ Tests make no network calls and execute no scanned content.
 
 | Gate | Command | Result on 2026-10-27 |
 | --- | --- | --- |
-| Full suite | `./.venv/Scripts/python.exe -m pytest -q` | 418 passed, 1 skipped in 16.56 s |
-| Remote suite | GitHub Actions CI, Ubuntu and Windows, Python 3.12–3.14 | The 0.1.0 run 40432137207 passed all six test jobs; the 0.1.1 run URL is recorded in `docs/production-readiness.md` |
+| Full suite | `./.venv/Scripts/python.exe -m pytest -q` | 418 passed, 1 skipped in 23.23 s |
+| Remote suite | GitHub Actions CI, Ubuntu and Windows, Python 3.12–3.14 | The 0.1.1 run 40508195834 passed the package job and all six test jobs: `417 passed, 2 deselected` plus `2 passed` for the slow suite, 0 skipped, coverage 86.73–86.74% |
 | Adversarial | `./.venv/Scripts/python.exe -m pytest -q -m security` | 37 passed, 1 skipped |
 | Golden | `./.venv/Scripts/python.exe -m pytest -q -m golden` | 2 passed |
 | Performance | `./.venv/Scripts/python.exe -m pytest -q -m slow` | 2 passed in 9.22 s |
-| Coverage | `./.venv/Scripts/python.exe scripts/check_coverage.py` | 86.67% overall; gate passed |
+| Coverage | `./.venv/Scripts/python.exe scripts/check_coverage.py` | 86.67% locally with slow tests deselected; 86.73–86.74% in the remote full-suite run; gate passed |
 | Schema | `./.venv/Scripts/python.exe scripts/gen_schema.py --check` | clean |
 | Artifacts | `./.venv/Scripts/python.exe scripts/check_artifacts.py dist` | clean; wheel 92 files, sdist 242 files |
 | Reproducibility | three hatchling builds into separate directories, then `sha256sum` | identical wheel and sdist digests |
 | Dependency audit | pip-audit 2.10.1; OSV-Scanner 2.7.0; Grype 0.121.0 on both SBOMs | no known advisories; no vulnerabilities |
-| Secret scans | gitleaks 8.30.1 history and tree; TruffleHog 3.99.7 git history | 0 leaks in tracked history; 0 verified secrets in the 0.1.1 export; ignored-cache candidates triaged |
+| Secret scans | gitleaks 8.30.1 on 9 commits / 2.32 MB; TruffleHog 3.99.7 on 460 chunks / 2,320,652 bytes without verification | 0 leaks; 0 verified and 0 unverified secrets |
 | Internal audit | zizmor 1.31.1, actionlint 1.7.12, Semgrep 1.182.1, Bandit 1.9.4 | 0 workflow findings; 0 actionlint diagnostics; 0 Semgrep findings on `p/ci` and `p/python`; 0 Bandit findings |
 | Browser QA | Chrome via CDP at 1440×900, 768×1024 and 390×844; axe-core 4.10.3 | 0 axe violations in desktop dark, desktop light, mobile dark; 0 console/log errors; 0 external requests; 0 overflow; boot gate clears after hydration |
 | HTML validation | html-validate 11.17.0 | clean |

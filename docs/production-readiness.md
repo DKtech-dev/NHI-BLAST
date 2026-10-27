@@ -36,8 +36,8 @@ recorded environments and what remains open. The milestone history is in
 
 | Workflow | Run | Result |
 | --- | --- | --- |
-| CI 0.1.1 (`ci.yml`) | Run URL recorded after the release commit is pushed; see the repository Actions history | Pending at this pre-release commit; the local gate set below is complete |
-| Advisory audit 0.1.1 (`audit.yml`) | Scheduled and push-triggered run after the release commit | Pending at this pre-release commit; the equivalent local scanner runs are recorded below |
+| CI 0.1.1 (`ci.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40508195834 | Package job passed; all six test jobs passed with `417 passed, 2 deselected` plus `2 passed` for the slow suite, 0 skipped, and coverage 86.73–86.74% on Ubuntu and Windows, Python 3.12–3.14 |
+| Advisory audit 0.1.1 (`audit.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40508195866 | Passed: runtime and development lock audits, Bandit, OSV-Scanner and the secret scan |
 | CI 0.1.0 (`ci.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40432137207 | Package job passed; all six test jobs passed with `404 passed` each and coverage 86.53–86.54% on Ubuntu and Windows, Python 3.12–3.14 |
 | Advisory audit 0.1.0 (`audit.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40432137192 | Passed: both lock files audited, Bandit, OSV-Scanner and gitleaks |
 | First fully green CI | https://github.com/DKtech-dev/nhi-blast/actions/runs/40427815113 | Package and six test jobs passed after the toolchain fixes |
@@ -52,14 +52,14 @@ suite, so the local Windows skip does not appear there.
 | Gate | Requirement | Actual result | Status |
 | --- | --- | --- | --- |
 | Specification implementation | M0–M7 pipeline and CLI complete | Implemented and exercised end to end; see `docs/implementation-status.md` | Pass |
-| Full test suite (local) | All tests pass; warnings are errors | 418 passed, 1 skipped in 16.56 s (the skip is the real-symlink case described below) | Pass |
-| Full test suite (remote) | Linux and Windows, Python 3.12–3.14 | 0.1.0 run 40432137207: 404 passed per job on six GitHub-hosted jobs; the 0.1.1 run is recorded after publication | Pass (0.1.0 run); 0.1.1 pending |
-| Python 3.13 suite | Same suite on CPython 3.13 | Local 3.13.17: 416 passed, 1 skipped, 2 deselected plus 2 slow passed; remote 0.1.0 job passed | Pass |
-| Python 3.14 suite | Same suite on CPython 3.14 | Local 3.14.7: 416 passed, 1 skipped, 2 deselected plus 2 slow passed; remote 0.1.0 job passed | Pass |
+| Full test suite (local) | All tests pass; warnings are errors | 418 passed, 1 skipped in 23.23 s (the skip is the real-symlink case described below) | Pass |
+| Full test suite (remote) | Linux and Windows, Python 3.12–3.14 | 0.1.1 run 40508195834: every test job reported `417 passed, 2 deselected` plus `2 passed` for the slow suite and 0 skipped; coverage 86.73% (86.74% on Ubuntu 3.14); package job passed | Pass |
+| Python 3.13 suite | Same suite on CPython 3.13 | Local 3.13.17: 416 passed, 1 skipped, 2 deselected plus 2 slow passed; remote 0.1.1 job passed | Pass |
+| Python 3.14 suite | Same suite on CPython 3.14 | Local 3.14.7: 416 passed, 1 skipped, 2 deselected plus 2 slow passed; remote 0.1.1 job passed | Pass |
 | Adversarial suite | Security-marked hostile-input tests pass | 37 passed, 1 skipped locally (real symlink creation requires a Windows privilege); the Linux CI job executes the skipped case | Pass |
 | Golden output | Reviewed fx07 console and semantic summary | 2 passed | Pass |
 | Performance | SPEC 12.8 budgets | 2 passed in 9.22 s; previously measured graph build + scenario 1.568 s (budget 5 s), rank 6.285 s (budget 60 s) on the documented 200-workflow/2,000-resource fixture | Pass |
-| Coverage | ≥80% overall; ≥80% in `aws/`, `analysis/`, `report/` | 86.67% overall line coverage; 89.47% statements, 78.87% branches; every enforced module ≥80%; `report/html.py` and `report/ui.py` at 100% | Pass |
+| Coverage | ≥80% overall; ≥80% in `aws/`, `analysis/`, `report/` | Local 86.67% overall line coverage with the two slow tests deselected under instrumentation; remote full-suite coverage 86.73% (86.74% on Ubuntu 3.14); 89.47% statements, 78.87% branches; every enforced module ≥80%; `report/html.py` and `report/ui.py` at 100% | Pass |
 | Lint | `ruff check` | Clean over `src`, `tests`, `scripts` locally and in CI | Pass |
 | Format | `ruff format --check` | 113 files already formatted | Pass |
 | Types | `mypy --strict src` | Clean, 71 source files locally and in CI | Pass |
@@ -73,11 +73,11 @@ suite, so the local Windows skip does not appear there.
 | Dependency audit | No known advisories in locked sets | pip-audit 2.10.1 on the runtime lock: no known vulnerabilities; OSV-Scanner 2.7.0: no issues across 60 package instances; Grype 0.121.0 on the dev lock and dependency SBOM: 0 matches | Pass |
 | Dependency age and yanks | Minimum 14-day release age; no yanked pins | 42 unique pins, minimum age 15 days, 0 yanked, 0 violations on 2026-10-27; locks unchanged since 0.1.0 | Pass |
 | License inventory | Permissive or documented weak copyleft only | 41 locked packages: MIT 27, Apache-2.0 family 6, BSD 4, ISC 1, MPL-2.0 2, PSF-2.0 1; no GPL/AGPL/SSPL/proprietary. Embedded Geist fonts are OFL-1.1 with the licence text shipped in the wheel | Pass |
-| Secret scans | No credential values in tracked history, tree or artifacts | gitleaks 8.30.1 and TruffleHog 3.99.7 on the committed 0.1.1 tree and history; results are appended after the release commit | Pending commit |
+| Secret scans | No credential values in tracked history, tree or artifacts | gitleaks 8.30.1: 9 commits and 2.32 MB of history scanned, no leaks. TruffleHog 3.99.7: 460 chunks and 2,320,652 bytes scanned without verification, 0 verified and 0 unverified secrets. Both cover the 0.1.1 release commit; the advisory workflow repeats gitleaks on every push | Pass |
 | Real-world corpus | Ten public repositories, including workflows and Terraform | 0 failures; 1,959 files, 163 workflow files, 101 Terraform files; 21 all-mutable-actions scenarios exactly matching 21 rank rows; 37 findings, 1,149 nodes, 2,181 edges, 451 diagnostics; max scan 1.92 s, max rank 1.82 s, max export 1.87 s | Pass (sample) |
 | Adversarial soak | Hostile and boundary inputs terminate within documented exit codes | 16 cases, 0 failures; hostile YAML, traversal, Terraform JSON/plan/HCL, 80-finding repository, bad config and CLI negatives all handled without traceback | Pass (sample) |
 | CI policy | Actions pinned to full SHAs; read-only token; locks used; no credential persistence | 12 policy tests pass; SHA pinning enforced by repository setting; checkout steps set `persist-credentials: false`; workflows are read-only and never use `pull_request_target` | Pass |
-| Advisory automation | Both locks and secrets scanned on a schedule | `audit.yml` runs on push, pull request and weekly cron; pip-audit on both locks, Bandit, hash-verified OSV-Scanner 2.7.0 and gitleaks 8.30.1; run 40429850149 passed | Pass |
+| Advisory automation | Both locks and secrets scanned on a schedule | `audit.yml` runs on push, pull request and weekly cron; pip-audit on both locks, Bandit, hash-verified OSV-Scanner 2.7.0 and gitleaks 8.30.1; 0.1.1 run 40508195866 passed | Pass |
 | CLI exit codes | 0, 1, 2, 3 and 4 observed | 0 success and `--fail-on never`; 1 on `--fail-on critical`; 2 for bad selector/format/path/config; 3 for strict partial results; 4 covered by CLI tests | Pass |
 | HTML structure and accessibility | Language, title, headings, labels, skip link, table semantics, graph text alternative, no-script fallback | Static tests pass (24 report tests); CSP, escaping and inert-hostile-string tests pass; axe-core 4.10.3 reports 0 WCAG 2.2 AA violations on desktop dark, desktop light and mobile dark; the boot gate clears after hydration and the no-script override keeps the document visible | Pass |
 | Browser QA | Offline rendering, fonts, interactions, external requests | Headless Chrome at 1440×900, 768×1024 and 390×844: 0 overflow, 0 console/log errors, 0 external requests; both fonts loaded and Geist in use; scenario switching, graph zoom/fit, trace, table scroll and filters exercised | Pass |
@@ -86,8 +86,8 @@ suite, so the local Windows skip does not appear there.
 | Design inspector | Layout, typography and density checks at 1440, 768 and 390 px | 0 findings | Pass |
 | Documentation set | README, architecture, rules, assumptions, provenance, benchmark, limitations, release, security, audit, external audit package, contributing, changelog, NOTICE | Present; local-link, rule-coverage and assumption-registry tests pass | Pass |
 | Three-build reproducibility | Repeated clean builds produce identical artifact digests | Three consecutive builds from the same unmodified tree produced identical SHA-256 digests for both the wheel and the sdist; cross-machine and cross-toolchain byte reproducibility is not claimed | Pass (local) |
-| Remote CI execution | The defined matrix runs green on GitHub-hosted runners | Run 40432137207: package job and all six test jobs passed | Pass |
-| Linux execution | The suite runs on Linux | Ubuntu jobs for Python 3.12, 3.13 and 3.14 passed, including the symlink security test and the performance tests | Pass |
+| Remote CI execution | The defined matrix runs green on GitHub-hosted runners | 0.1.1 run 40508195834: package job and all six test jobs passed | Pass |
+| Linux execution | The suite runs on Linux | 0.1.1 Ubuntu jobs for Python 3.12, 3.13 and 3.14 passed, including the symlink security test and the performance tests | Pass |
 | Internal security audit | Manual review and third-party automated scanners | Completed 2026-10-27; no high/critical finding open; report in `docs/security-audit.md` | Pass (internal) |
 | Repository security settings | Least-privilege automation and protected main branch | Workflow token read-only; SHA pinning required; Dependabot alerts and security updates enabled; `protect-main` ruleset blocks deletion and non-fast-forward pushes | Pass |
 | Independent audit | External human security review | None performed and none claimed; package prepared in `docs/external-audit-package.md` | Not claimed |
