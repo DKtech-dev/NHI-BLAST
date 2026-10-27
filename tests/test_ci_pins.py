@@ -60,6 +60,20 @@ def test_every_workflow_action_is_pinned_to_a_full_commit() -> None:
                 assert ACTION_PIN.fullmatch(uses), f"{path.name}: unpinned action: {uses}"
 
 
+def test_checkout_steps_do_not_persist_credentials() -> None:
+    for path in _workflow_paths():
+        _, document = _load_workflow(path)
+        jobs = document["jobs"]
+        assert isinstance(jobs, dict)
+        for job in jobs.values():
+            assert isinstance(job, dict)
+            for step in job["steps"]:
+                uses = step.get("uses", "")
+                if isinstance(uses, str) and uses.startswith("actions/checkout@"):
+                    options = step.get("with", {})
+                    assert options.get("persist-credentials") is False, path.name
+
+
 def test_all_workflows_are_read_only_and_never_use_pull_request_target() -> None:
     for path in _workflow_paths():
         _, document = _load_workflow(path)

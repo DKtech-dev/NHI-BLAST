@@ -8,7 +8,8 @@
 # test tooling. pytest 9.1.1 is required: pytest 8.4.2 is affected by
 # PYSEC-2026-1845. coverage is held below 7.17.0 and pluggy below 1.7.0
 # because those releases were less than 14 days old when this file was
-# recorded. Re-run the full gate after any deliberate update.
+# recorded. tomlkit is held at 0.15.1 for the same reason. Re-run the full gate
+# after any deliberate update.
 annotated-types==0.8.0
 attrs==26.1.0
 click==8.4.2
@@ -44,7 +45,7 @@ rpds-py==2026.9.1
 ruff==0.15.22
 shellingham==1.5.4
 sortedcontainers==2.4.0
-tomlkit==0.15.2
+tomlkit==0.15.1
 trove-classifiers==2026.9.21.13
 typer==0.20.1
 types-PyYAML==6.0.12.20260906
