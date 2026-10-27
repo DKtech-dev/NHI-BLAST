@@ -18,14 +18,17 @@ over.
 
 ## Install
 
-Download the wheel or sdist and `SHA256SUMS` from this release, verify the checksum,
-then install with the runtime lock:
+Download the wheel or sdist and `SHA256SUMS` from this release and verify the checksum.
+The sdist contains `requirements.lock`; use it to pin runtime dependencies:
 
 ```sh
 sha256sum -c SHA256SUMS
 python -m venv .venv
 .venv/bin/python -m pip install -c requirements.lock nhi_blast-0.1.0-py3-none-any.whl
 ```
+
+If you install from the wheel alone, take `requirements.lock` from the sdist or the
+repository and pass it with `-c`; the wheel does not embed the lock file.
 
 On Windows use `.\.venv\Scripts\python.exe` and `Get-FileHash`. The optional extras are
 `rich` for the enhanced console renderer and `hcl` for best-effort Terraform HCL

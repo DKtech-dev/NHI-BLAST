@@ -6,7 +6,9 @@ use semantic versioning from its first published release.
 
 ## 0.1.0 — 2026-10-27
 
-Initial release, distributed as GitHub Release assets (wheel, sdist and SHA-256 sums).
+Initial release, published as the GitHub Release
+[`v0.1.0`](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.0) (wheel, sdist
+and SHA-256 sums).
 No package-index upload or deployment. The verification record is in
 `docs/production-readiness.md`; the internal audit is in `docs/security-audit.md`.
 Independent human audit has not been performed and is not claimed.

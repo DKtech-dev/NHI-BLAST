@@ -5,7 +5,11 @@ automated and internal gate below passes on the recorded environments, including
 remote CI matrix on Linux and Windows. The independent human security audit has not
 been performed and is not claimed; it remains the one open assurance gate and is
 disclosed in `docs/security-audit.md` and `docs/external-audit-package.md`.
-Publication is limited to the GitHub Release authorized by the maintainer.
+Version 0.1.0 was published on 2026-10-27 as the GitHub Release
+https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.0 with the wheel, sdist and
+`SHA256SUMS`; the downloaded assets were verified against those sums. No package-index
+upload, deployment or SaaS was performed. This post-release documentation commit is not
+part of the tagged release.
 
 This page is the release-gate record. It states what was actually executed on the
 recorded environments and what remains open. The milestone history is in
@@ -78,7 +82,7 @@ suite, so the local Windows skip does not appear there.
 | Internal security audit | Manual review and third-party automated scanners | Completed 2026-10-27; no high/critical finding open; report in `docs/security-audit.md` | Pass (internal) |
 | Repository security settings | Least-privilege automation and protected main branch | Workflow token read-only; SHA pinning required; Dependabot alerts and security updates enabled; `protect-main` ruleset blocks deletion and non-fast-forward pushes | Pass |
 | Independent audit | External human security review | None performed and none claimed; package prepared in `docs/external-audit-package.md` | Not claimed |
-| Publication | GitHub Release with wheel, sdist and SHA-256 sums | Authorized by the maintainer; procedure in `docs/release.md`; no package-index upload, deployment or SaaS | Authorized |
+| Publication | GitHub Release with wheel, sdist and SHA-256 sums | `v0.1.0` published 2026-10-27 from commit `0269100` at https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.0; all three assets were re-downloaded and verified against `SHA256SUMS`; no package-index upload, deployment or SaaS | Published |
 
 ## Open gates and limitations
 
@@ -99,9 +103,11 @@ observations. They are not external benchmarks and not an independent audit.
 
 ## Release decision
 
-The maintainer authorized publication as GitHub Release assets. The release may be
-described as `0.1.0`, with the verification record in this document, provided every
-statement keeps the distinction between internal verification and independent audit.
+The maintainer authorized publication as GitHub Release assets. Version `0.1.0` was
+published on 2026-10-27 from commit `0269100`; the annotated tag `v0.1.0` and the
+wheel, sdist and `SHA256SUMS` assets are in the release record. Any later source or
+artifact change requires a fresh gate run before it can be described as released. Every
+statement must keep the distinction between internal verification and independent audit.
 The tool's own analysis is evidence-honest by design: it reports potential authority,
 conditional survival and rotation order. This readiness document makes the same
 distinction about the project itself. Local and CI tests demonstrate behaviour on the

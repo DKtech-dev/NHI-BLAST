@@ -21,9 +21,10 @@ as reachable authority; they feed a separate `potential` set. The tool does not 
 proof of compromise, exploitability or takeover, and it never prints a credential
 value.
 
-> **Status: 0.1.0, distributed as GitHub Release assets.** Wheel, sdist and SHA-256
-> sums are attached to the `v0.1.0` release; there is no package-index upload or
-> deployment. Remote CI passed on Ubuntu and Windows for Python 3.12, 3.13 and 3.14,
+> **Status: 0.1.0, published as a GitHub Release.** Wheel, sdist and SHA-256
+> sums are attached to the
+> [`v0.1.0` release](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.0);
+> there is no package-index upload or deployment. Remote CI passed on Ubuntu and Windows for Python 3.12, 3.13 and 3.14,
 > advisory automation scans both locks and secrets on a schedule, and an internal
 > security audit is recorded in [security audit](docs/security-audit.md). An
 > independent human audit has **not** been performed and is not claimed. Read

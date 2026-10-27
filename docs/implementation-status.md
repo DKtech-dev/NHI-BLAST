@@ -4,14 +4,15 @@ Living record of what is actually built and verified. Every row must correspond 
 command that was run, with its real result. When a gate is not met, it says so.
 
 Last updated: 2026-10-27
-Overall verdict: **RELEASE READY for the authorized GitHub Releases scope.** M0–M8 are
+Overall verdict: **0.1.0 RELEASED as a GitHub Release.** M0–M8 are
 implemented and verified locally and in remote CI, including packaging, clean-environment
 installation, documentation, CI policy, dependency and secret audits, three-build
 reproducibility, Python 3.12/3.13/3.14 suites on Ubuntu and Windows, a 10-repository
 real-world corpus, an adversarial soak, real-browser/axe verification, and an internal
-security audit with third-party scanners. The independent human audit has not been
-performed and is not claimed; it is the one open assurance gate. Publication is limited
-to the GitHub Release authorized by the maintainer.
+security audit with third-party scanners. Version 0.1.0 was published on 2026-10-27 from
+commit `0269100`; this post-release documentation commit is not part of the tagged
+release. The independent human audit has not been performed and is not claimed; it is
+the one open assurance gate.
 
 ## Environment used for every recorded result
 
@@ -717,10 +718,22 @@ not external benchmarks or an audit.
 | Repository settings | `gh api` on 2026-10-27 | Default workflow token read-only; SHA pinning required; Dependabot alerts and security updates enabled; `protect-main` ruleset blocks deletion and non-fast-forward pushes; secret scanning and CodeQL unavailable without Advanced Security |
 | New traceability tests | `pytest tests/test_docs.py tests/test_report_security.py` | 13 passed: assumption registry integrity and documentation match; report templates reject proof/guarantee/exploitability/takeover wording |
 
+### 2026-10-27 — publication record
+
+| Item | Value |
+| --- | --- |
+| Release | https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.0; not a draft, not a pre-release |
+| Tag | annotated `v0.1.0` → commit `0269100` (`Pin release evidence to the final CI and audit runs`) |
+| Assets | `nhi_blast-0.1.0-py3-none-any.whl`, `nhi_blast-0.1.0.tar.gz`, `SHA256SUMS` |
+| Pre-publication gates | remote CI run 40432467328 and audit run 40432467231 passed on `0269100` |
+| Verification | assets re-downloaded from the release; `sha256sum -c SHA256SUMS` passed; the digests reported by the release API matched the locally built artifacts and the checksum asset |
+| Distribution scope | GitHub Release only; no package-index upload, deployment or SaaS |
+
 ## Next action
 
 No local implementation milestone remains. Remote CI, Linux execution, advisory
-automation and the internal audit are complete. The remaining actions are:
+automation, the internal audit and the authorized 0.1.0 GitHub Release are complete.
+The remaining actions are:
 
 1. **Independent human audit.** This cannot be supplied by the implementation agent.
    `docs/external-audit-package.md` defines the target and materials; until a reviewer
@@ -729,6 +742,3 @@ automation and the internal audit are complete. The remaining actions are:
    files on a deliberate cadence, and re-run the full gate set before any later
    release. Secret scanning and CodeQL remain unavailable on the private repository
    unless GitHub Advanced Security is enabled.
-3. **Publication record.** Record the release tag, artifact digests and any follow-up
-   limitations in this document and `docs/production-readiness.md` after the release.
-   The gate matrix, not this status page, is authoritative for release claims.
