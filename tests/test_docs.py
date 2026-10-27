@@ -23,7 +23,10 @@ DOCS = (
     ROOT / "docs" / "known-limitations.md",
     ROOT / "docs" / "production-readiness.md",
     ROOT / "docs" / "release.md",
+    ROOT / "docs" / "release-notes-0.1.0.md",
     ROOT / "docs" / "requirements-traceability.md",
+    ROOT / "docs" / "security-audit.md",
+    ROOT / "docs" / "external-audit-package.md",
     ROOT / "docs" / "testing.md",
     ROOT / "docs" / "research" / "sources.md",
     *sorted((ROOT / "docs" / "rules").glob("*.md")),
@@ -71,3 +74,24 @@ def test_readme_documents_every_cli_command() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     for command in ("scan", "rank", "explain", "export", "schema", "version"):
         assert f"nhi-blast {command}" in readme or f"`{command}`" in readme
+
+
+def test_assumption_registry_matches_its_documentation() -> None:
+    registry = yaml.safe_load(
+        (ROOT / "src" / "nhi_blast" / "data" / "assumptions.yaml").read_text(encoding="utf-8")
+    )
+    entries = registry["entries"]
+    ids = [entry["id"] for entry in entries]
+    assert len(ids) == len(set(ids))
+    for entry in entries:
+        assert entry["kind"] in {"assumption", "heuristic"}
+        assert isinstance(entry["verify"], bool)
+        assert entry["statement"].strip()
+        assert entry["impact"].strip()
+    documented = set(
+        re.findall(
+            r"\b[AH]-[A-Z0-9-]+\b",
+            (ROOT / "docs" / "assumptions.md").read_text(encoding="utf-8"),
+        )
+    )
+    assert set(ids) == documented

@@ -16,20 +16,24 @@ Tests make no network calls and execute no scanned content.
 
 ## 2. Gates
 
-| Gate | Command | Result on 2026-10-26 |
+| Gate | Command | Result on 2026-10-27 |
 | --- | --- | --- |
-| Full suite | `./.venv/Scripts/python.exe -m pytest -q` | 395 passed, 1 skipped in 20.35 s |
-| Adversarial | `./.venv/Scripts/python.exe -m pytest -q -m security` | 32 passed, 1 skipped |
+| Full suite | `./.venv/Scripts/python.exe -m pytest -q` | 403 passed, 1 skipped in 12.10 s |
+| Remote suite | GitHub Actions CI, Ubuntu and Windows, Python 3.12–3.14 | 404 passed per job; package job passed |
+| Adversarial | `./.venv/Scripts/python.exe -m pytest -q -m security` | 37 passed, 1 skipped |
 | Golden | `./.venv/Scripts/python.exe -m pytest -q -m golden` | 2 passed |
 | Performance | `./.venv/Scripts/python.exe -m pytest -q -m slow` | 2 passed in 10.40 s |
 | Coverage | `./.venv/Scripts/python.exe scripts/check_coverage.py` | 86.47% overall; gate passed |
 | Schema | `./.venv/Scripts/python.exe scripts/gen_schema.py --check` | clean |
-| Artifacts | `./.venv/Scripts/python.exe scripts/check_artifacts.py dist` | clean; wheel 88 files, sdist 234 files |
+| Artifacts | `./.venv/Scripts/python.exe scripts/check_artifacts.py dist` | clean; wheel 88 files; sdist count recorded in `docs/production-readiness.md` after the final build |
 | Reproducibility | three hatchling builds into separate directories, then `sha256sum` | identical wheel and sdist digests |
+| Dependency audit | pip-audit 2.10.1; OSV-Scanner 2.7.0; Grype 0.121.0 on both SBOMs | no known advisories; no vulnerabilities |
+| Secret scans | gitleaks 8.30.1 history and tree; TruffleHog 3.99.7 filesystem | 0 leaks in 5 commits; 0 verified/unverified secrets in 96 MB; 6 tree hits triaged as ignored-cache false positives |
+| Internal audit | zizmor 1.31.1, actionlint 1.7.12, Semgrep 1.182.1, Bandit 1.9.4 | 0 workflow findings; 0 actionlint diagnostics; 2 Semgrep false positives; Bandit 0 medium/high, 11 low triaged |
 | Browser | Chrome 156.0.8078.47 via CDP at 1440×900 and 390×844 | 10-scenario and 2-scenario reports render at both sizes; no overflow, console errors or network requests |
 | Accessibility | axe-core 4.10.3 in light and dark schemes | 0 violations, 52 passes per scheme |
-| Python 3.13 | `%TEMP%/nhb-py313/Scripts/python.exe -m pytest -q -m "not slow"` | 393 passed, 1 skipped, 2 deselected; slow 2 passed |
-| Python 3.14 | `%TEMP%/nhb-py314/Scripts/python.exe -m pytest -q -m "not slow"` | 393 passed, 1 skipped, 2 deselected; slow 2 passed |
+| Python 3.13 | GitHub Actions job; local `%TEMP%/nhb-py313/Scripts/python.exe -m pytest -q -m "not slow"` | Remote CI job passed; local run earlier reported 393 passed, 1 skipped, 2 deselected and 2 slow passed |
+| Python 3.14 | GitHub Actions job; local `%TEMP%/nhb-py314/Scripts/python.exe -m pytest -q -m "not slow"` | Remote CI job passed; local run earlier reported 393 passed, 1 skipped, 2 deselected and 2 slow passed |
 | Lint | `./.venv/Scripts/python.exe -m ruff check src tests scripts` | clean |
 | Format | `./.venv/Scripts/python.exe -m ruff format --check src tests scripts` | clean |
 | Types | `./.venv/Scripts/python.exe -m mypy src` | clean (70 files) |
@@ -203,15 +207,22 @@ must be run separately; their results are recorded in
   trace, an 8-hop matrix trace, text filtering (3 of 7 findings), severity filtering
   (4 of 7) and the shared-credential filter (5 of 10). axe-core 4.10.3 reported zero
   violations in light and dark schemes, with 52 passes per scheme.
-- Re-run the full suite on Python 3.13.17 and 3.14.7. Both produced 393 passed, 1
-  skipped and 2 deselected for the non-slow suite, and 2 passed for the slow suite.
+- Run the suite on Python 3.13 and 3.14 in CI and locally. The local pre-audit runs
+  produced 393 passed, 1 skipped and 2 deselected for the non-slow suite, and 2 passed
+  for the slow suite; the remote CI jobs on Python 3.13 and 3.14 passed the complete
+  suite including the two tests added during the audit.
 - Run the adversarial soak and real-world corpus harnesses outside the repository. The
   ten-repository corpus produced 21 scenarios matching 21 rank rows, 37 findings, 1,149
   nodes and 2,181 edges with no failures and byte-identical repeats; the 16-case soak
   produced no failures.
-- The CI workflow is statically checked by `tests/test_ci_pins.py` but cannot prove a
-  remote run. `docs/production-readiness.md` lists remote CI, Linux/Python 3.13
-  execution and the CI advisory-automation decision as open gates.
+- The CI workflow is statically checked by `tests/test_ci_pins.py` and has run green on
+  GitHub-hosted Ubuntu and Windows runners for Python 3.12–3.14, with a separate
+  advisory workflow. Run URLs and results are recorded in
+  `docs/production-readiness.md`.
+- The audit added two documentation-level checks: the assumption registry must contain
+  unique, fully populated entries that match `docs/assumptions.md`, and report
+  templates must not assert proof, guarantee, exploitability or takeover. These close
+  the two previously partial traceability rows without changing runtime behaviour.
 
 ## 10. Known deviations and limits
 

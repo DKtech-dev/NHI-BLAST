@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import re
 from html.parser import HTMLParser
+from pathlib import Path
 
 from nhi_blast.analysis.findings import build_findings
 from nhi_blast.core.models import Inputs, Report, Severity, ToolInfo
@@ -53,6 +55,26 @@ jobs:
         graph=build.graph,
     )
     return report, token
+
+
+CLAIM_ASSERTION = re.compile(
+    r"\b(?:proves|guarantees?|guaranteed|exploitable|takeover|take over|taken over)\b",
+    re.IGNORECASE,
+)
+
+
+def test_report_templates_do_not_assert_claims() -> None:
+    root = Path(__file__).resolve().parents[1]
+    templates = sorted((root / "src" / "nhi_blast" / "report").glob("*.py"))
+    assert len(templates) > 2
+    offenders = []
+    for template in templates:
+        text = template.read_text(encoding="utf-8")
+        for match in CLAIM_ASSERTION.finditer(text):
+            line = text.count("\n", 0, match.start()) + 1
+            offenders.append(f"{template.relative_to(root)}:{line}:{match.group(0)}")
+    assert not offenders, "claim wording in report templates:\n" + "\n".join(offenders)
+    assert "not proof of exploitation" in html_report(make_report())
 
 
 def test_literal_credential_value_is_absent_from_every_renderer() -> None:

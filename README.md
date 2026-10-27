@@ -21,12 +21,13 @@ as reachable authority; they feed a separate `potential` set. The tool does not 
 proof of compromise, exploitability or takeover, and it never prints a credential
 value.
 
-> **Status: 0.1.0 pre-release, not published.** No package, tag or deployment exists.
-> The implementation and local release gates are complete, including Python 3.12/3.13/
-> 3.14 suites, packaging, clean installs, three-build reproducibility, a 10-repository
-> corpus, an adversarial soak and real-browser/axe verification. Remote CI, Linux,
-> independent audit and publication remain open. Read
-> [production readiness](docs/production-readiness.md) for the current gate results and
+> **Status: 0.1.0, distributed as GitHub Release assets.** Wheel, sdist and SHA-256
+> sums are attached to the `v0.1.0` release; there is no package-index upload or
+> deployment. Remote CI passed on Ubuntu and Windows for Python 3.12, 3.13 and 3.14,
+> advisory automation scans both locks and secrets on a schedule, and an internal
+> security audit is recorded in [security audit](docs/security-audit.md). An
+> independent human audit has **not** been performed and is not claimed. Read
+> [production readiness](docs/production-readiness.md) for the gate matrix and
 > [known limitations](docs/known-limitations.md) before relying on a report.
 
 ## Install from a source checkout

@@ -5,10 +5,11 @@ much as its findings, so defects that break them are treated as security bugs.
 
 ## Supported versions
 
-NHI-Blast is a pre-release project. No version has been published to a package index.
-Security fixes are made on the current `0.1.x` line only; there are no long-term
-support branches and no backports. A version is supported only when its source can be
-verified against this repository.
+NHI-Blast `0.1.0` is distributed as GitHub Release assets; it is not published to a
+package index. Security fixes are made on the current `0.1.x` line only; there are no
+long-term support branches and no backports. A version is supported only when its
+source can be verified against this repository and, for a release, against the
+published SHA-256 sums.
 
 ## Reporting a vulnerability
 
@@ -72,7 +73,7 @@ credential kind, redact the value, and send the redacted reproduction privately.
 project cannot rotate credentials for you; rotate anything that may have been exposed
 before sharing diagnostic material.
 
-## Verifying the guarantees
+## Verifying the security properties
 
 The repository's test suite contains security-marked tests for path escape,
 symlinked inputs, hostile YAML, oversized inputs, malformed documents, HTML

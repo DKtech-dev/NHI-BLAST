@@ -3,14 +3,15 @@
 Living record of what is actually built and verified. Every row must correspond to a
 command that was run, with its real result. When a gate is not met, it says so.
 
-Last updated: 2026-10-26
-Overall verdict: **NOT RELEASE READY** — M0–M8 are implemented and locally verified,
-including packaging, clean-environment installation, documentation, CI policy,
-dependency audit, three-build reproducibility, Python 3.12/3.13/3.14 test suites, a
-10-repository real-world corpus, an adversarial soak, and real-browser/axe verification
-of a 10-scenario report. Remote CI execution, execution on Linux, the CI advisory
-automation decision, independent audit and publication remain open. Nothing has been
-published, tagged, deployed or independently audited.
+Last updated: 2026-10-27
+Overall verdict: **RELEASE READY for the authorized GitHub Releases scope.** M0–M8 are
+implemented and verified locally and in remote CI, including packaging, clean-environment
+installation, documentation, CI policy, dependency and secret audits, three-build
+reproducibility, Python 3.12/3.13/3.14 suites on Ubuntu and Windows, a 10-repository
+real-world corpus, an adversarial soak, real-browser/axe verification, and an internal
+security audit with third-party scanners. The independent human audit has not been
+performed and is not claimed; it is the one open assurance gate. Publication is limited
+to the GitHub Release authorized by the maintainer.
 
 ## Environment used for every recorded result
 
@@ -20,7 +21,7 @@ published, tagged, deployed or independently audited.
 | Python | 3.12.14 (`C:/Cyber/.venv/Scripts/python.exe`); also 3.13.17 and 3.14.7 in isolated environments for the final matrix |
 | pip | 26.2.2 |
 | CLI dependencies | Typer 0.20.1, Click 8.4.2 (Click pinned below 8.5 because Typer imports deprecated `click.utils` shims and tests treat warnings as errors) |
-| Repository state | no commit yet; all files untracked |
+| Repository state | private GitHub repository `DKtech-dev/nhi-blast`, branch `main`; commits pushed and CI/audit workflows active |
 
 Commands (run from `C:/Cyber`):
 
@@ -43,7 +44,7 @@ Commands (run from `C:/Cyber`):
 | M5 reporters | Complete | 30 reporter tests; full suite 238 passed; lint, format, mypy and schema check green |
 | M6 CLI and pipeline | Complete | 37 pipeline/CLI tests; full suite 275 passed; lint, format, mypy green; installed console script exercised |
 | M7 full test programme | Complete | 364 passed, 1 skipped; security 21 passed, 1 skipped; goldens 2 passed; slow 2 passed; coverage 85.36%; full-scale graph+scenario 1.568 s against the 5 s budget |
-| M8 packaging, docs, CI | Complete (local) | 395 passed, 1 skipped; security 32/1; goldens 2; slow 2; coverage 86.47%; ruff/format/mypy/schema clean; wheel and sdist artifact check passed; clean installs with and without the HCL extra plus sdist install; both locks audit clean; CI pinned and statically tested; documentation set complete; three builds digest-identical; Python 3.12/3.13/3.14 suites pass; 10-repository corpus and adversarial soak clean; real-browser and axe pass at 1440×900 and 390×844 for single- and 10-scenario reports. Remote CI, Linux execution, advisory automation, independent audit and publication remain open |
+| M8 packaging, docs, CI | Complete (local + remote CI) | 403 passed, 1 skipped locally; 404 passed per job in remote CI on Ubuntu and Windows for 3.12–3.14; security 37/1; goldens 2; slow 2; coverage 86.47% local and 86.53% CI; ruff/format/mypy/schema clean; wheel and sdist artifact check passed; clean installs with and without the HCL extra plus sdist install; both locks clean under pip-audit and OSV; gitleaks/TruffleHog clean on history and artifacts; internal audit complete with zizmor, actionlint, Semgrep, Bandit, Grype and license inventory; CI pinned, SHA-pinning enforced, advisory workflow scheduled; documentation set complete; three builds digest-identical; 10-repository corpus and adversarial soak clean; real-browser and axe pass at 1440×900 and 390×844. Independent audit remains not performed and not claimed; publication authorized as GitHub Release assets |
 
 ## Verification log
 
@@ -704,16 +705,30 @@ the sdist installed and scanned, and the 15 corpus candidates showed no leaks in
 release/report artifacts. The corpus and soak are observations on this host and are
 not external benchmarks or an audit.
 
+### 2026-10-27 — remote CI, Linux, advisory automation and internal audit
+
+| Check | Command / run | Actual result |
+| --- | --- | --- |
+| Remote CI matrix | https://github.com/DKtech-dev/nhi-blast/actions/runs/40429850152 | Package job and all six test jobs passed on `ubuntu-latest` and `windows-latest` for Python 3.12, 3.13 and 3.14; each test job ran the full suite, coverage gate, performance tests, ruff and mypy |
+| Linux execution | Ubuntu jobs in the run above | Python 3.12, 3.13 and 3.14 passed, including the real-symlink security test that is skipped on the local Windows host |
+| Advisory workflow | https://github.com/DKtech-dev/nhi-blast/actions/runs/40429850149 | Passed: pip-audit on both locks, Bandit, hash-verified OSV-Scanner 2.7.0 and gitleaks 8.30.1; workflow also runs weekly |
+| Internal audit | Commands and versions in `docs/security-audit.md` | zizmor 1.31.1: 0 findings; actionlint 1.7.12: 0; Semgrep 1.182.1: 2 triaged false positives; Bandit 1.9.4: 0 medium/high, 11 low triaged; pip-audit 2.10.1: 0; OSV 2.7.0: 0 across 60 instances; Grype 0.121.0: 0 on both SBOMs; pip-licenses: 41 packages, no strong copyleft; gitleaks: 0 in history; TruffleHog 3.99.7: 0 in 96 MB; 42 pins with minimum age 15 days and none yanked |
+| Audit fixes | Commits on `main` | Checkout credential persistence removed; broken pip-audit invocation fixed; tomlkit held inside the age policy; fixture identity materialised for clean checkouts; console-script path resolved with `sysconfig`; Python 3.14 JSON test broadened without relaxing the facts check; editable build helper pinned |
+| Repository settings | `gh api` on 2026-10-27 | Default workflow token read-only; SHA pinning required; Dependabot alerts and security updates enabled; `protect-main` ruleset blocks deletion and non-fast-forward pushes; secret scanning and CodeQL unavailable without Advanced Security |
+| New traceability tests | `pytest tests/test_docs.py tests/test_report_security.py` | 13 passed: assumption registry integrity and documentation match; report templates reject proof/guarantee/exploitability/takeover wording |
+
 ## Next action
 
-No local implementation milestone remains. The next actions are external and require
-explicit authorization:
+No local implementation milestone remains. Remote CI, Linux execution, advisory
+automation and the internal audit are complete. The remaining actions are:
 
-1. Run the CI workflow on an authorized remote and record the run evidence; do not
-   treat the local Windows results as Linux evidence.
-2. Execute the suite on Linux, locally or through the CI matrix, and record the result.
-   Python 3.13.17 and 3.14.7 have now passed locally on Windows; Linux has not.
-3. Decide whether advisory scanning belongs in CI, then record the decision.
-4. Commit, push, tag, publish or deploy only after explicit authorization. The verdict
-   stays **NOT RELEASE READY** until every gate in `docs/production-readiness.md` is
-   Pass or is explicitly accepted by the maintainer as a documented limitation.
+1. **Independent human audit.** This cannot be supplied by the implementation agent.
+   `docs/external-audit-package.md` defines the target and materials; until a reviewer
+   completes a report, the project must not be described as independently audited.
+2. **Release maintenance.** Review Dependabot updates after `0.1.0`, refresh the lock
+   files on a deliberate cadence, and re-run the full gate set before any later
+   release. Secret scanning and CodeQL remain unavailable on the private repository
+   unless GitHub Advanced Security is enabled.
+3. **Publication record.** Record the release tag, artifact digests and any follow-up
+   limitations in this document and `docs/production-readiness.md` after the release.
+   The gate matrix, not this status page, is authoritative for release claims.

@@ -4,10 +4,12 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project intends to
 use semantic versioning from its first published release.
 
-## 0.1.0 — unreleased
+## 0.1.0 — 2026-10-27
 
-No package has been published, tagged or deployed. This entry describes the state of
-the source tree; the verification record is in `docs/implementation-status.md`.
+Initial release, distributed as GitHub Release assets (wheel, sdist and SHA-256 sums).
+No package-index upload or deployment. The verification record is in
+`docs/production-readiness.md`; the internal audit is in `docs/security-audit.md`.
+Independent human audit has not been performed and is not claimed.
 
 ### Added
 
@@ -75,6 +77,13 @@ the source tree; the verification record is in `docs/implementation-status.md`.
 - Credential values are never stored or printed. Literal-credential findings report
   kind and length only.
 - Hostile strings are rendered inert in every output format.
+- CI checkouts do not persist credentials, workflow tokens are read-only, actions are
+  pinned to full commit SHAs and the repository requires SHA pinning. Dependabot alerts
+  and security updates are enabled, and `main` is protected against deletion and
+  force-pushes.
+- An internal security audit with third-party scanners found no open high or critical
+  issue; results and residual risk are in `docs/security-audit.md`. It is not an
+  independent audit.
 
 ### Known limitations
 
@@ -85,6 +94,6 @@ the source tree; the verification record is in `docs/implementation-status.md`.
   in `docs/known-limitations.md`.
 - The HCL parser is a best-effort fallback for literal configuration; unresolved
   expressions stay unknown.
-- Release gates, packaging checks and clean-environment installation results are
-  recorded in `docs/production-readiness.md`. The source tree is not release-ready
-  while that document reports open gates.
+- Release gates, packaging checks, remote CI runs, clean-environment installation and
+  audit results are recorded in `docs/production-readiness.md`. No independent human
+  audit has been performed; the external audit package is prepared but unaudited.

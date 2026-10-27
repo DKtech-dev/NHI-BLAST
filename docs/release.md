@@ -1,8 +1,9 @@
 # Release procedure
 
-This document describes how a release is prepared and checked. It is a procedure, not
-evidence that a release happened. No version of NHI-Blast has been published, tagged
-or deployed. The current gate results are in `docs/production-readiness.md`.
+This document describes how a release is prepared and checked. Version `0.1.0` is
+distributed as GitHub Release assets (wheel, sdist and SHA-256 sums); there is no
+package-index upload or deployment. The current gate results and run URLs are in
+`docs/production-readiness.md`. No independent human audit has been performed.
 
 ## Preconditions
 
@@ -12,8 +13,9 @@ or deployed. The current gate results are in `docs/production-readiness.md`.
 4. The primary-source dates in the data files are current enough for the release; see
    `docs/data-provenance.md`.
 5. Every gate in `docs/production-readiness.md` has a recorded command and result.
-6. Explicit authorization to tag or publish has been given. Preparing artifacts
-   locally does not imply authorization to distribute them.
+6. Explicit authorization to tag or publish has been given. The maintainer authorized
+   the `v0.1.0` GitHub Release with wheel, sdist and SHA-256 sums; that authorization
+   does not extend to package indexes, deployments or later versions.
 
 ## 1. Run the full gate set
 
