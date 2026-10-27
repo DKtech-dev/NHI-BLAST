@@ -21,14 +21,15 @@ as reachable authority; they feed a separate `potential` set. The tool does not 
 proof of compromise, exploitability or takeover, and it never prints a credential
 value.
 
-> **Status: 0.1.0, published as a GitHub Release.** Wheel, sdist and SHA-256
-> sums are attached to the
-> [`v0.1.0` release](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.0);
-> there is no package-index upload or deployment. Remote CI passed on Ubuntu and Windows for Python 3.12, 3.13 and 3.14,
-> advisory automation scans both locks and secrets on a schedule, and an internal
-> security audit is recorded in [security audit](docs/security-audit.md). An
+> **Status: 0.1.1 release candidate.** The current published release is
+> [`v0.1.0`](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.0); 0.1.1
+> adds the redesigned offline HTML report and is prepared for its authorized GitHub
+> Release (wheel, sdist and SHA-256 sums) after the gates recorded in
+> [production readiness](docs/production-readiness.md). There is no package-index
+> upload or deployment. Remote CI passed on Ubuntu and Windows for Python 3.12, 3.13
+> and 3.14, advisory automation scans both locks and secrets on a schedule, and an
+> internal security audit is recorded in [security audit](docs/security-audit.md). An
 > independent human audit has **not** been performed and is not claimed. Read
-> [production readiness](docs/production-readiness.md) for the gate matrix and
 > [known limitations](docs/known-limitations.md) before relying on a report.
 
 ## Install from a source checkout
@@ -171,11 +172,15 @@ suppressed findings as diagnostics instead of silently dropping them.
   evidence for scanner ingestion; capped at 5,000 results with a notification.
 - **HTML** — a single offline file. Embedded JSON is escaped as Unicode escapes, the
   DOM is built without HTML-string concatenation, the CSP allows only hashed inline
-  scripts and vendored assets are inlined with hashes recorded in
-  `src/nhi_blast/report/assets/MANIFEST.json`. Hostile strings render inert. The report
-  includes a cross-scenario R/E/Z/P exposure matrix, deterministic shortest-path
-  tracing with graph highlighting, scenario-aware summaries, and search/severity/
-  scenario filters over findings.
+  scripts and the vendored scripts and fonts are inlined with hashes recorded in
+  `src/nhi_blast/report/assets/MANIFEST.json`. Geist and Geist Mono are embedded under
+  the SIL Open Font License, so typography is identical offline. Hostile strings render
+  inert. The report includes a cross-scenario R/E/Z/P exposure matrix, deterministic
+  shortest-path tracing with graph highlighting, scenario-aware summaries,
+  search/severity/scenario filters over findings, graph zoom controls, a print layout
+  and a no-script fallback. A boot gate keeps the document hidden until the first
+  hydrated render, eliminating layout shift without hiding content when JavaScript is
+  disabled.
 - **DOT** — the authority graph for Graphviz.
 
 ## Safety model

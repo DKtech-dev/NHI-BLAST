@@ -106,8 +106,9 @@ All renderers consume the same validated `Report` model:
   code-flow locations, capped at 5,000 results with a warning.
 - **HTML** is one file with data in `<script type="application/json">`, escaped
   `<`, `>`, `&`, U+2028 and U+2029, a restrictive CSP with inline-script hashes, and
-  DOM construction through `textContent`/`setAttribute` only. Vendored assets are
-  hash-verified against `assets/MANIFEST.json`.
+  DOM construction through `textContent`/`setAttribute` only. Vendored scripts and the
+  embedded Geist fonts are hash-verified against `assets/MANIFEST.json`; a boot gate
+  hides the shell until the first hydrated render, with a no-script override.
 - **DOT** uses numeric vertex IDs so hostile labels cannot inject syntax.
 
 ## 7. Determinism and safety

@@ -7,6 +7,7 @@ import re
 from html.parser import HTMLParser
 from pathlib import Path
 
+from nhi_blast import __version__
 from nhi_blast.analysis.findings import build_findings
 from nhi_blast.core.models import Inputs, Report, Severity, ToolInfo
 from nhi_blast.report.console import render_console
@@ -21,9 +22,24 @@ class _TagCollector(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.tags: list[tuple[str, dict[str, str | None]]] = []
+        self.controls: list[tuple[str, dict[str, str | None], bool]] = []
+        self.label_for: set[str] = set()
+        self._label_depth = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        self.tags.append((tag, dict(attrs)))
+        attributes = dict(attrs)
+        self.tags.append((tag, attributes))
+        if tag == "label":
+            self._label_depth += 1
+            target = attributes.get("for")
+            if target:
+                self.label_for.add(target)
+        if tag in {"input", "select", "textarea"}:
+            self.controls.append((tag, attributes, self._label_depth > 0))
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "label":
+            self._label_depth = max(0, self._label_depth - 1)
 
 
 def _literal_report() -> tuple[Report, str]:
@@ -45,7 +61,7 @@ jobs:
     )
     findings = build_findings(build.graph).findings
     report = Report(
-        tool=ToolInfo(version="0.1.0"),
+        tool=ToolInfo(version=__version__),
         inputs=Inputs(
             digest="d" * 64,
             repo_slug="acme/shop",
@@ -61,6 +77,39 @@ CLAIM_ASSERTION = re.compile(
     r"\b(?:proves|guarantees?|guaranteed|exploitable|takeover|take over|taken over)\b",
     re.IGNORECASE,
 )
+
+
+def test_report_has_one_title_unique_ids_and_labelled_controls() -> None:
+    document = html_report(make_report())
+    collector = _TagCollector()
+    collector.feed(document)
+
+    h1s = [tag for tag, _ in collector.tags if tag == "h1"]
+    ids = [attrs["id"] for _, attrs in collector.tags if attrs.get("id")]
+    assert h1s == ["h1"]
+    assert "Incident exposure report" in document
+    assert len(ids) == len(set(ids))
+    assert collector.controls
+    for tag, attrs, wrapped in collector.controls:
+        label = attrs.get("aria-label")
+        control_id = attrs.get("id")
+        assert label or wrapped or (control_id is not None and control_id in collector.label_for), (
+            f"{tag} control without an accessible name: {attrs}"
+        )
+
+
+def test_html_font_faces_are_embedded_and_never_fetched() -> None:
+    document = html_report(make_report())
+    style = document.split("<style>", 1)[1].split("</style>", 1)[0]
+    faces = re.findall(r"@font-face \{.*?\}", style, re.DOTALL)
+
+    assert len(faces) == 2
+    for face in faces:
+        sources = re.findall(r"url\(([^)]+)\)", face)
+        assert sources
+        assert all(item.startswith('"data:font/woff2;base64,') for item in sources)
+    assert "fonts.googleapis.com" not in document
+    assert "fonts.gstatic.com" not in document
 
 
 def test_report_templates_do_not_assert_claims() -> None:

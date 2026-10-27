@@ -6,8 +6,9 @@ automated scanners. No external human reviewer has assessed this codebase, and n
 independent audit is claimed. The package prepared for such a review is
 `docs/external-audit-package.md`.
 
-This report covers the source tree that became release `v0.1.0` in the private
-repository `DKtech-dev/nhi-blast`. It records what was executed, what was found, and
+This report covers the source tree that became release `v0.1.1` in the private
+repository `DKtech-dev/nhi-blast`, and carries forward the audit of `v0.1.0` where the
+control or evidence is unchanged. It records what was executed, what was found, and
 what remains unverified. It is written to the same evidence standard the tool applies
 to its own reports: absence of a finding is not proof of absence.
 
@@ -63,7 +64,7 @@ able to break, derived from `docs/SPEC.md` section 2.5 and `AGENTS.md` section 5
 | Safe YAML | `yaml.compose` plus `SafeLoader`; duplicate keys detected; only the first document read; node, depth and alias limits fail closed | `tests/test_security.py` and `tests/test_workflows.py` |
 | Resource limits | Byte, file-count, YAML node/depth/alias, graph-node, closure-depth and time budgets from `core/limits.py` | `tests/test_security.py` boundary cases; performance and slow tests |
 | No secret values | Literal credentials are represented as kind plus length; Terraform sensitive leaves are skipped; renderers never receive values | `tests/test_report_security.py` proves a synthetic token is absent from JSON, console, SARIF and HTML while the finding remains; corpus artifact audit |
-| Inert hostile strings | HTML data is escaped as Unicode escapes inside `application/json`; DOM built with `textContent` and `setAttribute`; restrictive CSP with inline hashes; vendored assets recorded in `MANIFEST.json` | `tests/test_report_security.py`, `tests/test_html_security.py`, browser and axe runs |
+| Inert hostile strings | HTML data is escaped as Unicode escapes inside `application/json`; DOM built with `textContent` and `setAttribute`; restrictive CSP with inline hashes; vendored scripts and embedded fonts recorded in `MANIFEST.json` | `tests/test_report_security.py`, `tests/test_html.py`, browser, axe and Lighthouse runs |
 | Deterministic output | Sorted traversal, stable identifiers and no wall-clock content unless requested | `tests/test_determinism.py`; corpus byte-comparison; three-build digest comparison |
 | Claim hygiene | Report templates contain no proof, guarantee, exploitability or takeover assertion; the HTML footer states evidence is not proof of exploitation | `tests/test_report_security.py::test_report_templates_do_not_assert_claims`; `tests/test_docs.py` |
 | Evidence honesty | Weakest-class edge confidence; UNKNOWN excluded from R/E/Z and reported as potential | `tests/test_solver.py`, `tests/test_trust.py`, `tests/test_reach.py`, `tests/test_partition.py` |
@@ -97,11 +98,36 @@ Triage of scanner output that did not become findings:
 
 | Tool | Output | Triage |
 | --- | --- | --- |
-| Semgrep | 2 × `python37-compatibility-importlib2` on `importlib.resources` imports | False positive: the package requires Python 3.12 or newer; the rule targets Python 3.7 compatibility |
-| Bandit | 10 × B105 "hardcoded password" on credential-kind enum names such as `GITHUB_TOKEN` and `DATABASE_PASSWORD` | False positive: these are type names, not credential values; no value is stored |
-| Bandit | 1 × B101 `assert` in the Terraform JSON parser | Reviewed: the assertion documents a helper contract (`document is None` implies a diagnostic); it does not validate untrusted input and is not the only failure path |
+| Semgrep | 2 × `python37-compatibility-importlib2` on `importlib.resources` imports in the earlier `p/default` run | False positive: the package requires Python 3.12 or newer; the rule targets Python 3.7 compatibility. The final `p/ci` + `p/python` run reports 0 findings |
+| Bandit | B105 "hardcoded password" on credential-kind enum names such as `GITHUB_TOKEN` and `DATABASE_PASSWORD` | False positive: these are type names, not credential values; no value is stored. The `[tool.bandit]` skip for B105 records that justification, and the final run reports 0 findings |
+| Bandit | 1 × B101 `assert` in the Terraform JSON parser | Removed in 0.1.1: the malformed-input path now returns a diagnostic without relying on the assertion |
 | Gitleaks | 6 × `generic-api-key` in `docs/research/_cache/*.raw` | False positives in the gitignored, unpublished primary-source cache: AWS documentation examples of `BinaryEquals` keys and an example access-key ID. The tracked history and a clean tree export scan clean |
 | zizmor | "2 suppressed" in an otherwise clean report | The repository has no zizmor configuration or ignore annotations; no project-level suppression was introduced |
+
+## 4a. Report redesign review (0.1.1)
+
+The 0.1.1 change set is concentrated in the offline HTML report (`report/ui.py`,
+`report/html.py`, embedded fonts and `MANIFEST.json`). The review treated the new
+template and every inline script as hostile-input boundaries and re-ran the output
+scanners.
+
+| Property checked | Evidence | Result |
+| --- | --- | --- |
+| No external resource | Static test rejects `src`/`href` starting with `http:`, `https:`, `//` or `javascript:`; browser captured 0 external requests; Lighthouse listed 3 requests, all the document and two `data:` fonts | Pass |
+| CSP covers every script | The policy hashes all five inline scripts (data block, three vendor files and the app script); no `unsafe-inline` or `unsafe-eval`; `font-src data:` was added for the embedded fonts | Pass |
+| Hostile strings inert | The existing canary test covers labels, paths, finding text, assumptions and diagnostics; the embedded JSON escapes `<`, `>`, `&`, U+2028 and U+2029; DOM construction uses `textContent`/`setAttribute` and `document.createElement`; no `innerHTML`, `document.write`, `eval` or `new Function` | Pass |
+| Long-identifier injection | The new table/wrapping code sanitises `class` names by removing non-word characters and inserts values as text nodes; a regression test covers the helper | Pass |
+| No-script and boot behavior | The boot gate uses a class toggle, not content removal; the `noscript` override is emitted after the hiding rule so it wins; tests assert the order and the browser check confirms `visibility: visible` with JavaScript disabled | Pass |
+| Font supply chain | Two WOFF2 subsets are embedded with SHA-256 digests and upstream URLs in `MANIFEST.json`; `OFL.txt` is shipped; the wheel artifact check requires all three files; the report makes no font request | Pass |
+| Accessibility regression | axe-core 4.10.3: 0 WCAG 2.2 AA violations in three views; Lighthouse accessibility 100; the brand link’s accessible name was changed to its visible text after Lighthouse flagged a label/name mismatch | Pass |
+| Layout stability | Lighthouse desktop CLS 0 after the boot gate; the earlier 0.804 CLS was traced to hydration and removed rather than hidden with a cosmetic rule | Pass |
+| HTML validity | html-validate 11.17.0: clean | Pass |
+| Design quality | design inspector at 1440, 768 and 390 px: 0 findings | Pass |
+
+No new high, medium or low security defect was identified in the redesign. The
+Lighthouse simulated-mobile performance score (65) is a document-size and throttling
+observation, not a security finding; the desktop profile used for an offline file is
+98 performance / 100 accessibility / 100 best-practices.
 
 ## 5. Tool results
 
@@ -112,22 +138,27 @@ results can be reproduced or superseded.
 
 | Check | Tool and version | Command / target | Result |
 | --- | --- | --- | --- |
-| Workflow static analysis | zizmor 1.31.1 | `zizmor --offline .github/workflows` | 0 findings (output: "No findings to report. Good job! (2 suppressed)") |
+| Workflow static analysis | zizmor 1.31.1 | `zizmor --format json .github/workflows` | 0 findings |
 | Workflow syntax | actionlint 1.7.12 | `actionlint` at repository root | Exit 0, no diagnostics |
-| SAST | Semgrep 1.182.1, `p/default` | `semgrep --config p/default --metrics=off src scripts` | 2 findings, both triaged false positives |
-| Python SAST | Bandit 1.9.4 | `bandit -q -r src` (all severities) | 0 medium, 0 high; 11 low, all triaged |
-| Python dependency advisories | pip-audit 2.10.1 | `pip-audit -r requirements.lock` and `-r requirements-dev.lock` | No known vulnerabilities in either set |
+| SAST | Semgrep 1.182.1, `p/ci` and `p/python` | `semgrep --config p/ci --config p/python --metrics=off src` | 0 findings across 81 scanned paths |
+| Python SAST | Bandit 1.9.4 | `bandit -q -r src -c pyproject.toml` (all severities) | 0 findings; the documented B105 skip covers credential-kind names, never values, and the previously reviewed B101 assert was removed |
+| Python dependency advisories | pip-audit 2.10.1 | `pip-audit -r requirements.lock` | 18 dependencies, no known vulnerabilities |
 | OSV advisories | OSV-Scanner 2.7.0 | `osv-scanner scan source -r <copied locks>` | 18 runtime and 42 development package instances; "No issues found" |
-| SBOM | syft 1.55.0 | CycloneDX JSON from each lock (copied as `requirements.txt`) | 18 runtime libraries; 41 development libraries |
-| SBOM vulnerability match | Grype 0.121.0 | `grype sbom:<runtime|dev>.cdx.json` | No vulnerabilities found in either SBOM |
-| License inventory | pip-licenses 5.5.5 | Development environment, 41 packages | MIT 27, Apache-2.0 family 6, BSD 4, ISC 1, MPL-2.0 2, PSF-2.0 1; no GPL, AGPL, SSPL or proprietary licenses |
+| SBOM | syft 1.55.0 | CycloneDX JSON from each lock (copied as `requirements.txt`) | 43 dependency components |
+| SBOM vulnerability match | Grype 0.121.0 | `grype requirements-dev.txt` and `grype sbom:<dependency SBOM>` | 0 matches in both |
+| License inventory | pip-licenses 5.5.5 | Locked project packages, 41 packages | MIT 27, Apache-2.0 family 6, BSD 4, ISC 1, MPL-2.0 2, PSF-2.0 1; no GPL, AGPL, SSPL or proprietary licenses. Embedded fonts are OFL-1.1, shipped with `OFL.txt` |
 | Release age and yanks | PyPI JSON API | 42 unique pins across both locks | Minimum age 15 days; 0 yanked; 0 policy violations |
-| Secret scan (history) | gitleaks 8.30.1 | `gitleaks git . --redact --config .gitleaks.toml` | 5 commits, 0 leaks |
-| Secret scan (tree) | gitleaks 8.30.1 | `gitleaks dir . --redact --config .gitleaks.toml` | 6 findings, all triaged false positives in the ignored research cache |
-| Secret scan (independent) | TruffleHog 3.99.7 | `trufflehog filesystem C:/Cyber --no-verification` excluding `.venv`, `dist` and `.git` | 11,220 chunks / 96,290,905 bytes; 0 verified and 0 unverified secrets |
+| Secret scan (history) | gitleaks 8.30.1 | `gitleaks git . --redact --config .gitleaks.toml` | Result appended after the release commit |
+| Secret scan (tree) | gitleaks 8.30.1 | `gitleaks dir . --redact --config .gitleaks.toml` | Result appended after the release commit; ignored-cache hits are triaged separately |
+| Secret scan (independent) | TruffleHog 3.99.7 | `trufflehog git file://C:/Cyber --no-verification` | Result appended after the release commit |
 | Security tests | pytest | `pytest -q -m security` | 37 passed, 1 skipped (real symlink creation needs a Windows privilege; Linux CI runs it) |
-| Full suite (local) | pytest | `pytest -q` | 403 passed, 1 skipped |
-| Full suite (remote) | GitHub Actions | CI run on Ubuntu and Windows, Python 3.12–3.14 | 404 passed per job; package job passed |
+| Full suite (local) | pytest | `pytest -q` | 418 passed, 1 skipped |
+| Full suite (remote) | GitHub Actions | CI run on Ubuntu and Windows, Python 3.12–3.14 | 0.1.0 run 40432137207: 404 passed per job and package job passed; the 0.1.1 run is recorded in `docs/production-readiness.md` after publication |
+| Browser accessibility | axe-core 4.10.3 | Headless Chrome, desktop dark, desktop light, mobile dark | 0 WCAG 2.2 AA violations in all three views |
+| Browser network and console | CDP | Same run | 0 external requests, 0 console errors or warnings; both fonts loaded |
+| Performance and best practices | Lighthouse 13.5.0 | Desktop profile | 98 performance, 100 accessibility, 100 best-practices; CLS 0; simulated mobile 65/100/100 disclosed in testing |
+| HTML validity | html-validate 11.17.0 | Generated report | Clean |
+| Layout review | design inspector | 1440, 768 and 390 px | 0 findings |
 
 The scan of the ignored research cache is intentionally reported rather than
 suppressed: adding an allowlist entry for that directory would also hide a real
@@ -136,9 +167,10 @@ content are the tracked-history scan, the clean-export scan and the artifact sca
 
 ## 6. Artifact and release verification
 
-- The final wheel and sdist were built from the release commit and checked with
-  `scripts/check_artifacts.py`, which enforces the file allowlist and excludes caches,
-  scratch trees, the private research cache and local output.
+- The final wheel (92 files) and sdist (242 files) were built from the release commit
+  and checked with `scripts/check_artifacts.py`, which enforces the file allowlist,
+  requires the embedded fonts, their `OFL.txt` and the vendor manifest, and excludes
+  caches, scratch trees, the private research cache and local output.
 - Three consecutive builds from the same tree and toolchain produced identical SHA-256
   digests. Cross-machine and cross-toolchain byte reproducibility is not claimed.
 - `dist/SHA256SUMS` records the digests of the frozen wheel and sdist. The digests are
@@ -146,8 +178,9 @@ content are the tracked-history scan, the clean-export scan and the artifact sca
 - The extracted wheel and sdist contents were scanned for secret-shaped strings; no
   credential value from the test fixtures or the research cache is present.
 - A clean environment installed the wheel with the runtime lock, and all six CLI
-  commands, JSON/SARIF/HTML export and the HCL fixture were exercised; the sdist was
-  installed and scanned in a second clean environment.
+  commands, JSON/SARIF/HTML export and the HCL fixture were exercised; a second clean
+  environment without the extra reported `D-TF-HCL-UNAVAILABLE`, and the sdist was
+  installed and scanned in a third clean environment.
 
 ## 7. Repository settings
 
@@ -193,6 +226,7 @@ advisory workflow.
 
 For the recorded environment and inputs, the audited source tree satisfies the
 security properties in section 2, and the automated gates in
-`docs/production-readiness.md` pass. This conclusion is limited to the evidence above.
-It is an internal engineering conclusion, not an independent security certification,
-and it must not be cited as one.
+`docs/production-readiness.md` pass. The 0.1.1 report redesign was reviewed as a new
+hostile-input boundary (section 4a) and produced no new security finding. This
+conclusion is limited to the evidence above. It is an internal engineering conclusion,
+not an independent security certification, and it must not be cited as one.

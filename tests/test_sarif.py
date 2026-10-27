@@ -7,6 +7,7 @@ from pathlib import Path
 
 import jsonschema
 
+from nhi_blast import __version__
 from nhi_blast.core.models import Severity
 from nhi_blast.report.sarif import sarif_report, write_sarif
 from tests.report_support import make_report
@@ -31,7 +32,7 @@ def test_sarif_carries_rule_metadata_levels_severity_and_confidence() -> None:
     driver = run["tool"]["driver"]
 
     assert driver["name"] == "nhi-blast"
-    assert driver["version"] == "0.1.0"
+    assert driver["version"] == __version__
     assert driver["informationUri"]
     assert any(rule["id"] == "NHB-SURV-001" for rule in driver["rules"])
     assert all(

@@ -7,15 +7,22 @@ import hashlib
 import html as html_module
 import json
 import re
+from collections.abc import Iterator
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import Any
 
-from nhi_blast.report.html import html_report
+import pytest
+
+from nhi_blast.report import html as report_html_module
+from nhi_blast.report.html import html_report, write_html
 from tests.report_support import HOSTILE, make_report
 
 ROOT = Path(__file__).resolve().parents[1]
-VENDOR = ROOT / "src" / "nhi_blast" / "report" / "assets" / "vendor"
-MANIFEST = ROOT / "src" / "nhi_blast" / "report" / "assets" / "MANIFEST.json"
+ASSETS = ROOT / "src" / "nhi_blast" / "report" / "assets"
+VENDOR = ASSETS / "vendor"
+FONTS = ASSETS / "fonts"
+MANIFEST = ASSETS / "MANIFEST.json"
 
 
 class _TagCollector(HTMLParser):
@@ -93,6 +100,20 @@ def test_html_has_no_external_resources_or_unsafe_dom_sinks() -> None:
     assert "new Function" not in document
 
 
+def test_report_hides_until_hydrated_and_remains_usable_without_script() -> None:
+    document = html_report(make_report())
+
+    assert '<html lang="en" class="booting">' in document
+    hidden = "html.booting body { visibility: hidden; }"
+    visible = "<noscript><style>html.booting body { visibility: visible; }</style></noscript>"
+    assert hidden in document
+    assert visible in document
+    # The no-script override must come after the hiding rule so it wins.
+    assert document.index(hidden) < document.index(visible)
+    app = _scripts(document)[-1][1]
+    assert 'classList.remove("booting")' in app
+
+
 def test_embedded_json_escapes_html_metacharacters_and_preserves_exact_strings() -> None:
     report = make_report(hostile=True)
     document = html_report(report)
@@ -127,7 +148,7 @@ def test_hostile_content_is_data_not_markup() -> None:
 def test_report_has_accessible_structure_and_table_semantics() -> None:
     document = html_report(make_report())
 
-    assert '<html lang="en">' in document
+    assert '<html lang="en" class="booting">' in document
     assert '<meta name="viewport"' in document
     assert "<title>NHI-Blast report</title>" in document
     assert 'class="skip-link"' in document
@@ -213,6 +234,59 @@ def test_vendored_assets_match_the_pinned_manifest() -> None:
         assert entry["license"] == "MIT"
 
 
+def test_embedded_fonts_match_the_pinned_manifest_and_carry_their_licence() -> None:
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    entries = {entry["name"]: entry for entry in manifest["fonts"]}
+
+    assert set(entries) == {"geist-latin.woff2", "geist-mono-latin.woff2"}
+    for name, entry in entries.items():
+        payload = (FONTS / name).read_bytes()
+        assert payload[:4] == b"wOF2"
+        assert hashlib.sha256(payload).hexdigest() == entry["sha256"]
+        assert entry["family"] in {"Geist", "Geist Mono"}
+        assert entry["license"] == "OFL-1.1"
+        assert entry["license_file"] == "OFL.txt"
+        assert entry["source_url"].startswith("https://")
+    licence = (FONTS / "OFL.txt").read_text(encoding="utf-8")
+    assert "SIL OPEN FONT LICENSE" in licence
+    assert "Version 1.1" in licence
+
+
+def test_fonts_are_embedded_as_data_uris_and_csp_allows_only_data_fonts() -> None:
+    document = html_report(make_report())
+    style = document.split("<style>", 1)[1].split("</style>", 1)[0]
+
+    assert len(re.findall(r"@font-face \{", style)) == 2
+    assert style.count('url("data:font/woff2;base64,') == 2
+    assert "font-display: optional" in style
+    assert "http://" not in style
+    assert "https://" not in style
+
+    policy = re.search(
+        r'<meta http-equiv="Content-Security-Policy" content="([^"]+)">',
+        document,
+    )
+    assert policy is not None
+    unescaped = html_module.unescape(policy.group(1))
+    assert "default-src 'none'" in unescaped
+    assert "font-src data:" in unescaped
+    font_src = next(part for part in unescaped.split(";") if part.strip().startswith("font-src"))
+    assert font_src.strip() == "font-src data:"
+
+
+def test_embedded_font_payloads_are_byte_identical_to_the_licensed_files() -> None:
+    document = html_report(make_report())
+    payloads = re.findall(r'url\("data:font/woff2;base64,([A-Za-z0-9+/=]+)"\)', document)
+
+    assert len(payloads) == 2
+    embedded = sorted(hashlib.sha256(base64.b64decode(item)).hexdigest() for item in payloads)
+    source = sorted(
+        hashlib.sha256((FONTS / name).read_bytes()).hexdigest()
+        for name in ("geist-latin.woff2", "geist-mono-latin.woff2")
+    )
+    assert embedded == source
+
+
 def test_html_is_deterministic_and_app_script_uses_text_content() -> None:
     report = make_report()
     first = html_report(report)
@@ -223,3 +297,141 @@ def test_html_is_deterministic_and_app_script_uses_text_content() -> None:
     assert "textContent" in app_script
     assert "replaceChildren" in app_script
     assert "innerHTML" not in app_script
+
+
+@pytest.fixture
+def report_html() -> Iterator[Any]:
+    report_html_module._manifest.cache_clear()
+    report_html_module._asset_texts.cache_clear()
+    report_html_module._font_css.cache_clear()
+    yield report_html_module
+    report_html_module._manifest.cache_clear()
+    report_html_module._asset_texts.cache_clear()
+    report_html_module._font_css.cache_clear()
+
+
+def _manifest() -> dict[str, Any]:
+    return json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+
+def test_asset_manifest_rejects_an_unknown_format(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class FakeFile:
+        def read_text(self, *_args: Any, **_kwargs: Any) -> str:
+            return '{"format": "nhi-blast-assets/2"}'
+
+    class FakeRoot:
+        def joinpath(self, *_args: Any, **_kwargs: Any) -> FakeFile:
+            return FakeFile()
+
+    def fake_files(*_args: Any, **_kwargs: Any) -> FakeRoot:
+        return FakeRoot()
+
+    monkeypatch.setattr(report_html.resources, "files", fake_files)
+    report_html._manifest.cache_clear()
+
+    with pytest.raises(RuntimeError, match="unsupported report asset manifest format"):
+        report_html._manifest()
+
+
+def test_asset_manifest_must_pin_every_vendor_script(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(report_html, "_manifest", lambda: {"assets": [], "fonts": []})
+
+    with pytest.raises(RuntimeError, match="does not pin the expected assets"):
+        report_html._asset_texts()
+
+
+def test_asset_texts_reject_a_changed_vendor_file(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest = _manifest()
+    manifest["assets"][0]["sha256"] = "0" * 64
+    monkeypatch.setattr(report_html, "_manifest", lambda: manifest)
+
+    with pytest.raises(RuntimeError, match="report asset hash mismatch"):
+        report_html._asset_texts()
+
+
+def test_font_css_requires_every_dealt_font(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest = _manifest()
+    manifest["fonts"] = []
+    monkeypatch.setattr(report_html, "_manifest", lambda: manifest)
+
+    with pytest.raises(RuntimeError, match="does not pin the expected fonts"):
+        report_html._font_css()
+
+
+def test_font_css_requires_the_pinned_licence_and_family(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest = _manifest()
+    manifest["fonts"][0]["license"] = "MIT"
+    monkeypatch.setattr(report_html, "_manifest", lambda: manifest)
+    with pytest.raises(RuntimeError, match="not pinned to its OFL licence"):
+        report_html._font_css()
+
+    manifest = _manifest()
+    manifest["fonts"][0]["family"] = "Another Sans"
+    monkeypatch.setattr(report_html, "_manifest", lambda: manifest)
+    with pytest.raises(RuntimeError, match="report font family mismatch"):
+        report_html._font_css()
+
+
+def test_font_css_rejects_a_changed_binary(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest = _manifest()
+    manifest["fonts"][0]["sha256"] = "0" * 64
+    monkeypatch.setattr(report_html, "_manifest", lambda: manifest)
+
+    with pytest.raises(RuntimeError, match="report font hash mismatch"):
+        report_html._font_css()
+
+
+def test_font_css_rejects_a_non_ofl_licence_file(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class FakeFile:
+        def read_text(self, *_args: Any, **_kwargs: Any) -> str:
+            return "All rights reserved."
+
+    class FakeRoot:
+        def joinpath(self, *_args: Any, **_kwargs: Any) -> FakeFile:
+            return FakeFile()
+
+    monkeypatch.setattr(report_html, "_manifest", _manifest)
+
+    def fake_files(*_args: Any, **_kwargs: Any) -> FakeRoot:
+        return FakeRoot()
+
+    monkeypatch.setattr(report_html.resources, "files", fake_files)
+
+    with pytest.raises(RuntimeError, match="not the SIL Open Font License"):
+        report_html._font_css()
+
+
+def test_inline_scripts_reject_a_vendor_closing_tag(report_html: Any) -> None:
+    assets = dict.fromkeys(
+        ("cytoscape.min.js", "dagre.min.js", "cytoscape-dagre.js"), "window.x = 1;"
+    )
+    assets["dagre.min.js"] = "</script><script>alert(1)</script>"
+
+    with pytest.raises(RuntimeError, match="closing script tag"):
+        report_html._inline_scripts("{}", assets)
+
+
+def test_write_html_creates_parent_directories_and_ends_with_one_newline(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "nested" / "report.html"
+    write_html(make_report(), target)
+
+    text = target.read_text(encoding="utf-8")
+    assert text.startswith("<!DOCTYPE html>")
+    assert text.endswith("\n")
+    assert not text.endswith("\n\n")

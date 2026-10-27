@@ -133,13 +133,16 @@ registry. The registry is in `docs/assumptions.md`.
 - Console output is a summary. The JSON report is the complete machine-readable
   record; SARIF is for code-scanning ingestion; the HTML report is a single offline
   document.
-- The HTML report needs JavaScript to render its embedded data. Without JavaScript it
-  shows only a note explaining that; use the console or JSON report instead. The graph
-  canvas is pointer-operated and is not keyboard operable; the scenario, survival,
-  findings and cross-scenario matrix sections present the same evidence as text, with
-  labelled tables, a skip link and keyboard-operable trace buttons, so the report
-  remains usable without interacting with the graph. Wide tables scroll inside
-  labelled, keyboard-focusable regions instead of widening the page.
+- The HTML report needs JavaScript to render its embedded data. Without JavaScript the
+  document remains visible (a no-script override defeats the hydration boot gate) and
+  shows a notice that the data cannot be displayed; use the console or JSON report
+  instead. Geist and Geist Mono are embedded in the file, so the report makes no font
+  request and renders identically offline. The graph canvas is pointer-operated and is
+  not keyboard operable; the scenario, survival, findings and cross-scenario matrix
+  sections present the same evidence as text, with labelled tables, a skip link and
+  keyboard-operable trace and zoom buttons, so the report remains usable without
+  interacting with the graph. Wide tables scroll inside labelled, keyboard-focusable
+  regions instead of widening the page.
 - SARIF output is capped at 5,000 results with a notification, matching GitHub
   code-scanning limits. Findings beyond the cap are counted but not listed.
 - A suppressed rule is removed from the findings list. Suppression does not alter the

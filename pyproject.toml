@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "nhi-blast"
-version = "0.1.0"
+version = "0.1.1"
 description = "Offline, evidence-labelled analysis of GitHub Actions to AWS OIDC authority and revocation survival"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -107,7 +107,7 @@ max-statements = 70
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S", "PLR0915", "PLR0912", "PLR0911"]
 "scripts/**" = ["T201"]  # command-line helpers; printing is their interface
-"src/nhi_blast/report/html.py" = ["S", "E501"]  # embedded CSS/JS templates, not project code
+"src/nhi_blast/report/ui.py" = ["S", "E501"]  # embedded CSS/JS templates, not project code
 "src/nhi_blast/core/models.py" = ["S105"]  # credential-kind enum names, not values
 
 [tool.ruff.format]
@@ -142,3 +142,9 @@ branch = true
 
 [tool.coverage.report]
 exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "raise NotImplementedError"]
+
+[tool.bandit]
+# B105 flags credential-kind names, selector aliases and dictionary keys; this
+# project records credential kinds and lengths, never credential values.
+skips = ["B105"]
+exclude_dirs = ["tests", ".venv", "dist", ".taste-skill", "docs/research/_cache"]

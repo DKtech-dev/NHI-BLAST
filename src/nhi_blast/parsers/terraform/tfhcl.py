@@ -351,8 +351,7 @@ def parse_tf_hcl(rel_path: str, text: str, *, limits: Limits) -> ParseResult[TfM
     if text.lstrip().startswith("{"):
         document, failure = _json_configuration(text, rel_path)
         if document is None:
-            assert failure is not None
-            return ParseResult(facts=None, diagnostics=(failure,))
+            return ParseResult(facts=None, diagnostics=() if failure is None else (failure,))
         variables = _json_variables(document)
         lines: dict[str, int] = {}
         data_blocks = _json_blocks(document, "data")

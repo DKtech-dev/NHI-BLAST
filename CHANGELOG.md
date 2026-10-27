@@ -4,6 +4,48 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project intends to
 use semantic versioning from its first published release.
 
+## 0.1.1 — 2026-10-27
+
+Patch release focused on the offline HTML report. The analysis pipeline, CLI surface
+and report schemas are unchanged; JSON (`nhi-blast-report/1.0`) and SARIF 2.1.0 output
+from 0.1.0 remain compatible. Prepared for distribution as GitHub Release `v0.1.1`
+(wheel, sdist and SHA-256 sums). No package-index upload or deployment.
+
+### Changed
+
+- Rebuilt the single-file HTML report around an achromatic-ledger layout: a compact
+  viewer bar, report header with entrypoint selector, table of contents, summary
+  figures, survival panel, rotation plan, cross-scenario matrix, graph, findings,
+  assumptions, data files and diagnostics in one printable document.
+- Embedded Geist and Geist Mono variable fonts as WOFF2 data URIs under the SIL Open
+  Font License 1.1, so typography is identical offline on every platform and the
+  report still makes no external request.
+- Added zoom-out, zoom-in and fit controls for the authority graph, per-edge dimming
+  for off-path inspection, optional label backgrounds with ellipsis, and a brighter
+  edge token in the dark theme.
+- Added the `--timestamp`-free boot gate: the document stays hidden until the first
+  hydrated render to eliminate cumulative layout shift, with a no-script override and
+  notice so the report remains readable without JavaScript.
+- Wrapped long identifiers at word boundaries, made wide tables keyboard-scrollable
+  with visible hints, and shortened matrix column labels while retaining full names in
+  the accessible table headers.
+- Removed the only `assert` in the Terraform JSON parser; malformed input now returns
+  a diagnostic on every path.
+- Recorded Bandit's B105 skip in `pyproject.toml` with its justification: the flagged
+  strings are credential-kind names, not credential values.
+
+### Security
+
+- Kept the report self-contained: a restrictive CSP hashes all five inline scripts,
+  embedded JSON escapes `<`, `>`, `&`, U+2028 and U+2029, DOM construction uses only
+  `textContent` and `setAttribute`, and hostile strings render inert.
+- Extended the report tests to 24 cases, including the boot gate, no-script fallback,
+  font embedding, CSP coverage and external-resource rejection.
+- Verified the final report in headless Chrome: zero axe-core WCAG 2.2 AA violations in
+  dark, light and mobile views, zero console errors, zero external requests, and
+  Lighthouse 98 performance / 100 accessibility / 100 best practices with CLS 0 in the
+  desktop profile.
+
 ## 0.1.0 — 2026-10-27
 
 Initial release, published as the GitHub Release

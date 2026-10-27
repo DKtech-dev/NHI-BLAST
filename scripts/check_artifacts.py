@@ -31,6 +31,9 @@ REQUIRED_WHEEL_DATA = frozenset(
 REQUIRED_WHEEL_ASSETS = frozenset(
     {
         "nhi_blast/report/assets/MANIFEST.json",
+        "nhi_blast/report/assets/fonts/OFL.txt",
+        "nhi_blast/report/assets/fonts/geist-latin.woff2",
+        "nhi_blast/report/assets/fonts/geist-mono-latin.woff2",
         "nhi_blast/report/assets/vendor/cytoscape-dagre.js",
         "nhi_blast/report/assets/vendor/cytoscape.min.js",
         "nhi_blast/report/assets/vendor/dagre.min.js",

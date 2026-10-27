@@ -4,15 +4,18 @@ Living record of what is actually built and verified. Every row must correspond 
 command that was run, with its real result. When a gate is not met, it says so.
 
 Last updated: 2026-10-27
-Overall verdict: **0.1.0 RELEASED as a GitHub Release.** M0–M8 are
-implemented and verified locally and in remote CI, including packaging, clean-environment
-installation, documentation, CI policy, dependency and secret audits, three-build
-reproducibility, Python 3.12/3.13/3.14 suites on Ubuntu and Windows, a 10-repository
-real-world corpus, an adversarial soak, real-browser/axe verification, and an internal
-security audit with third-party scanners. Version 0.1.0 was published on 2026-10-27 from
-commit `0269100`; this post-release documentation commit is not part of the tagged
-release. The independent human audit has not been performed and is not claimed; it is
-the one open assurance gate.
+Overall verdict: **0.1.1 RELEASE CANDIDATE; 0.1.0 remains the published release.**
+M0–M8 are implemented and verified locally and in remote CI, including packaging,
+clean-environment installation, documentation, CI policy, dependency and secret audits,
+three-build reproducibility, Python 3.12/3.13/3.14 suites on Ubuntu and Windows, a
+10-repository real-world corpus, an adversarial soak, real-browser/axe verification, an
+internal security audit with third-party scanners, and the 0.1.1 report redesign with
+Lighthouse, html-validate and design-inspector verification. Version 0.1.0 was
+published on 2026-10-27 from commit `0269100`. Version 0.1.1 is prepared from the
+verified release commit and is published to the authorized GitHub Release after a green
+remote CI run; the publication record is appended after asset verification. The
+independent human audit has not been performed and is not claimed; it is the one open
+assurance gate.
 
 ## Environment used for every recorded result
 
@@ -729,16 +732,41 @@ not external benchmarks or an audit.
 | Verification | assets re-downloaded from the release; `sha256sum -c SHA256SUMS` passed; the digests reported by the release API matched the locally built artifacts and the checksum asset |
 | Distribution scope | GitHub Release only; no package-index upload, deployment or SaaS |
 
+### 2026-10-27 — 0.1.1 offline report redesign
+
+| Check | Command / run | Actual result |
+| --- | --- | --- |
+| Report redesign | `src/nhi_blast/report/ui.py`, `report/html.py`, embedded WOFF2 fonts | Achromatic-ledger layout with viewer bar, entrypoint selector, summary, survival panel, rotation plan, cross-scenario matrix, graph, findings, assumptions, data files and diagnostics; dark/light themes; print layout; Geist and Geist Mono embedded under OFL-1.1; no external request |
+| Graph readability | Browser capture at 1440×900 | Dark-theme edge token brightened, per-edge off-path dimming, label backgrounds with ellipsis, zoom-out/zoom-in/fit controls; 24 nodes and 22 edges rendered at 0.843 zoom with readable labels |
+| Layout stability | Lighthouse 13.5.0 desktop; CDP performance trace | CLS 0 after the boot gate; FCP 0.9 s, LCP 0.9 s, TBT 10 ms; performance 98, accessibility 100, best-practices 100. Simulated mobile performance 65 is disclosed and attributed to the 841 KiB document over a 1.6 Mbps throttle |
+| Accessibility | axe-core 4.10.3 in desktop dark, desktop light and mobile dark | 0 WCAG 2.2 AA violations in all three views; Lighthouse accessibility 100; brand-link accessible name fixed after a label/name mismatch |
+| Browser QA | CDP at 1440×900, 768×1024 and 390×844 | 0 overflow, 0 console/log errors, 0 external requests; both fonts loaded and Geist in use; boot gate clears; no-script fallback visible with notice; scenario switching, graph zoom/fit, trace, table scroll and filters exercised |
+| HTML validation | html-validate 11.17.0 | Clean |
+| Design inspector | 1440, 768 and 390 px | 0 findings |
+| Report tests | `pytest tests/test_html.py tests/test_report_security.py` | 24 report tests; CSP hashes five scripts, boot-gate/no-script ordering, font embedding, no external resources, inert hostile strings and secret-leak checks pass; `report/html.py` and `report/ui.py` at 100% coverage |
+| Full suite | `pytest -q` | 418 passed, 1 skipped in 16.56 s |
+| Python 3.13/3.14 | isolated environments | 416 passed, 1 skipped, 2 deselected plus 2 slow passed on each |
+| Coverage gate | `scripts/check_coverage.py` | 86.67% overall; every enforced module ≥80%; lowest `report/explain.py` 83.78% |
+| Lint, format, types | ruff 0.15.22, mypy 1.20.2 strict | Clean; 113 files formatted; 71 source files typed |
+| Scanners | zizmor 1.31.1, actionlint 1.7.12, Semgrep 1.182.1, Bandit 1.9.4, pip-audit 2.10.1, Grype 0.121.0 | 0 findings in each; B105 skip documented; B101 assert removed; 0 vulnerabilities |
+| Build and artifacts | three hatchling builds; `scripts/check_artifacts.py dist` | Identical wheel and sdist digests across three builds; wheel 92 files, sdist 242 files, including fonts, `OFL.txt` and vendor manifest |
+| Clean installs | wheel, wheel with `[hcl]`, sdist | All six commands exit 0; fx10 parses HCL with the extra (14 nodes) and reports `D-TF-HCL-UNAVAILABLE` without it (8 nodes); repeated installed-wheel scans are byte-identical |
+| Publication | GitHub Release `v0.1.1` | Prepared; the publication record is appended after the release is created and its assets are re-downloaded and verified against `SHA256SUMS` |
+
 ## Next action
 
 No local implementation milestone remains. Remote CI, Linux execution, advisory
 automation, the internal audit and the authorized 0.1.0 GitHub Release are complete.
+The 0.1.1 report redesign has passed every local gate and is prepared for publication.
 The remaining actions are:
 
-1. **Independent human audit.** This cannot be supplied by the implementation agent.
+1. **Publish 0.1.1.** Push the release commit, confirm the remote CI and advisory runs
+   are green, create the annotated tag, upload the wheel, sdist and `SHA256SUMS`, then
+   re-download and verify the assets. This is the final step of the current task.
+2. **Independent human audit.** This cannot be supplied by the implementation agent.
    `docs/external-audit-package.md` defines the target and materials; until a reviewer
    completes a report, the project must not be described as independently audited.
-2. **Release maintenance.** Review Dependabot updates after `0.1.0`, refresh the lock
+3. **Release maintenance.** Review Dependabot updates after `0.1.1`, refresh the lock
    files on a deliberate cadence, and re-run the full gate set before any later
    release. Secret scanning and CodeQL remain unavailable on the private repository
    unless GitHub Advanced Security is enabled.
