@@ -4,6 +4,24 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project intends to
 use semantic versioning from its first published release.
 
+## 0.2.0 — unreleased
+
+Source-licensing change; no runtime or schema changes. Versions 0.1.0 and 0.1.1 were
+published under the MIT License and remain under those terms. This source tree and
+future releases are proprietary.
+
+### Changed
+
+- Replaced the MIT licence with an all-rights-reserved proprietary licence. No use,
+  copying, modification or distribution is permitted without prior written permission
+  from the copyright holder; viewing or forking the repository on GitHub does not grant
+  those rights.
+- Updated package metadata to `LicenseRef-Proprietary` and removed the MIT classifier.
+- Bumped the source version to 0.2.0 so unreleased builds cannot be confused with the
+  MIT-licensed 0.1.1 artifacts.
+- Kept the vendored report libraries under MIT and the embedded fonts under SIL OFL
+  1.1; their notices are unchanged in `NOTICE`.
+
 ## 0.1.1 — 2026-10-27
 
 Patch release focused on the offline HTML report. The analysis pipeline, CLI surface

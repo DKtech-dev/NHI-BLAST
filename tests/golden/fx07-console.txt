@@ -1,4 +1,4 @@
-NHI-Blast 0.1.1
+NHI-Blast 0.2.0
 Report schema: nhi-blast-report/1.0
 
 Parse

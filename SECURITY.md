@@ -5,26 +5,27 @@ much as its findings, so defects that break them are treated as security bugs.
 
 ## Supported versions
 
-NHI-Blast `0.1.0` is distributed as GitHub Release assets; it is not published to a
-package index. Security fixes are made on the current `0.1.x` line only; there are no
-long-term support branches and no backports. A version is supported only when its
-source can be verified against this repository and, for a release, against the
-published SHA-256 sums.
+NHI-Blast `0.1.1` is the latest published release; `0.1.0` remains available. Both
+were distributed as GitHub Release assets under the MIT License. The source tree on
+`main` is version `0.2.0` under a proprietary licence and is not yet released.
+Security fixes are made on the current source line; there are no long-term support
+branches and no backports. A version is supported only when its source can be
+verified against this repository and, for a release, against the published SHA-256
+sums.
 
 ## Reporting a vulnerability
 
-Report suspected vulnerabilities privately. Use the private security-advisory
-mechanism of the hosting forge where this repository is published. If no such
-mechanism is available, contact the maintainer through the same private channel by
-which you obtained the source. Do not open a public issue, and do not include real
-credential values, production tokens or customer data in a report.
+Report suspected vulnerabilities privately through GitHub's private vulnerability
+reporting or security-advisory mechanism for this repository. Do not open a public
+issue, and do not include real credential values, production tokens or customer data
+in a report.
 
 A useful report contains: the affected version or commit, the command or API used,
 the input that triggers the problem, the observed behaviour, and why it violates a
 property below. Attach a minimised reproducer where possible.
 
-This is a volunteer pre-release project. There is no bug bounty, no formal SLA and no
-claim of an independent security audit. Reports are acknowledged and triaged when a
+This is a small volunteer project. There is no bug bounty, no formal SLA and no claim
+of an independent security audit. Reports are acknowledged and triaged when a
 maintainer is available; a fix or advisory is published at the maintainer's
 discretion.
 

@@ -4,18 +4,17 @@ build-backend = "hatchling.build"
 
 [project]
 name = "nhi-blast"
-version = "0.1.1"
+version = "0.2.0"
 description = "Offline, evidence-labelled analysis of GitHub Actions to AWS OIDC authority and revocation survival"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+license = "LicenseRef-Proprietary"
 authors = [{ name = "NHI-Blast Maintainers" }]
 keywords = ["security", "github-actions", "aws", "oidc", "iam", "incident-response"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Environment :: Console",
   "Intended Audience :: Information Technology",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",

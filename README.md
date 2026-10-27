@@ -21,13 +21,15 @@ as reachable authority; they feed a separate `potential` set. The tool does not 
 proof of compromise, exploitability or takeover, and it never prints a credential
 value.
 
-> **Status: 0.1.1 published.** The current release is
+> **Status: 0.1.1 published; main is 0.2.0 (proprietary).** The current release is
 > [`v0.1.1`](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.1), which adds
 > the redesigned offline HTML report; [`v0.1.0`](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.1.0)
-> remains available. Both are GitHub Releases with wheel, sdist and `SHA256SUMS`; there
-> is no package-index upload or deployment. Remote CI passed on Ubuntu and Windows for
-> Python 3.12, 3.13 and 3.14, advisory automation scans both locks and secrets on a
-> schedule, and an internal security audit is recorded in
+> remains available. Both releases were published under the MIT License. The source
+> tree on `main` is version 0.2.0 and is proprietary, all rights reserved; see
+> [LICENSE](LICENSE). Visibility of the source does not grant permission to use it.
+> There is no package-index upload or deployment. Remote CI passed on Ubuntu and
+> Windows for Python 3.12, 3.13 and 3.14, advisory automation scans both locks and
+> secrets on a schedule, and an internal security audit is recorded in
 > [security audit](docs/security-audit.md). An independent human audit has **not** been
 > performed and is not claimed. Read [known limitations](docs/known-limitations.md)
 > before relying on a report.
@@ -231,4 +233,9 @@ the deterministic performance fixture and the current environment.
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE) and [NOTICE](NOTICE) for vendored asset attribution.
+Proprietary, all rights reserved. See [LICENSE](LICENSE). No permission is granted
+to use, copy, modify or distribute this source tree or future releases without the
+copyright holder's prior written permission; viewing or forking the repository on
+GitHub does not grant such permission. The published `0.1.0` and `0.1.1` releases
+were distributed under the MIT License and remain under those terms. Vendored report
+assets retain their MIT and SIL OFL licences; see [NOTICE](NOTICE).

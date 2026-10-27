@@ -1,7 +1,13 @@
 NHI-Blast
 Copyright (c) 2026 NHI-Blast Maintainers
 
-NHI-Blast is distributed under the MIT License. See LICENSE for the full text.
+NHI-Blast is proprietary software. All rights reserved. No permission is granted
+to use, copy, modify or distribute it without the copyright holder's prior
+written permission; see LICENSE for the full notice.
+
+Versions 0.1.0 and 0.1.1 were previously published under the MIT License and
+remain available under those terms. The proprietary terms apply to this source
+tree and to versions released from it.
 
 Vendored third-party assets
 ---------------------------

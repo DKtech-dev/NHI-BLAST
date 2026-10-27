@@ -754,7 +754,7 @@ ParseResult  holds facts  and diagnostics . A parser never raises on bad input. 
 returns a diagnostic and partial facts.
 5.3 Repository layout
 nhi-blast/
-|-- pyproject.toml  README.md  LICENSE(MIT)  NOTICE  SECURITY.md
+|-- pyproject.toml  README.md  LICENSE(proprietary)  NOTICE  SECURITY.md
 CONTRIBUTING.md  AGENTS.md
 |-- docs/  SPEC.md  assumptions.md  rules/NHB-*.md  benchmark.md
 |-- scripts/  vendor_assets.py  gen_schema.py  record_oidc_claims.md
