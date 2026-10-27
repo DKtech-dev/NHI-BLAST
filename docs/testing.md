@@ -19,13 +19,13 @@ Tests make no network calls and execute no scanned content.
 | Gate | Command | Result on 2026-10-27 |
 | --- | --- | --- |
 | Full suite | `./.venv/Scripts/python.exe -m pytest -q` | 403 passed, 1 skipped in 12.10 s |
-| Remote suite | GitHub Actions CI, Ubuntu and Windows, Python 3.12–3.14 | 404 passed per job; package job passed |
+| Remote suite | GitHub Actions CI, Ubuntu and Windows, Python 3.12–3.14 (run 40432137207) | 404 passed per job; coverage 86.53–86.54%; package job passed |
 | Adversarial | `./.venv/Scripts/python.exe -m pytest -q -m security` | 37 passed, 1 skipped |
 | Golden | `./.venv/Scripts/python.exe -m pytest -q -m golden` | 2 passed |
 | Performance | `./.venv/Scripts/python.exe -m pytest -q -m slow` | 2 passed in 10.40 s |
 | Coverage | `./.venv/Scripts/python.exe scripts/check_coverage.py` | 86.47% overall; gate passed |
 | Schema | `./.venv/Scripts/python.exe scripts/gen_schema.py --check` | clean |
-| Artifacts | `./.venv/Scripts/python.exe scripts/check_artifacts.py dist` | clean; wheel 88 files; sdist count recorded in `docs/production-readiness.md` after the final build |
+| Artifacts | `./.venv/Scripts/python.exe scripts/check_artifacts.py dist` | clean; wheel 88 files, sdist 237 files |
 | Reproducibility | three hatchling builds into separate directories, then `sha256sum` | identical wheel and sdist digests |
 | Dependency audit | pip-audit 2.10.1; OSV-Scanner 2.7.0; Grype 0.121.0 on both SBOMs | no known advisories; no vulnerabilities |
 | Secret scans | gitleaks 8.30.1 history and tree; TruffleHog 3.99.7 filesystem | 0 leaks in 5 commits; 0 verified/unverified secrets in 96 MB; 6 tree hits triaged as ignored-cache false positives |

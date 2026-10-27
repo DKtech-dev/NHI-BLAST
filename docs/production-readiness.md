@@ -30,15 +30,14 @@ recorded environments and what remains open. The milestone history is in
 
 | Workflow | Run | Result |
 | --- | --- | --- |
-| CI (`ci.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40429850152 | Package job passed; all six test jobs passed on Ubuntu and Windows, Python 3.12–3.14 |
-| Advisory audit (`audit.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40429850149 | Passed: both lock files audited, Bandit, OSV-Scanner and gitleaks |
+| CI (`ci.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40432137207 | Package job passed; all six test jobs passed with `404 passed` each and coverage 86.53–86.54% on Ubuntu and Windows, Python 3.12–3.14 |
+| Advisory audit (`audit.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40432137192 | Passed: both lock files audited, Bandit, OSV-Scanner and gitleaks |
 | First fully green CI | https://github.com/DKtech-dev/nhi-blast/actions/runs/40427815113 | Package and six test jobs passed after the toolchain fixes |
 
 The CI jobs ran `ruff check`, `mypy`, the full suite, the coverage gate, the performance
-tests and the package build. Linux `py3.12` reported `402 passed` for the functional
-suite before the two documentation/claim tests added with this audit; the release run
-reports `404 passed` per job. Windows runners can create the real symlink used by the
-security suite, so the local Windows skip does not appear there.
+tests and the package build. The release run includes the two documentation/claim tests
+added with the audit. Windows runners can create the real symlink used by the security
+suite, so the local Windows skip does not appear there.
 
 ## Gate matrix
 
@@ -52,13 +51,13 @@ security suite, so the local Windows skip does not appear there.
 | Adversarial suite | Security-marked hostile-input tests pass | 37 passed, 1 skipped locally (real symlink creation requires a Windows privilege); the Linux CI job executes the skipped case | Pass |
 | Golden output | Reviewed fx07 console and semantic summary | 2 passed | Pass |
 | Performance | SPEC 12.8 budgets | 2 passed; graph build + scenario 1.568 s (budget 5 s), rank 6.285 s (budget 60 s), using the documented 200-workflow/2,000-resource fixture | Pass |
-| Coverage | ≥80% overall; ≥80% in `aws/`, `analysis/`, `report/` | 86.47% overall line coverage locally; 86.53% in CI; gate passed | Pass |
+| Coverage | ≥80% overall; ≥80% in `aws/`, `analysis/`, `report/` | 86.47% overall line coverage locally; 86.53–86.54% in CI; gate passed | Pass |
 | Lint | `ruff check` | Clean over `src`, `tests`, `scripts` locally and in CI | Pass |
 | Format | `ruff format --check` | 112 files already formatted | Pass |
 | Types | `mypy --strict src` | Clean, 70 source files locally and in CI | Pass |
 | Report schema | Committed schema matches generated schema | `scripts/gen_schema.py --check` exit 0 | Pass |
 | Determinism and offline | Byte-identical repeats; no socket use | `tests/test_determinism.py`; corpus byte comparison; three-build digest comparison; no network-capable module imported by `src` | Pass |
-| Artifact contents | Required data/assets/docs present; no caches, scratch or research cache | `scripts/check_artifacts.py` passed; every sdist top-level entry is on an explicit allowlist | Pass |
+| Artifact contents | Required data/assets/docs present; no caches, scratch or research cache | `scripts/check_artifacts.py` passed: wheel 88 files, sdist 237 files; every sdist top-level entry is on an explicit allowlist | Pass |
 | Clean install (HCL extra) | Wheel installs with runtime lock; all six commands work | `version`, `version --data`, `schema`, `scan`, `rank`, `export` and `explain` all exit 0 on the final wheel; fx07 JSON/SARIF/HTML produced; HCL fixture fx10 parsed | Pass |
 | Clean install (minimal) | Wheel without HCL extra degrades clearly | `version` works; fx10 with `--tf-hcl` reports `D-TF-HCL-UNAVAILABLE` with install guidance; `--strict` returns 3 | Pass |
 | Clean install (sdist) | The sdist builds and installs | Fresh venv install from the final sdist; `version` and an fx01 scenario scan exit 0 | Pass |
@@ -74,7 +73,7 @@ security suite, so the local Windows skip does not appear there.
 | HTML structure and accessibility | Language, title, headings, labels, skip link, table semantics, graph text alternative | Static tests pass; CSP, escaping and inert-hostile-string tests pass; axe-core 4.10.3 reports 0 violations and 52 passes in both light and dark schemes; the only incomplete check is gradient-background contrast, whose text pairs were manually computed at ≥4.86:1 | Pass |
 | Documentation set | README, architecture, rules, assumptions, provenance, benchmark, limitations, release, security, audit, external audit package, contributing, changelog, NOTICE | Present; local-link, rule-coverage and assumption-registry tests pass | Pass |
 | Three-build reproducibility | Repeated clean builds produce identical artifact digests | Three consecutive builds from the same unmodified tree produced identical SHA-256 digests for both the wheel and the sdist; cross-machine and cross-toolchain byte reproducibility is not claimed | Pass (local) |
-| Remote CI execution | The defined matrix runs green on GitHub-hosted runners | Run 40429850152: package job and all six test jobs passed | Pass |
+| Remote CI execution | The defined matrix runs green on GitHub-hosted runners | Run 40432137207: package job and all six test jobs passed | Pass |
 | Linux execution | The suite runs on Linux | Ubuntu jobs for Python 3.12, 3.13 and 3.14 passed, including the symlink security test and the performance tests | Pass |
 | Internal security audit | Manual review and third-party automated scanners | Completed 2026-10-27; no high/critical finding open; report in `docs/security-audit.md` | Pass (internal) |
 | Repository security settings | Least-privilege automation and protected main branch | Workflow token read-only; SHA pinning required; Dependabot alerts and security updates enabled; `protect-main` ruleset blocks deletion and non-fast-forward pushes | Pass |

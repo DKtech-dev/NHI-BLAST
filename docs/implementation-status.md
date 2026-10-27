@@ -709,9 +709,9 @@ not external benchmarks or an audit.
 
 | Check | Command / run | Actual result |
 | --- | --- | --- |
-| Remote CI matrix | https://github.com/DKtech-dev/nhi-blast/actions/runs/40429850152 | Package job and all six test jobs passed on `ubuntu-latest` and `windows-latest` for Python 3.12, 3.13 and 3.14; each test job ran the full suite, coverage gate, performance tests, ruff and mypy |
+| Remote CI matrix | https://github.com/DKtech-dev/nhi-blast/actions/runs/40432137207 | Package job and all six test jobs passed with `404 passed` each and coverage 86.53–86.54% on `ubuntu-latest` and `windows-latest` for Python 3.12, 3.13 and 3.14 |
 | Linux execution | Ubuntu jobs in the run above | Python 3.12, 3.13 and 3.14 passed, including the real-symlink security test that is skipped on the local Windows host |
-| Advisory workflow | https://github.com/DKtech-dev/nhi-blast/actions/runs/40429850149 | Passed: pip-audit on both locks, Bandit, hash-verified OSV-Scanner 2.7.0 and gitleaks 8.30.1; workflow also runs weekly |
+| Advisory workflow | https://github.com/DKtech-dev/nhi-blast/actions/runs/40432137192 | Passed: pip-audit on both locks, Bandit, hash-verified OSV-Scanner 2.7.0 and gitleaks 8.30.1; workflow also runs weekly |
 | Internal audit | Commands and versions in `docs/security-audit.md` | zizmor 1.31.1: 0 findings; actionlint 1.7.12: 0; Semgrep 1.182.1: 2 triaged false positives; Bandit 1.9.4: 0 medium/high, 11 low triaged; pip-audit 2.10.1: 0; OSV 2.7.0: 0 across 60 instances; Grype 0.121.0: 0 on both SBOMs; pip-licenses: 41 packages, no strong copyleft; gitleaks: 0 in history; TruffleHog 3.99.7: 0 in 96 MB; 42 pins with minimum age 15 days and none yanked |
 | Audit fixes | Commits on `main` | Checkout credential persistence removed; broken pip-audit invocation fixed; tomlkit held inside the age policy; fixture identity materialised for clean checkouts; console-script path resolved with `sysconfig`; Python 3.14 JSON test broadened without relaxing the facts check; editable build helper pinned |
 | Repository settings | `gh api` on 2026-10-27 | Default workflow token read-only; SHA pinning required; Dependabot alerts and security updates enabled; `protect-main` ruleset blocks deletion and non-fast-forward pushes; secret scanning and CodeQL unavailable without Advanced Security |
