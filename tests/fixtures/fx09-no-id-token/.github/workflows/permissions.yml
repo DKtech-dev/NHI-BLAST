@@ -1,0 +1,22 @@
+name: CI
+on:
+  push:
+    branches: [main]
+
+permissions: read-all
+
+jobs:
+  constrained:
+    runs-on: ubuntu-latest
+    permissions: read-all
+    steps:
+      - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+      - name: Lint
+        run: ./scripts/lint.sh
+
+  empty:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Test
+        run: ./scripts/test.sh

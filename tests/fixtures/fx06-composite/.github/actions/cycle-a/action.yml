@@ -1,0 +1,6 @@
+name: Cycle A
+description: Fixture composite action that calls Cycle B (deliberate cycle).
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/cycle-b

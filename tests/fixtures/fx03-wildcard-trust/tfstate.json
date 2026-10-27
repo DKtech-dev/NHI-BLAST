@@ -1,0 +1,101 @@
+{
+  "format_version": "1.0",
+  "terraform_version": "1.9.8",
+  "values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_iam_openid_connect_provider.github",
+          "mode": "managed",
+          "type": "aws_iam_openid_connect_provider",
+          "name": "github",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "url": "https://token.actions.githubusercontent.com",
+            "client_id_list": [
+              "sts.amazonaws.com"
+            ],
+            "arn": "arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com"
+          }
+        },
+        {
+          "address": "aws_iam_role.legacy_ci",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "legacy_ci",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "legacy-ci",
+            "arn": "arn:aws:iam::111122223333:role/legacy-ci",
+            "max_session_duration": 3600,
+            "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"},\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"},\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/*\"}}}]}",
+            "inline_policy": [
+              {
+                "name": "read-ci-token",
+                "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"ssm:GetParameter\"],\"Resource\":[\"arn:aws:ssm:us-east-1:111122223333:parameter/legacy/ci-token\"]}]}"
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_iam_role.admin",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "admin",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "admin-unconstrained",
+            "arn": "arn:aws:iam::111122223333:role/admin-unconstrained",
+            "max_session_duration": 3600,
+            "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"},\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"}}}]}"
+          }
+        },
+        {
+          "address": "aws_iam_role.dead_condition",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "dead_condition",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "dead-condition",
+            "arn": "arn:aws:iam::111122223333:role/dead-condition",
+            "max_session_duration": 3600,
+            "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"},\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\",\"token.actions.githubusercontent.com:repository_owner\":\"acme\"},\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/shop:ref:refs/tags/v*\"}}}]}"
+          }
+        },
+        {
+          "address": "aws_iam_role.no_aud",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "no_aud",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "no-audience",
+            "arn": "arn:aws:iam::111122223333:role/no-audience",
+            "max_session_duration": 3600,
+            "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"},\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/shop:ref:refs/tags/v*\"}}}]}"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.legacy_ci_token",
+          "mode": "managed",
+          "type": "aws_ssm_parameter",
+          "name": "legacy_ci_token",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "/legacy/ci-token",
+            "type": "SecureString",
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/legacy/ci-token",
+            "key_id": "alias/aws/ssm"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+name: Comment commands
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  command:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Run comment-triggered command
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: ./scripts/comment-command.sh

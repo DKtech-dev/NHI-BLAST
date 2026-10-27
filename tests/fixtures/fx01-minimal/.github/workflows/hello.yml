@@ -1,0 +1,12 @@
+name: Hello
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+      - name: Greet
+        run: echo "hello from acme/shop"

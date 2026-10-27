@@ -1,0 +1,7 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Deterministic fake action SHAs used by the fixture generator"
+paths = ['''scripts/gen_fixtures\.py''']
+regexes = ['''abcdef0123456789abcdef0123456789abcdef0[12]''']

@@ -1,0 +1,23 @@
+name: PR triage
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Run PR-provided triage script
+        run: ./scripts/triage.sh
+      - uses: aws-actions/configure-aws-credentials@abcdef0123456789abcdef0123456789abcdef02
+        with:
+          role-to-assume: arn:aws:iam::111122223333:role/main-only
+          aws-region: us-east-1

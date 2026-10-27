@@ -1,0 +1,259 @@
+# Findings catalog (spec 13.1). Rule documentation lives in docs/rules/NHB-*.md.
+# Severity is an ordering label, not a verdict. Dynamic severities are computed by
+# the analysis engine and documented in severity_note.
+source: "docs/SPEC.md section 13.1"
+source_url: "https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions"
+verified_on: "2026-10-25"
+rules:
+  - id: NHB-OIDC-001
+    title: "Trust policy has no sub or job_workflow_ref control"
+    base_severity: CRITICAL
+    short_description: "The AWS role trust policy does not constrain sub or job_workflow_ref."
+    full_description: >-
+      The trust policy statement allows sts:AssumeRoleWithWebIdentity for the GitHub
+      OIDC provider without constraining sub or job_workflow_ref. Any GitHub Actions
+      workflow that satisfies the remaining conditions can request a token for the
+      configured audience and call AssumeRoleWithWebIdentity. The analysis compares
+      the policy as written against candidate subjects; it does not prove that a
+      live caller exists.
+    help: >-
+      Add a condition on sub (or job_workflow_ref) that names the exact repository,
+      ref and environment, and keep aud constrained.
+    tags: [security, oidc, aws, trust-policy]
+    precision: high
+    doc: docs/rules/NHB-OIDC-001.md
+  - id: NHB-OIDC-002
+    title: "Organisation-wide or global wildcard in sub"
+    base_severity: HIGH
+    severity_note: "CRITICAL when the breadth class is ANY_ORG or SAME_ORG, raised further when Z is non-empty."
+    short_description: "The trust policy accepts subjects from any repository in the organisation or from any repository at all."
+    full_description: >-
+      The sub condition is a wildcard that accepts workflows from repositories outside
+      the analysed repository. A workflow author in another repository of the same
+      organisation (or in any organisation, for a global wildcard) may satisfy the
+      policy as written if the audience check passes. The analysis reports the breadth
+      class and the matching workflow lines; it does not prove that such a workflow
+      exists or is reachable by an attacker.
+    help: >-
+      Replace the wildcard with the exact repository and ref, or constrain
+      job_workflow_ref to a reviewed reusable workflow.
+    tags: [security, oidc, aws, trust-policy, wildcard]
+    precision: high
+    doc: docs/rules/NHB-OIDC-002.md
+  - id: NHB-OIDC-003
+    title: "Repo-wide wildcard in sub"
+    base_severity: HIGH
+    short_description: "The trust policy accepts any branch, tag, pull request run or environment in the repository."
+    full_description: >-
+      The sub condition uses a repository-wide wildcard. Every workflow in the
+      repository that can obtain an OIDC token may satisfy the policy, including
+      workflows added on short-lived branches by anyone with write access. The
+      analysis does not model branch protection or environment protection rules.
+    help: >-
+      Pin sub to a specific ref or environment and add an aud condition.
+    tags: [security, oidc, aws, trust-policy, wildcard]
+    precision: high
+    doc: docs/rules/NHB-OIDC-003.md
+  - id: NHB-OIDC-004
+    title: "Audience not constrained"
+    base_severity: MEDIUM
+    short_description: "The trust policy does not constrain the aud claim."
+    full_description: >-
+      The trust statement omits an aud condition. AWS accepts any token issued for the
+      GitHub OIDC provider that satisfies the remaining conditions, which may include
+      tokens minted for other resource servers. Add an aud condition matching the
+      audience the workflow requests.
+    help: >-
+      Add "aud" to the condition block with the exact audience used by the workflow
+      (sts.amazonaws.com by default).
+    tags: [security, oidc, aws, trust-policy]
+    precision: medium
+    doc: docs/rules/NHB-OIDC-004.md
+  - id: NHB-OIDC-005
+    title: "Subject format drift"
+    base_severity: LOW
+    short_description: "A classic-form sub pattern will not match repositories that use immutable subject claims."
+    full_description: >-
+      The policy matches the classic subject form repo:OWNER/REPO:... only. Repositories
+      created after the immutable-subject cutover, and renamed or transferred
+      repositories after that date, mint subjects of the form
+      repo:OWNER@OWNER_ID/REPO@REPO_ID:..., which this pattern does not match. The
+      policy may therefore silently fail to federate for those repositories.
+    help: >-
+      Match both subject formats, or match on job_workflow_ref with the immutable
+      owner/repository IDs.
+    tags: [oidc, aws, compatibility]
+    precision: medium
+    doc: docs/rules/NHB-OIDC-005.md
+  - id: NHB-OIDC-006
+    title: "Dead condition key for AWS"
+    base_severity: LOW
+    short_description: "The trust policy conditions on a claim key that AWS IAM does not document for GitHub OIDC."
+    full_description: >-
+      The condition uses a key that is not in the documented set of claim keys AWS IAM
+      accepts for token.actions.githubusercontent.com. Such a condition can never be
+      satisfied as written (or is silently ignored depending on operator), so the
+      statement is treated as failing closed for this analysis. Verify against current
+      AWS documentation before relying on the result.
+    help: >-
+      Remove the condition or move the constraint to a supported key such as sub,
+      job_workflow_ref, ref or environment.
+    tags: [oidc, aws, trust-policy, correctness]
+    precision: medium
+    doc: docs/rules/NHB-OIDC-006.md
+  - id: NHB-OIDC-007
+    title: "Environment-only trust with unknown protection"
+    base_severity: INFO
+    short_description: "The trust policy is pinned to a GitHub environment whose protection rules are unknown."
+    full_description: >-
+      The sub condition names a GitHub environment. Environment protection rules
+      (required reviewers, deployment branches, wait timers) are not present in
+      repository files, so the analysis cannot verify that the environment gates
+      access. Anyone who can edit workflows can add an environment claim. Treat this
+      as informational only after confirming the protection rules in GitHub settings.
+    help: >-
+      Confirm required reviewers and deployment branch rules for the environment, or
+      pin sub to a specific ref as well.
+    tags: [oidc, aws, trust-policy, settings]
+    precision: low
+    doc: docs/rules/NHB-OIDC-007.md
+  - id: NHB-GHA-001
+    title: "Mutable third-party action in a job that holds secrets or OIDC"
+    base_severity: MEDIUM
+    severity_note: "HIGH when the resulting scenario has a non-empty Z set."
+    short_description: "A third-party action is referenced by a mutable tag or branch and runs in a privileged job."
+    full_description: >-
+      The job references a third-party action by a tag, branch or otherwise mutable
+      reference and also holds credentials or may mint an OIDC token. If the action
+      reference is moved, the replacement code executes with everything the job
+      holds. Pin third-party actions to a full commit SHA and review updates.
+    help: >-
+      Pin the action to a full 40-character commit SHA.
+    tags: [supply-chain, github-actions, mutable-reference]
+    precision: high
+    doc: docs/rules/NHB-GHA-001.md
+  - id: NHB-GHA-002
+    title: "Untrusted checkout under a privileged trigger"
+    base_severity: HIGH
+    severity_note: "CRITICAL when an AWS role is reachable."
+    short_description: "A privileged trigger gets secrets or OIDC, then checks out and runs pull-request head content."
+    full_description: >-
+      The workflow is started by pull_request_target, workflow_run or issue_comment,
+      which run with repository secrets, and a job checks out pull-request head code
+      (or uses refs/pull/) before a run or uses step. That pattern executes
+      attacker-controlled content with access to the job credentials. This is the
+      classic pwn-request shape; the file alone cannot prove the checked-out code is
+      attacker-controlled, hence ASSUMED evidence for execution.
+    help: >-
+      Do not run pull-request code in a privileged trigger; split into an unprivileged
+      workflow that uploads artifacts and a privileged workflow_run that consumes
+      verified artifacts.
+    tags: [security, github-actions, pwn-request]
+    precision: high
+    doc: docs/rules/NHB-GHA-002.md
+  - id: NHB-GHA-003
+    title: "Self-hosted runner"
+    base_severity: INFO
+    short_description: "The job targets a self-hosted runner; state may persist across jobs."
+    full_description: >-
+      The job runs on a self-hosted runner. Runner state, local files and non-ephemeral
+      credentials can persist between jobs, so reachability assumptions that hold for
+      fresh GitHub-hosted runners are not sufficient. This is informational: it does
+      not by itself indicate a credential exposure.
+    help: >-
+      Use ephemeral self-hosted runners and avoid persisting credentials on the host.
+    tags: [github-actions, runner]
+    precision: high
+    doc: docs/rules/NHB-GHA-003.md
+  - id: NHB-GHA-004
+    title: "secrets: inherit or whole secrets context"
+    base_severity: MEDIUM
+    short_description: "The job exposes every repository secret instead of named references."
+    full_description: >-
+      The job uses secrets: inherit on a reusable workflow call, the bare secrets
+      context, toJSON(secrets) or a dynamic index into secrets. Which secrets are
+      materialised cannot be determined from the file, so the analysis records a
+      wildcard, UNKNOWN-class credential edge rather than a precise set.
+    help: >-
+      Pass only the secrets the reusable workflow needs, using explicit secret names
+      with inherit: false.
+    tags: [github-actions, secrets, blast-radius]
+    precision: high
+    doc: docs/rules/NHB-GHA-004.md
+  - id: NHB-GHA-005
+    title: "Literal credential in workflow"
+    base_severity: HIGH
+    short_description: "A workflow value matches a literal credential pattern."
+    full_description: >-
+      A scalar value in env, with or run matches one of the tool's literal credential
+      heuristics. The report shows only the credential kind and length; the value is
+      never stored or printed. This is not a secret scanner: use gitleaks or
+      TruffleHog for commit-history coverage. Rotate the credential and move it to a
+      secret store.
+    help: >-
+      Rotate the credential, remove it from the workflow, and source it from GitHub
+      secrets or OIDC.
+    tags: [secrets, github-actions, literal]
+    precision: high
+    doc: docs/rules/NHB-GHA-005.md
+  - id: NHB-CRED-001
+    title: "Static AWS keys used where OIDC could be used"
+    base_severity: MEDIUM
+    short_description: "A job passes long-lived AWS access keys instead of using OIDC federation."
+    full_description: >-
+      The job configures AWS with static access key inputs. Long-lived keys survive
+      job revocation and are not scoped to a workflow run. If the workflow already has
+      id-token: write, OIDC can replace the static keys. The keys become persistent
+      credentials in the survival partition.
+    help: >-
+      Remove the static keys and use OIDC federation with a tightly scoped role trust
+      policy.
+    tags: [credentials, aws, static-keys]
+    precision: high
+    doc: docs/rules/NHB-CRED-001.md
+  - id: NHB-SURV-001
+    title: "Credentials survive revocation of the entrypoint"
+    base_severity: HIGH
+    severity_note: "Reported at the highest criticality of the surviving credentials."
+    short_description: "Persistent credentials remain valid after the compromised entrypoint is revoked."
+    full_description: >-
+      The scenario obtains at least one persistent credential. Stopping the workflow,
+      removing the action or revoking the job token does not invalidate these values,
+      so they must be rotated in the order given by the rotation plan. Survival is
+      conditional on the path having been exercised; the analysis does not prove that
+      any credential was actually read.
+    help: >-
+      Follow the rotation plan: contain the entrypoint, rotate survivors in generation
+      order, and verify with CloudTrail.
+    tags: [incident-response, revocation, rotation]
+    precision: medium
+    doc: docs/rules/NHB-SURV-001.md
+  - id: NHB-ROT-001
+    title: "Reachable credential sink without rotation"
+    base_severity: LOW
+    short_description: "A credential sink reachable from the scenario has no rotation configured."
+    full_description: >-
+      The sink is reachable and classified as credential-bearing, but no rotation
+      resource or interval was found. Without scheduled rotation the value remains
+      valid until someone rotates it manually, so record the manual rotation in the
+      response plan.
+    help: >-
+      Enable automatic rotation for the secret, or document the manual rotation step.
+    tags: [rotation, secrets]
+    precision: high
+    doc: docs/rules/NHB-ROT-001.md
+  - id: NHB-ROT-002
+    title: "Role can modify a reachable sink"
+    base_severity: MEDIUM
+    short_description: "A role in the scenario can write or rotate a credential sink and thereby defeat a later rotation."
+    full_description: >-
+      A role reachable from the entrypoint is allowed to modify a credential sink
+      (for example secretsmanager:PutSecretValue or ssm:PutParameter). An attacker who
+      holds that role can re-write a freshly rotated value, so the affected credentials
+      must be treated as a cycle in the rotation plan.
+    help: >-
+      Remove write access from the federated role; use separate roles for read and
+      rotation, and rotate the modifying role before dependent credentials.
+    tags: [rotation, aws, iam]
+    precision: high
+    doc: docs/rules/NHB-ROT-002.md

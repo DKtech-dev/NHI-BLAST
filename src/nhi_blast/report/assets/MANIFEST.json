@@ -1,0 +1,26 @@
+{
+  "format": "nhi-blast-assets/1",
+  "assets": [
+    {
+      "name": "cytoscape.min.js",
+      "version": "3.30.4",
+      "sha256": "1bb5340e549511e111b31e5684872c949ad33d40ea5dba0ad8e7d90c62c7b3b9",
+      "license": "MIT",
+      "source_url": "https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"
+    },
+    {
+      "name": "dagre.min.js",
+      "version": "0.8.5",
+      "sha256": "62eb9787ccfdbdf4148d4d99d31dbf9ee4770eafee81e637d759b52aac22cd51",
+      "license": "MIT",
+      "source_url": "https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"
+    },
+    {
+      "name": "cytoscape-dagre.js",
+      "version": "2.5.0",
+      "sha256": "bf70fe402991dcbff33e05a7e4a5271c78020bb75e85d1c80ab7538e4157112e",
+      "license": "MIT",
+      "source_url": "https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"
+    }
+  ]
+}

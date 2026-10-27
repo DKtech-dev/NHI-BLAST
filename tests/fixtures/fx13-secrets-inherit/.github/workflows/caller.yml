@@ -1,0 +1,30 @@
+name: Release caller
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  call:
+    uses: ./.github/workflows/reusable.yml
+    secrets: inherit
+
+  mint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+      - uses: acme-org/shared-setup@v2
+      - name: Inspect secrets context
+        env:
+          ALL_SECRETS: ${{ toJSON(secrets) }}
+        run: echo "secrets context withheld"
+      - uses: aws-actions/configure-aws-credentials@abcdef0123456789abcdef0123456789abcdef02
+        with:
+          role-to-assume: arn:aws:iam::111122223333:role/inherit-ci
+          aws-region: us-east-1

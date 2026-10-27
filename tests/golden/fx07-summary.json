@@ -1,0 +1,85 @@
+{
+  "diagnostics": [],
+  "finding_ids": [
+    "NHB-OIDC-002-ebd9705d",
+    "NHB-SURV-001-4b5ea811",
+    "NHB-GHA-001-089a8486",
+    "NHB-OIDC-005-5cfb5d56",
+    "NHB-ROT-001-2bef5238",
+    "NHB-ROT-001-470989f8",
+    "NHB-ROT-001-be3e6d21"
+  ],
+  "partition": {
+    "E": [
+      {
+        "label": "STS session for deploy-prod",
+        "ttl_seconds": 3600
+      },
+      {
+        "label": "STS session for legacy-ci",
+        "ttl_seconds": 3600
+      }
+    ],
+    "R": [
+      "GITHUB_TOKEN",
+      "GITHUB_TOKEN",
+      "OIDC request token"
+    ],
+    "Z": [
+      {
+        "criticality": 100,
+        "depth": 0,
+        "label": "prod/db-master",
+        "survival_window": "until rotated"
+      },
+      {
+        "criticality": 70,
+        "depth": 0,
+        "label": "/prod/stripe/live_key",
+        "survival_window": "until rotated"
+      },
+      {
+        "criticality": 65,
+        "depth": 0,
+        "label": "/legacy/ci-token",
+        "survival_window": "until rotated"
+      },
+      {
+        "criticality": 55,
+        "depth": 0,
+        "label": "prod/app-config",
+        "survival_window": "up to 30 days"
+      },
+      {
+        "criticality": 40,
+        "depth": 0,
+        "label": "SLACK_WEBHOOK_URL",
+        "survival_window": "until rotated"
+      }
+    ]
+  },
+  "rotation": [
+    [
+      "prod/db-master"
+    ],
+    [
+      "/prod/stripe/live_key"
+    ],
+    [
+      "/legacy/ci-token"
+    ],
+    [
+      "prod/app-config"
+    ],
+    [
+      "SLACK_WEBHOOK_URL"
+    ]
+  ],
+  "schema": "nhi-blast-report/1.0",
+  "scope_and_limits": [
+    "Scope: 2 workflows, 2 jobs, 9 Terraform resources.",
+    "Not analysed: SCPs, environment protection, branch rules, live AWS state, job outputs and artifacts.",
+    "Limits: closure depth 3, graph node budget 500000, scenario time budget 60 s."
+  ],
+  "selector": "action:tj-actions/changed-files@v45"
+}

@@ -1,0 +1,32 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+permissions:
+  contents: read
+  # OIDC token so the deploy role can be assumed (spec 14.4 cites release.yml:9).
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: tj-actions/changed-files@v45
+      - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+      - uses: aws-actions/configure-aws-credentials@abcdef0123456789abcdef0123456789abcdef02
+        with:
+          role-to-assume: arn:aws:iam::111122223333:role/deploy-prod
+          aws-region: us-east-1
+          audience: sts.amazonaws.com
+      - name: Deploy application
+        run: |
+          ./scripts/deploy.sh
+          echo "deploy finished"
+
+      # Notify the release channel; the webhook URL is a repository secret.
+      - name: Notify Slack
+        if: always()
+        env:
+          CHANNEL: '#releases'
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: ./scripts/notify.sh

@@ -1,0 +1,19 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+      - uses: aws-actions/configure-aws-credentials@abcdef0123456789abcdef0123456789abcdef02
+        with:
+          role-to-assume: arn:aws:iam::111122223333:role/legacy-ci
+          aws-region: us-east-1

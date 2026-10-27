@@ -1,0 +1,7 @@
+name: Deep 4
+description: Fixture composite action depth-chain link 4 of 6.
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/deep-5
+

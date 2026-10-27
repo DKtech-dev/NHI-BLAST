@@ -1,0 +1,11 @@
+name: Unicode path fixture
+on:
+  push:
+    branches: [main]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Unicode file name
+        run: echo "this workflow file name contains non-ASCII characters"

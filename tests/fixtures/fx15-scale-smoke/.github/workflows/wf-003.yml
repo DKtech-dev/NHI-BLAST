@@ -1,0 +1,21 @@
+name: Scale workflow 003
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  build-003:
+    runs-on: ubuntu-latest
+    environment: scale-env-003
+    steps:
+      - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+      - uses: acme-scale/action-003-0@v1
+      - uses: acme-scale/action-003-1@v1
+      - uses: aws-actions/configure-aws-credentials@abcdef0123456789abcdef0123456789abcdef02
+        with:
+          role-to-assume: arn:aws:iam::111122223333:role/scale-role-003
+          aws-region: us-east-1
+      - name: Exercise the fixture
+        run: echo "scale fixture"

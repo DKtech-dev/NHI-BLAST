@@ -1,0 +1,22 @@
+# Valid GitHub Actions permission scopes (spec 7.4).
+source: "docs/SPEC.md section 7.4"
+source_url: "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions"
+verified_on: "2026-10-25"
+scopes:
+  - actions
+  - attestations
+  - checks
+  - contents
+  - deployments
+  - discussions
+  - environments
+  - id-token
+  - issues
+  - models
+  - packages
+  - pages
+  - pull-requests
+  - security-events
+  - statuses
+read_all: read
+write_all: write

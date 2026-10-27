@@ -1,0 +1,159 @@
+# Assumption and heuristic registry (spec 3.3).
+# Rendered in every report. "verify: true" marks a fact that could not be fully
+# confirmed from a primary source during specification research; it is treated as
+# ASSUMED evidence and must never be presented as a configuration fact.
+source: "docs/SPEC.md section 3.3"
+source_url: "https://docs.github.com/en/actions"
+verified_on: "2026-10-25"
+entries:
+  - id: A-STEP-SHARE
+    kind: assumption
+    statement: >-
+      All steps of a job, including third-party actions, share the runner process
+      space and environment, so a compromised action inherits what the job holds.
+    verify: false
+    impact: >-
+      Also used for remote composite actions whose nested steps cannot be read: the
+      job context is assumed to apply to them.
+  - id: A-RUNNER-SECRETS
+    kind: assumption
+    statement: >-
+      Only secrets referenced by expressions in the job are materialised in the
+      runner; secrets: inherit or toJSON(secrets) exposes every secret the repository
+      can see (set unknown).
+    verify: true
+    impact: >-
+      makes the wildcard credential edge UNKNOWN-class so it never contributes to R,
+      E or Z.
+  - id: A-OIDC-ENV
+    kind: assumption
+    statement: >-
+      With id-token: write, any step can request an OIDC token through the runner URL
+      and bearer environment variables.
+    verify: false
+    impact: a job grants its steps the ability to mint a token for every audience.
+  - id: A-DEFAULT-NO-IDTOKEN
+    kind: assumption
+    statement: >-
+      With no permissions block, id-token is not writable.
+    verify: true
+    impact: default-permission jobs never receive CAN_MINT.
+  - id: A-FORK-NO-OIDC
+    kind: assumption
+    statement: >-
+      Fork pull_request runs get neither secrets nor OIDC tokens.
+    verify: true
+    impact: pull_request candidates are not produced for fork-style triggers.
+  - id: A-PRT-SUB
+    kind: assumption
+    statement: >-
+      pull_request_target runs mint a sub for the base-branch ref.
+    verify: true
+    impact: candidates for pull_request_target use the base branch ref.
+  - id: A-DISPATCH-ANYREF
+    kind: assumption
+    statement: >-
+      A user with write access can run workflow_dispatch or push on any branch or tag.
+    verify: false
+    impact: workflow_dispatch candidates cover all branches and tags.
+  - id: A-ENV-UNPROTECTED
+    kind: assumption
+    statement: >-
+      Environment protection and branch rules are unknown; anyone who can edit
+      workflows can satisfy an environment: claim.
+    verify: true
+    impact: environment-pinned trust policies are only as strong as protection rules.
+  - id: A-STS-TTL
+    kind: assumption
+    statement: >-
+      An AssumeRoleWithWebIdentity session lasts at most the role
+      max_session_duration (default 3600 s).
+    verify: false
+    impact: E-class credentials expire after at most ttl_seconds and are not
+      revoked from the GitHub side.
+  - id: A-NO-SCP
+    kind: assumption
+    statement: >-
+      SCPs, RCPs, session policies and permission boundaries that were not supplied
+      are not modelled; Allow results may over-approximate.
+    verify: false
+    impact: a permission boundary is only evaluated when supplied.
+  - id: A-SCOPE-INPUT
+    kind: assumption
+    statement: >-
+      Only resources present in the inputs exist; Resource '*' may cover resources
+      outside them (reported UNKNOWN_EXTERNAL).
+    verify: false
+    impact: wildcard resource statements can produce potential edges, never R/E/Z.
+  - id: A-DEFAULT-BRANCH
+    kind: assumption
+    statement: >-
+      Default branch is main unless configured.
+    verify: false
+    impact: schedule, workflow_run and repository_dispatch candidates use it.
+  - id: A-REPO-AGE
+    kind: assumption
+    statement: >-
+      Whether a repository mints classic or immutable subjects is unknown from files,
+      so both are evaluated.
+    verify: false
+    impact: every job emits candidates in both formats; repo_slug may be symbolic.
+  - id: A-REPO-WRITE
+    kind: assumption
+    statement: >-
+      A repository writer can edit a workflow on a branch, add id-token: write, and
+      request the default AWS audience; branch protection and actor permissions are
+      not present in repository files.
+    verify: true
+    impact: repo-write scenarios add ASSUMED role and session paths only where trust accepts the branch candidate.
+  - id: A-KMS-UNMODELLED
+    kind: assumption
+    statement: >-
+      KMS key policies are not modelled; a read that requires kms:Decrypt on a
+      customer-managed key without an explicit grant is CONDITIONAL.
+    verify: true
+    impact: KMS-dependent reads become ASSUMED rather than DERIVED.
+  - id: A-TRUST-UNMODELLED
+    kind: assumption
+    statement: >-
+      When a role trust policy cannot be resolved from the supplied files, the role
+      is still reported: trust matches are UNKNOWN-class potential paths, never
+      declared authority.
+    verify: true
+    impact: unresolved trust policies produce potential CAN_ASSUME edges only.
+  - id: A-POLICY-UNMODELLED
+    kind: assumption
+    statement: >-
+      When an attached managed policy or inline policy body is unavailable, a read or
+      write that would otherwise be absent becomes UNKNOWN-class potential access.
+    verify: true
+    impact: missing policy bodies never turn into a confident allow or deny.
+  - id: A-REUSABLE-CALLER
+    kind: assumption
+    statement: >-
+      When several jobs call the same reusable workflow with different permission
+      grants, the per-scope most permissive caller bound is used.
+    verify: false
+    impact: >-
+      the effective grant for the called job may over-approximate any one caller;
+      the disagreement is reported as a diagnostic.
+  - id: H-SECRET-NAME
+    kind: heuristic
+    statement: >-
+      Whether a secret or parameter holds a credential, and of what kind, is inferred
+      from resource type and name patterns.
+    verify: false
+    impact: STORES edges are ASSUMED and carry the heuristic id.
+  - id: H-ROT-WINDOW
+    kind: heuristic
+    statement: >-
+      A rotation resource means periodic rotation; the next rotation time is unknown,
+      so survival is reported as up to N days.
+    verify: false
+    impact: survival_window for rotating credentials is 'up to N days'.
+  - id: H-LITERAL
+    kind: heuristic
+    statement: >-
+      A small regex set recognises literal credentials in workflow values.
+    verify: false
+    impact: hits are reported as kind plus length; values are never stored.

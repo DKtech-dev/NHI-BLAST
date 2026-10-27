@@ -1,0 +1,8 @@
+repo_slug = "acme/shop"
+default_branch = "main"
+
+[bindings.credentials]
+# Fixture binding: a stored AWS access key authenticates as the named Terraform
+# role once the credential value is obtained. The two sinks form a cycle.
+"cycle/aws-access-key-a" = "aws_iam_role.role_b"
+"cycle/aws-access-key-b" = "aws_iam_role.role_a"

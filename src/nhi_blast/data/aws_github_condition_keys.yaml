@@ -1,0 +1,37 @@
+# AWS IAM condition keys accepted for the GitHub Actions OIDC provider.
+# Supported list from AWS condition-key documentation; required-control note from the
+# AWS IAM release notes of 2026-09-30. GitHub's own AWS guide still states custom
+# claims are unavailable -- the two documents disagree; NHI-Blast follows AWS.
+source: "docs/SPEC.md sections 1 (row 6) and 9.5"
+source_url: "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_iam-condition-keys.html"
+verified_on: "2026-10-25"
+provider_host: token.actions.githubusercontent.com
+supported:
+  - aud
+  - sub
+  - actor
+  - actor_id
+  - job_workflow_ref
+  - repository
+  - repository_id
+  - repository_owner_id
+  - workflow
+  - ref
+  - environment
+  - enterprise_id
+not_documented:
+  - repository_owner
+  - event_name
+  - head_ref
+  - base_ref
+  - workflow_ref
+  - runner_environment
+not_statically_fixable:
+  - actor
+  - actor_id
+  - repository_id
+  - repository_owner_id
+  - enterprise_id
+required_control_any_of:
+  - sub
+  - job_workflow_ref

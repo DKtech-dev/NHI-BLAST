@@ -1,0 +1,42 @@
+NHI-Blast
+Copyright (c) 2026 NHI-Blast Maintainers
+
+NHI-Blast is distributed under the MIT License. See LICENSE for the full text.
+
+Vendored third-party assets
+---------------------------
+
+The offline HTML report inlines the following MIT-licensed JavaScript libraries.
+They are shipped as part of the installed wheel and are not fetched at runtime.
+Versions, SHA-256 digests and upstream URLs are recorded in
+src/nhi_blast/report/assets/MANIFEST.json.
+
+  Cytoscape.js 3.30.4
+  Copyright (c) 2016-2024, The Cytoscape Consortium.
+  https://github.com/cytoscape/cytoscape.js
+  License: MIT (full text retained in the vendored file header)
+
+  dagre 0.8.5
+  https://github.com/dagrejs/dagre
+  License: MIT
+
+  cytoscape-dagre 2.5.0
+  https://github.com/cytoscape/cytoscape.js-dagre
+  License: MIT
+
+Platform data
+-------------
+
+The files under src/nhi_blast/data/ describe GitHub Actions and AWS IAM
+behaviour. Each file records its primary source URL and the date on which it was
+verified; see docs/data-provenance.md. Those documents remain the property of
+their respective publishers and are not redistributed here. The data files are
+this project's own summaries, not copies of vendor documentation.
+
+Runtime dependencies (installed separately, not vendored)
+---------------------------------------------------------
+
+pydantic, PyYAML, networkx, typer, click and their transitive dependencies are
+distributed under their own licences. Optional extras add rich (MIT) and
+python-hcl2 with lark and regex (MIT). None of these packages is bundled in the
+NHI-Blast wheel or sdist.

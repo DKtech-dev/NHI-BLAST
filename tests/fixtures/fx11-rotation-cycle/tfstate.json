@@ -1,0 +1,127 @@
+{
+  "format_version": "1.0",
+  "terraform_version": "1.9.8",
+  "values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_iam_openid_connect_provider.github",
+          "mode": "managed",
+          "type": "aws_iam_openid_connect_provider",
+          "name": "github",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "url": "https://token.actions.githubusercontent.com",
+            "client_id_list": [
+              "sts.amazonaws.com"
+            ],
+            "arn": "arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com"
+          }
+        },
+        {
+          "address": "aws_iam_role.external",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "external",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "fixture-external",
+            "arn": "arn:aws:iam::111122223333:role/fixture-external",
+            "max_session_duration": 3600,
+            "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"},\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"},\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/shop:ref:refs/heads/main\"}}}]}",
+            "inline_policy": [
+              {
+                "name": "read-key-a",
+                "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:GetSecretValue\"],\"Resource\":[\"arn:aws:secretsmanager:us-east-1:111122223333:secret:cycle/aws-access-key-a-??????\"]}]}"
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_iam_role.role_a",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "role_a",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "cycle-role-a",
+            "arn": "arn:aws:iam::111122223333:role/cycle-role-a",
+            "max_session_duration": 3600,
+            "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"},\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"},\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/shop:ref:refs/heads/release-*\"}}}]}",
+            "inline_policy": [
+              {
+                "name": "read-key-a",
+                "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:GetSecretValue\"],\"Resource\":[\"arn:aws:secretsmanager:us-east-1:111122223333:secret:cycle/aws-access-key-a-??????\"]}]}"
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_iam_role.role_b",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "role_b",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "cycle-role-b",
+            "arn": "arn:aws:iam::111122223333:role/cycle-role-b",
+            "max_session_duration": 3600,
+            "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"},\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"},\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/shop:ref:refs/heads/release-*\"}}}]}",
+            "inline_policy": [
+              {
+                "name": "read-key-b-and-leaf",
+                "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:GetSecretValue\",\"ssm:GetParameter\"],\"Resource\":[\"arn:aws:secretsmanager:us-east-1:111122223333:secret:cycle/aws-access-key-b-??????\",\"arn:aws:ssm:us-east-1:111122223333:parameter/cycle/api-token-leaf\"]}]}"
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.aws_access_key_a",
+          "mode": "managed",
+          "type": "aws_secretsmanager_secret",
+          "name": "aws_access_key_a",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "cycle/aws-access-key-a",
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:cycle/aws-access-key-a-??????",
+            "kms_key_id": "alias/aws/secretsmanager",
+            "rotation_enabled": false
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.aws_access_key_b",
+          "mode": "managed",
+          "type": "aws_secretsmanager_secret",
+          "name": "aws_access_key_b",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "cycle/aws-access-key-b",
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:cycle/aws-access-key-b-??????",
+            "kms_key_id": "alias/aws/secretsmanager",
+            "rotation_enabled": false
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.api_token_leaf",
+          "mode": "managed",
+          "type": "aws_ssm_parameter",
+          "name": "api_token_leaf",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "/cycle/api-token-leaf",
+            "type": "SecureString",
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/cycle/api-token-leaf",
+            "key_id": "alias/aws/ssm"
+          }
+        }
+      ]
+    }
+  }
+}

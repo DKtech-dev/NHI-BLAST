@@ -1,0 +1,33 @@
+name: "Hostile fixture </script><script>alert(1)</script>"
+on:
+  push:
+    branches: [main]
+name: "Duplicate name key (last value wins in PyYAML)"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    name: "Build &quot;everything&quot; 💥"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+      - name: "</script><script>alert(1)</script>"
+        env:
+          IMG: "<img src=x onerror=alert(1)>"
+          QUOTED: "&quot;quoted&quot;"
+          UNICODE: "💥 漢字 ‮RTL"
+          COERCED: "[object Object]"
+          FAKE_AWS_KEY: "AKIAFIXTURE000000000"
+        run: |
+          echo "payload: ${{ github.event.inputs.obj }}"
+      - name: "Secret name injection"
+        env:
+          WEIRD: ${{ secrets.SECRET_<img src=x onerror=alert(1)> }}
+        run: echo "never printed"
+      - uses: aws-actions/configure-aws-credentials@abcdef0123456789abcdef0123456789abcdef02
+        with:
+          role-to-assume: arn:aws:iam::111122223333:role/hostile-ci
+          aws-region: us-east-1

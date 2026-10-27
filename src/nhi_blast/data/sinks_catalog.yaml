@@ -1,0 +1,26 @@
+# Credential-store action catalog (spec 9.5).
+source: "docs/SPEC.md section 9.5"
+source_url: "https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_iam-permissions.html"
+verified_on: "2026-10-25"
+secretsmanager_secret:
+  value_read_actions:
+    - secretsmanager:GetSecretValue
+    - secretsmanager:BatchGetSecretValue
+  modify_actions:
+    - secretsmanager:PutSecretValue
+    - secretsmanager:UpdateSecret
+    - secretsmanager:RotateSecret
+  arn_pattern: "arn:aws:secretsmanager:{region}:{account}:secret:{name}-??????"
+  default_kms_alias: alias/aws/secretsmanager
+ssm_parameter:
+  value_read_actions:
+    - ssm:GetParameter
+    - ssm:GetParameters
+    - ssm:GetParametersByPath
+    - ssm:GetParameterHistory
+  modify_actions:
+    - ssm:PutParameter
+  arn_pattern: "arn:aws:ssm:{region}:{account}:parameter/{name_without_leading_slash}"
+  default_kms_alias: alias/aws/ssm
+  credential_bearing_types:
+    - SecureString

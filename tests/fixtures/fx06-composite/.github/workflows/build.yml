@@ -1,0 +1,28 @@
+name: Build
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+      - uses: ./.github/actions/setup
+      - name: Publish package
+        run: ./scripts/publish.sh
+
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: acme/shared-composites/.github/actions/publish@v2
+
+  cycle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/cycle-a
+
+  deep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/deep-1

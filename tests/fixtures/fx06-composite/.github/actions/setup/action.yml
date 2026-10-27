@@ -1,0 +1,9 @@
+name: Setup
+description: Install build tooling (fixture local composite action).
+runs:
+  using: composite
+  steps:
+    - name: Install tooling
+      shell: bash
+      run: ./scripts/install.sh
+    - uses: ./.github/actions/nested

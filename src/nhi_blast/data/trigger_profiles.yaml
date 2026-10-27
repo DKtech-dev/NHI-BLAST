@@ -1,0 +1,102 @@
+# Trigger profiles (spec 7.3): who can start the event, which ref the sub uses and
+# whether fork/PR code runs with credentials.
+source: "docs/SPEC.md section 7.3"
+source_url: "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows"
+verified_on: "2026-10-25"
+profiles:
+  push:
+    attacker: write_access
+    candidate: filters
+    fork_without_credentials: false
+    pr_code_untrusted: false
+    note: pushed commit; candidate refs follow branch and tag filters, otherwise all
+  pull_request:
+    attacker: any_contributor
+    candidate: pull_request
+    fork_without_credentials: true
+    pr_code_untrusted: false
+    note: same-repo PR runs get secrets and OIDC; fork runs get none
+  pull_request_target:
+    attacker: any_contributor
+    candidate: base_ref
+    fork_without_credentials: false
+    pr_code_untrusted: true
+    note: runs the base-branch workflow with secrets; PR code only if checked out
+  workflow_run:
+    attacker: fork_pr_chain
+    candidate: default_branch
+    fork_without_credentials: false
+    pr_code_untrusted: true
+    note: may be started by a fork PR workflow but runs the default-branch workflow
+  workflow_dispatch:
+    attacker: write_access
+    candidate: any_ref
+    fork_without_credentials: false
+    pr_code_untrusted: false
+    note: write access can choose any branch or tag
+  repository_dispatch:
+    attacker: repo_scope_token
+    candidate: default_branch
+    fork_without_credentials: false
+    pr_code_untrusted: false
+    note: token with repository scope triggers it
+  schedule:
+    attacker: none
+    candidate: default_branch
+    fork_without_credentials: false
+    pr_code_untrusted: false
+    note: cron only, default branch
+  issue_comment:
+    attacker: any_commenter
+    candidate: default_branch
+    fork_without_credentials: false
+    pr_code_untrusted: true
+    note: any user who can comment can start it; PR code only if checked out
+  issues:
+    attacker: any_user
+    candidate: default_branch
+    fork_without_credentials: false
+    pr_code_untrusted: false
+    note: any user who can open an issue
+  discussion:
+    attacker: any_user
+    candidate: default_branch
+    fork_without_credentials: false
+    pr_code_untrusted: false
+    note: any user who can start a discussion
+  discussion_comment:
+    attacker: any_commenter
+    candidate: default_branch
+    fork_without_credentials: false
+    pr_code_untrusted: true
+    note: any user who can comment
+  release:
+    attacker: write_access
+    candidate: tags
+    fork_without_credentials: false
+    pr_code_untrusted: false
+    note: write access can publish a release for a tag
+  create:
+    attacker: write_access
+    candidate: tags
+    fork_without_credentials: false
+    pr_code_untrusted: false
+    note: write access can create branches or tags
+  delete:
+    attacker: write_access
+    candidate: tags
+    fork_without_credentials: false
+    pr_code_untrusted: false
+    note: write access can delete branches or tags
+  merge_group:
+    attacker: any_contributor
+    candidate: merge_group
+    fork_without_credentials: true
+    pr_code_untrusted: false
+    note: merge queue runs for pull requests
+  workflow_call:
+    attacker: caller
+    candidate: caller
+    fork_without_credentials: false
+    pr_code_untrusted: false
+    note: candidates are the union of the calling job candidates

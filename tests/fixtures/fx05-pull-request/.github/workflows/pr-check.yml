@@ -1,0 +1,12 @@
+name: PR checks
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+      - name: Run tests
+        run: ./scripts/run-tests.sh

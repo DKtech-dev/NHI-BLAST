@@ -1,0 +1,467 @@
+{
+  "format_version": "1.0",
+  "lineage": "0f0f0f0f-1111-2222-3333-444444444444",
+  "outputs": {},
+  "resources": [],
+  "serial": 1,
+  "terraform_version": "1.9.8",
+  "values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_iam_openid_connect_provider.github",
+          "mode": "managed",
+          "name": "github",
+          "type": "aws_iam_openid_connect_provider",
+          "values": {
+            "client_id_list": [
+              "sts.amazonaws.com"
+            ],
+            "url": "https://token.actions.githubusercontent.com"
+          }
+        },
+        {
+          "address": "aws_iam_role.role_000",
+          "mode": "managed",
+          "name": "role_000",
+          "type": "aws_iam_role",
+          "values": {
+            "arn": "arn:aws:iam::111122223333:role/scale-role-000",
+            "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"},\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/scale:environment:scale-env-000\"}},\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"}}],\"Version\":\"2012-10-17\"}",
+            "max_session_duration": 3600,
+            "name": "scale-role-000"
+          }
+        },
+        {
+          "address": "aws_iam_role_policy.policy_000",
+          "mode": "managed",
+          "name": "policy_000",
+          "type": "aws_iam_role_policy",
+          "values": {
+            "name": "scale-policy-000",
+            "policy": "{\"Statement\":[{\"Action\":[\"ssm:GetParameter\",\"ssm:GetParameters\",\"secretsmanager:GetSecretValue\"],\"Effect\":\"Allow\",\"Resource\":[\"arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-000/token\",\"arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-000/live-key\",\"arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-000/webhook-url\",\"arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-000/db-master-*\",\"arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-000/app-config-*\"]}],\"Version\":\"2012-10-17\"}",
+            "role": "aws_iam_role.role_000.id"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.param_000_token",
+          "mode": "managed",
+          "name": "param_000_token",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-000/token",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/param-000/token",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.param_000_live_key",
+          "mode": "managed",
+          "name": "param_000_live_key",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-000/live-key",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/param-000/live-key",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.param_000_webhook",
+          "mode": "managed",
+          "name": "param_000_webhook",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-000/webhook-url",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/param-000/webhook-url",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.db_master_000",
+          "mode": "managed",
+          "name": "db_master_000",
+          "type": "aws_secretsmanager_secret",
+          "values": {
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-000/db-master-a1b2c3",
+            "name": "scale/secret-000/db-master"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.app_config_000",
+          "mode": "managed",
+          "name": "app_config_000",
+          "type": "aws_secretsmanager_secret",
+          "values": {
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-000/app-config-d4e5f6",
+            "name": "scale/secret-000/app-config"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret_version.app_config_000",
+          "mode": "managed",
+          "name": "app_config_000",
+          "type": "aws_secretsmanager_secret_version",
+          "values": {
+            "secret_id": "scale/secret-000/app-config"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret_rotation.app_config_000",
+          "mode": "managed",
+          "name": "app_config_000",
+          "type": "aws_secretsmanager_secret_rotation",
+          "values": {
+            "rotation_rules": [
+              {
+                "automatically_after_days": 30
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_iam_role.role_001",
+          "mode": "managed",
+          "name": "role_001",
+          "type": "aws_iam_role",
+          "values": {
+            "arn": "arn:aws:iam::111122223333:role/scale-role-001",
+            "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"},\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/scale:environment:scale-env-001\"}},\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"}}],\"Version\":\"2012-10-17\"}",
+            "max_session_duration": 3600,
+            "name": "scale-role-001"
+          }
+        },
+        {
+          "address": "aws_iam_role_policy.policy_001",
+          "mode": "managed",
+          "name": "policy_001",
+          "type": "aws_iam_role_policy",
+          "values": {
+            "name": "scale-policy-001",
+            "policy": "{\"Statement\":[{\"Action\":[\"ssm:GetParameter\",\"ssm:GetParameters\",\"secretsmanager:GetSecretValue\"],\"Effect\":\"Allow\",\"Resource\":[\"arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-001/token\",\"arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-001/live-key\",\"arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-001/webhook-url\",\"arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-001/db-master-*\",\"arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-001/app-config-*\"]}],\"Version\":\"2012-10-17\"}",
+            "role": "aws_iam_role.role_001.id"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.param_001_token",
+          "mode": "managed",
+          "name": "param_001_token",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-001/token",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/param-001/token",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.param_001_live_key",
+          "mode": "managed",
+          "name": "param_001_live_key",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-001/live-key",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/param-001/live-key",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.param_001_webhook",
+          "mode": "managed",
+          "name": "param_001_webhook",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-001/webhook-url",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/param-001/webhook-url",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.db_master_001",
+          "mode": "managed",
+          "name": "db_master_001",
+          "type": "aws_secretsmanager_secret",
+          "values": {
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-001/db-master-a1b2c3",
+            "name": "scale/secret-001/db-master"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.app_config_001",
+          "mode": "managed",
+          "name": "app_config_001",
+          "type": "aws_secretsmanager_secret",
+          "values": {
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-001/app-config-d4e5f6",
+            "name": "scale/secret-001/app-config"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret_version.app_config_001",
+          "mode": "managed",
+          "name": "app_config_001",
+          "type": "aws_secretsmanager_secret_version",
+          "values": {
+            "secret_id": "scale/secret-001/app-config"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret_rotation.app_config_001",
+          "mode": "managed",
+          "name": "app_config_001",
+          "type": "aws_secretsmanager_secret_rotation",
+          "values": {
+            "rotation_rules": [
+              {
+                "automatically_after_days": 30
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_iam_role.role_002",
+          "mode": "managed",
+          "name": "role_002",
+          "type": "aws_iam_role",
+          "values": {
+            "arn": "arn:aws:iam::111122223333:role/scale-role-002",
+            "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"},\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/scale:environment:scale-env-002\"}},\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"}}],\"Version\":\"2012-10-17\"}",
+            "max_session_duration": 3600,
+            "name": "scale-role-002"
+          }
+        },
+        {
+          "address": "aws_iam_role_policy.policy_002",
+          "mode": "managed",
+          "name": "policy_002",
+          "type": "aws_iam_role_policy",
+          "values": {
+            "name": "scale-policy-002",
+            "policy": "{\"Statement\":[{\"Action\":[\"ssm:GetParameter\",\"ssm:GetParameters\",\"secretsmanager:GetSecretValue\"],\"Effect\":\"Allow\",\"Resource\":[\"arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-002/token\",\"arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-002/live-key\",\"arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-002/webhook-url\",\"arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-002/db-master-*\",\"arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-002/app-config-*\"]}],\"Version\":\"2012-10-17\"}",
+            "role": "aws_iam_role.role_002.id"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.param_002_token",
+          "mode": "managed",
+          "name": "param_002_token",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-002/token",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/param-002/token",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.param_002_live_key",
+          "mode": "managed",
+          "name": "param_002_live_key",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-002/live-key",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/param-002/live-key",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.param_002_webhook",
+          "mode": "managed",
+          "name": "param_002_webhook",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-002/webhook-url",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/param-002/webhook-url",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.db_master_002",
+          "mode": "managed",
+          "name": "db_master_002",
+          "type": "aws_secretsmanager_secret",
+          "values": {
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-002/db-master-a1b2c3",
+            "name": "scale/secret-002/db-master"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.app_config_002",
+          "mode": "managed",
+          "name": "app_config_002",
+          "type": "aws_secretsmanager_secret",
+          "values": {
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-002/app-config-d4e5f6",
+            "name": "scale/secret-002/app-config"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret_version.app_config_002",
+          "mode": "managed",
+          "name": "app_config_002",
+          "type": "aws_secretsmanager_secret_version",
+          "values": {
+            "secret_id": "scale/secret-002/app-config"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret_rotation.app_config_002",
+          "mode": "managed",
+          "name": "app_config_002",
+          "type": "aws_secretsmanager_secret_rotation",
+          "values": {
+            "rotation_rules": [
+              {
+                "automatically_after_days": 30
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_iam_role.role_003",
+          "mode": "managed",
+          "name": "role_003",
+          "type": "aws_iam_role",
+          "values": {
+            "arn": "arn:aws:iam::111122223333:role/scale-role-003",
+            "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"},\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/scale:environment:scale-env-003\"}},\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"}}],\"Version\":\"2012-10-17\"}",
+            "max_session_duration": 3600,
+            "name": "scale-role-003"
+          }
+        },
+        {
+          "address": "aws_iam_role_policy.policy_003",
+          "mode": "managed",
+          "name": "policy_003",
+          "type": "aws_iam_role_policy",
+          "values": {
+            "name": "scale-policy-003",
+            "policy": "{\"Statement\":[{\"Action\":[\"ssm:GetParameter\",\"ssm:GetParameters\",\"secretsmanager:GetSecretValue\"],\"Effect\":\"Allow\",\"Resource\":[\"arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-003/token\",\"arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-003/live-key\",\"arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-003/webhook-url\",\"arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-003/db-master-*\",\"arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-003/app-config-*\"]}],\"Version\":\"2012-10-17\"}",
+            "role": "aws_iam_role.role_003.id"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.param_003_token",
+          "mode": "managed",
+          "name": "param_003_token",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-003/token",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/param-003/token",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.param_003_live_key",
+          "mode": "managed",
+          "name": "param_003_live_key",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-003/live-key",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/param-003/live-key",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.param_003_webhook",
+          "mode": "managed",
+          "name": "param_003_webhook",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/param-003/webhook-url",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/param-003/webhook-url",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.db_master_003",
+          "mode": "managed",
+          "name": "db_master_003",
+          "type": "aws_secretsmanager_secret",
+          "values": {
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-003/db-master-a1b2c3",
+            "name": "scale/secret-003/db-master"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.app_config_003",
+          "mode": "managed",
+          "name": "app_config_003",
+          "type": "aws_secretsmanager_secret",
+          "values": {
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:scale/secret-003/app-config-d4e5f6",
+            "name": "scale/secret-003/app-config"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret_version.app_config_003",
+          "mode": "managed",
+          "name": "app_config_003",
+          "type": "aws_secretsmanager_secret_version",
+          "values": {
+            "secret_id": "scale/secret-003/app-config"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret_rotation.app_config_003",
+          "mode": "managed",
+          "name": "app_config_003",
+          "type": "aws_secretsmanager_secret_rotation",
+          "values": {
+            "rotation_rules": [
+              {
+                "automatically_after_days": 30
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.extra_0000",
+          "mode": "managed",
+          "name": "extra_0000",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/extra/0000",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/extra/0000",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.extra_0001",
+          "mode": "managed",
+          "name": "extra_0001",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/extra/0001",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/extra/0001",
+            "type": "SecureString"
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.extra_0002",
+          "mode": "managed",
+          "name": "extra_0002",
+          "type": "aws_ssm_parameter",
+          "values": {
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/scale/extra/0002",
+            "key_id": "alias/aws/ssm",
+            "name": "/scale/extra/0002",
+            "type": "SecureString"
+          }
+        }
+      ]
+    }
+  },
+  "version": 4
+}

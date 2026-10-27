@@ -1,0 +1,48 @@
+# Suggested human actions per credential kind (spec 12.5). Text only; the tool
+# never executes these.
+source: "docs/SPEC.md sections 12.5 and 12.6"
+source_url: "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html"
+verified_on: "2026-10-25"
+hints:
+  DATABASE_PASSWORD: >-
+    Rotate the database master password, update the credential store, then terminate
+    existing database sessions so the old password cannot be reused.
+  AWS_ACCESS_KEY: >-
+    Deactivate the access key first, create its replacement, update every consumer,
+    then delete the old key and review CloudTrail for its use.
+  PRIVATE_KEY: >-
+    Revoke the key at the platform that trusts it (deploy key, SSH CA, signing
+    service), issue a replacement and redeploy the consumer.
+  API_KEY: >-
+    Revoke the key in the provider console, issue a replacement, update the store and
+    redeploy consumers; review provider audit logs for use of the old key.
+  API_TOKEN: >-
+    Revoke the token at the issuer, issue a replacement with the minimum scope,
+    update the store and redeploy consumers.
+  GENERIC_SECRET: >-
+    Rotate the value in the credential store, update every consumer, and confirm the
+    previous value is no longer accepted by the downstream system.
+  WEBHOOK_URL: >-
+    Regenerate the webhook endpoint/secret in the provider, update the workflow
+    secret and remove the old endpoint.
+  GITHUB_TOKEN: >-
+    No action beyond ending the workflow run: GITHUB_TOKEN is job-bound.
+  STS_SESSION: >-
+    Sessions cannot be revoked directly; attach an explicit deny for the role keyed
+    on token issue time until the maximum session duration has passed (VERIFY at the
+    AWS console), then rotate the role trust.
+  OIDC_REQUEST_TOKEN: >-
+    No rotation needed: the OIDC request token expires with the job.
+  OIDC_JWT: >-
+    No rotation needed: the OIDC JWT is short-lived and cannot be revoked.
+verify_actions:
+  default: >-
+    Search CloudTrail for AssumeRoleWithWebIdentity on the E-set roles and for
+    GetSecretValue or GetParameter on the Z sinks inside the exposure window.
+notes:
+  rotating: >-
+    Periodic rotation is configured; confirm the scheduled rotation ran after the
+    containment step, otherwise rotate manually now.
+  frozen: >-
+    This credential belongs to a dependency cycle. Freeze the principals involved,
+    rotate every member of the batch, then re-enable them.

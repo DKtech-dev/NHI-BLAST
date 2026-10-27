@@ -1,0 +1,144 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nhi-blast"
+version = "0.1.0"
+description = "Offline, evidence-labelled analysis of GitHub Actions to AWS OIDC authority and revocation survival"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "NHI-Blast Maintainers" }]
+keywords = ["security", "github-actions", "aws", "oidc", "iam", "incident-response"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Information Technology",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Security",
+]
+# Typer 0.20 still imports deprecated click.utils shims; Click 8.5 warns on import
+# and this project treats warnings as errors in tests.
+dependencies = [
+  "pydantic>=2.9,<3",
+  "PyYAML>=6.0.2,<7",
+  "networkx>=3.3,<4",
+  "typer>=0.15,<0.21",
+  "click>=8.0,<8.5",
+]
+
+[project.optional-dependencies]
+rich = ["rich>=13.9,<15"]
+hcl = ["python-hcl2>=7.0,<8"]
+dev = [
+  "pytest>=9.0.3,<10",
+  "pytest-cov>=7,<8",
+  "coverage>=7.10.2,<7.17",
+  "hypothesis>=6.115,<7",
+  "ruff>=0.7,<0.16",
+  "mypy>=1.13,<2",
+  "jsonschema>=4.23,<5",
+  "types-PyYAML>=6.0.12",
+  "hatchling>=1.27",
+]
+
+[project.scripts]
+nhi-blast = "nhi_blast.cli.app:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nhi_blast"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src",
+  "tests",
+  "docs",
+  "scripts",
+  "README.md",
+  "LICENSE",
+  "NOTICE",
+  "SECURITY.md",
+  "CONTRIBUTING.md",
+  "CHANGELOG.md",
+  "requirements.lock",
+  "requirements-dev.lock",
+]
+exclude = [
+  ".buildcheck",
+  "docs/research/_cache",
+  "tests/fixtures/_validate_tmp.py",
+  "**/__pycache__",
+  "**/*.pyc",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+# Fixtures are scanned data, not project source; a stray helper script there is
+# not part of the tool and must not influence lint results.
+extend-exclude = ["tests/fixtures"]
+
+[tool.ruff.lint]
+select = [
+  "E", "W", "F", "I", "N", "UP", "B", "A", "C4", "DTZ", "T20", "SIM",
+  "RUF", "S", "PT", "ARG", "PL", "TRY", "EM", "LOG", "G",
+]
+ignore = [
+  "TRY003",   # long exception messages are fine at boundaries
+  "TRY300",   # try/else is not always clearer
+  "PLR0913",  # pydantic/dataclass-heavy signatures
+  "PLR2004",  # magic values in tests are explicit assertions
+  "S101",     # asserts in tests
+]
+
+[tool.ruff.lint.pylint]
+# Parsers are flat dispatch trees over hostile input shapes; the defaults count
+# every shape check as a branch. The limits below still reject genuinely
+# unwieldy functions while keeping one-return-per-shape parsers readable.
+max-returns = 14
+max-branches = 20
+max-statements = 70
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "PLR0915", "PLR0912", "PLR0911"]
+"scripts/**" = ["T201"]  # command-line helpers; printing is their interface
+"src/nhi_blast/report/html.py" = ["S", "E501"]  # embedded CSS/JS templates, not project code
+"src/nhi_blast/core/models.py" = ["S105"]  # credential-kind enum names, not values
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+show_error_codes = true
+exclude = ["tests/fixtures"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["networkx.*", "yaml.*", "hcl2.*", "typer.*", "rich.*", "jsonschema.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+  "slow: performance or large-input tests",
+  "security: adversarial and hostile-input tests",
+  "golden: golden-output regression tests",
+]
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["nhi_blast"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "raise NotImplementedError"]

@@ -1,0 +1,10 @@
+name: Nested setup
+description: Nested local composite action; the secret expression is inherited by the calling job.
+runs:
+  using: composite
+  steps:
+    - name: Configure npm
+      shell: bash
+      env:
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      run: echo "configuring npm (token value not printed)"

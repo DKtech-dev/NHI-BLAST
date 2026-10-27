@@ -1,0 +1,122 @@
+NHI-Blast 0.1.0
+Report schema: nhi-blast-report/1.0
+
+Parse
+  Repository: acme/shop [declared .git/config]
+  Inputs digest: bfa811ede0aad9775e04ad99d168bf609dc067615684c827fe775b1145b6fe1a
+  Input: .git/config (git_config, sha256 77cc71bd1e5e2562) [declared .git/config]
+  Input: .github/workflows/ci.yml (workflow, sha256 0c467c595d850fae) [declared .github/workflows/ci.yml]
+  Input: .github/workflows/release.yml (workflow, sha256 069825a7256cf1dc) [declared .github/workflows/release.yml]
+  Input: tfstate.json (tf_json, sha256 c80bd3391ff8f524) [declared tfstate.json]
+  Scope: 2 workflows, 2 jobs, 9 Terraform resources.
+  Not analysed: SCPs, environment protection, branch rules, live AWS state, job outputs and artifacts.
+  Limits: closure depth 3, graph node budget 500000, scenario time budget 60 s.
+  Data: assumptions.yaml (verified 2026-10-25)
+  Data: aws_github_condition_keys.yaml (verified 2026-10-25)
+  Data: credential_heuristics.yaml (verified 2026-10-25)
+  Data: permission_scopes.yaml (verified 2026-10-25)
+  Data: rotation_hints.yaml (verified 2026-10-25)
+  Data: rules.yaml (verified 2026-10-25)
+  Data: sinks_catalog.yaml (verified 2026-10-25)
+  Data: trigger_profiles.yaml (verified 2026-10-25)
+
+Trust audit
+  AWS roles: 2
+    arn:aws:iam::111122223333:role/deploy-prod (aws:role:arn:aws:iam::111122223333:role/deploy-prod) [declared tfstate.json:23]
+    arn:aws:iam::111122223333:role/legacy-ci (aws:role:arn:aws:iam::111122223333:role/legacy-ci) [declared tfstate.json:43]
+  OIDC providers: 1
+    token.actions.githubusercontent.com (aws:oidc:token.actions.githubusercontent.com) [declared tfstate.json:8]
+  Trust findings: 2
+
+Scenario
+  Selector: action:tj-actions/changed-files@v45
+    start test (job:.github/workflows/ci.yml#test) [declared .github/workflows/ci.yml:8]
+    start publish (job:.github/workflows/release.yml#publish) [declared .github/workflows/release.yml:12]
+  Potential edges (UNKNOWN authority): 0
+  Note: Periodic rotation is configured; confirm the scheduled rotation ran after the containment step, otherwise rotate manually now.
+
+Survival
+  action:tj-actions/changed-files@v45
+  R (ends with entrypoint): 3
+  E (expires on its own): 2
+  Z (survives): 5
+    R GITHUB_TOKEN (cred:job:.github/workflows/ci.yml#test:GITHUB_TOKEN) [declared .github/workflows/ci.yml:8]
+    R GITHUB_TOKEN (cred:job:.github/workflows/release.yml#publish:GITHUB_TOKEN) [declared .github/workflows/release.yml:12]
+    R OIDC request token (cred:job:.github/workflows/release.yml#publish:OIDC_REQUEST_TOKEN) [declared .github/workflows/release.yml:7]
+    E STS session for deploy-prod (cred:oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/deploy-prod) [declared tfstate.json:23]; ttl 3600s
+    E STS session for legacy-ci (cred:oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/legacy-ci) [declared tfstate.json:43]; ttl 3600s
+    Z prod/db-master (cred:aws:secret:prod/db-master:stored) [declared tfstate.json:77]; depth 0; until rotated; criticality 100
+    Z /prod/stripe/live_key (cred:aws:ssm:/prod/stripe/live_key:stored) [declared tfstate.json:125]; depth 0; until rotated; criticality 70
+    Z /legacy/ci-token (cred:aws:ssm:/legacy/ci-token:stored) [declared tfstate.json:139]; depth 0; until rotated; criticality 65
+    Z prod/app-config (cred:aws:secret:prod/app-config:stored) [declared tfstate.json:107]; depth 0; up to 30 days; criticality 55
+    Z SLACK_WEBHOOK_URL (cred:job:.github/workflows/release.yml#publish:SLACK_WEBHOOK_URL) [declared .github/workflows/release.yml:12]; depth 0; until rotated; criticality 40
+
+Rotation plan
+  action:tj-actions/changed-files@v45 - Containment
+  step 0:
+    Pin the action to a verified full commit SHA or remove it. [declared .github/workflows/ci.yml:8]
+    Disable the affected workflow(s) and review run logs for the exposure window. [declared .github/workflows/ci.yml:8]
+    Revoke active sessions for the affected roles with a deny keyed on token issue time (VERIFY). [declared .github/workflows/ci.yml:8]
+    Tighten the affected role trust policies before restoring federation. [declared .github/workflows/ci.yml:8]
+  action:tj-actions/changed-files@v45 - Rotation
+  step 1 generation 0:
+    prod/db-master: Rotate the database master password, update the credential store, then terminate existing database sessions so the old password cannot be reused. [declared tfstate.json:77]
+    prod/db-master (cred:aws:secret:prod/db-master:stored) [declared tfstate.json:77]
+  step 2 generation 0:
+    /prod/stripe/live_key: Revoke the key in the provider console, issue a replacement, update the store and redeploy consumers; review provider audit logs for use of the old key. [declared tfstate.json:125]
+    /prod/stripe/live_key (cred:aws:ssm:/prod/stripe/live_key:stored) [declared tfstate.json:125]
+  step 3 generation 0:
+    /legacy/ci-token: Revoke the token at the issuer, issue a replacement with the minimum scope, update the store and redeploy consumers. [declared tfstate.json:139]
+    /legacy/ci-token (cred:aws:ssm:/legacy/ci-token:stored) [declared tfstate.json:139]
+  step 4 generation 0:
+    prod/app-config: Rotate the value in the credential store, update every consumer, and confirm the previous value is no longer accepted by the downstream system. [declared tfstate.json:107]
+    prod/app-config (cred:aws:secret:prod/app-config:stored) [declared tfstate.json:107]
+  step 5 generation 0:
+    SLACK_WEBHOOK_URL: Regenerate the webhook endpoint/secret in the provider, update the workflow secret and remove the old endpoint. [declared .github/workflows/release.yml:12]
+    SLACK_WEBHOOK_URL (cred:job:.github/workflows/release.yml#publish:SLACK_WEBHOOK_URL) [declared .github/workflows/release.yml:12]
+  action:tj-actions/changed-files@v45 - Verify
+  step 6:
+    VERIFY: Search CloudTrail for AssumeRoleWithWebIdentity on the E-set roles and for GetSecretValue or GetParameter on the Z sinks inside the exposure window. [declared .github/workflows/release.yml:12]
+  Note: Periodic rotation is configured; confirm the scheduled rotation ran after the containment step, otherwise rotate manually now.
+
+Findings
+  Total: 7
+  [CRITICAL] NHB-OIDC-002 NHB-OIDC-002-ebd9705d: Organisation-wide or global wildcard in sub [declared tfstate.json:43]
+    Trust policy for arn:aws:iam::111122223333:role/legacy-ci accepts organisation-wide or global subjects. Evidence class: derived. [declared tfstate.json:43]
+    scenario: action:tj-actions/changed-files@v45
+    path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/legacy-ci
+  [CRITICAL] NHB-SURV-001 NHB-SURV-001-4b5ea811: Credentials survive revocation of the entrypoint [declared .github/workflows/release.yml:7]
+    5 persistent credential(s) survive revocation of the entrypoint if the authority path was exercised. Evidence class: assumed. Assumptions: H-SECRET-NAME. [declared .github/workflows/release.yml:7]
+    scenario: action:tj-actions/changed-files@v45
+    path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/deploy-prod -> aws:secret:prod/db-master -> cred:aws:secret:prod/db-master:stored
+  [HIGH] NHB-GHA-001 NHB-GHA-001-089a8486: Mutable third-party action in a job that holds secrets or OIDC [declared .github/workflows/ci.yml:11]
+    Mutable third-party action tj-actions/changed-files@v45 runs in privileged job publish. Evidence class: declared. [declared .github/workflows/ci.yml:11]
+    scenario: action:tj-actions/changed-files@v45
+    path: job:.github/workflows/release.yml#publish -> action:tj-actions/changed-files@v45
+  [LOW] NHB-OIDC-005 NHB-OIDC-005-5cfb5d56: Subject format drift [declared tfstate.json:43]
+    Trust policy for arn:aws:iam::111122223333:role/legacy-ci matches only the classic subject format. Evidence class: derived. [declared tfstate.json:43]
+    scenario: action:tj-actions/changed-files@v45
+    path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/legacy-ci
+  [LOW] NHB-ROT-001 NHB-ROT-001-2bef5238: Reachable credential sink without rotation [declared .github/workflows/release.yml:7]
+    Reachable credential sink /prod/stripe/live_key has no rotation configured. Evidence class: derived. [declared .github/workflows/release.yml:7]
+    scenario: action:tj-actions/changed-files@v45
+    path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/deploy-prod -> aws:ssm:/prod/stripe/live_key
+  [LOW] NHB-ROT-001 NHB-ROT-001-470989f8: Reachable credential sink without rotation [declared .github/workflows/release.yml:7]
+    Reachable credential sink prod/db-master has no rotation configured. Evidence class: derived. [declared .github/workflows/release.yml:7]
+    scenario: action:tj-actions/changed-files@v45
+    path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/deploy-prod -> aws:secret:prod/db-master
+  [LOW] NHB-ROT-001 NHB-ROT-001-be3e6d21: Reachable credential sink without rotation [declared .github/workflows/release.yml:7]
+    Reachable credential sink /legacy/ci-token has no rotation configured. Evidence class: derived. [declared .github/workflows/release.yml:7]
+    scenario: action:tj-actions/changed-files@v45
+    path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/legacy-ci -> aws:ssm:/legacy/ci-token
+
+Assumptions and unknowns
+  [ASSUMED] A-NO-SCP: SCPs, RCPs, session policies and permission boundaries that were not supplied are not modelled; Allow results may over-approximate.
+  [ASSUMED] A-OIDC-ENV: With id-token: write, any step can request an OIDC token through the runner URL and bearer environment variables.
+  [ASSUMED] A-REPO-AGE: Whether a repository mints classic or immutable subjects is unknown from files, so both are evaluated.
+  [ASSUMED] A-STS-TTL: An AssumeRoleWithWebIdentity session lasts at most the role max_session_duration (default 3600 s).
+  [ASSUMED] H-ROT-WINDOW: A rotation resource means periodic rotation; the next rotation time is unknown, so survival is reported as up to N days.
+  [ASSUMED] H-SECRET-NAME: Whether a secret or parameter holds a credential, and of what kind, is inferred from resource type and name patterns.
+
+Diagnostics
+  Total: 0

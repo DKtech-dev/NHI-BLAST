@@ -1,0 +1,196 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.9.8",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_iam_openid_connect_provider.github",
+          "mode": "managed",
+          "type": "aws_iam_openid_connect_provider",
+          "name": "github",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "url": "https://token.actions.githubusercontent.com",
+            "client_id_list": [
+              "sts.amazonaws.com"
+            ],
+            "arn": "arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com"
+          }
+        },
+        {
+          "address": "aws_iam_role.unknown_trust",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "unknown_trust",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "unknown-trust",
+            "arn": "arn:aws:iam::111122223333:role/unknown-trust",
+            "max_session_duration": 3600
+          }
+        },
+        {
+          "address": "aws_iam_role.resolved_trust",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "resolved_trust",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "resolved-trust",
+            "arn": "arn:aws:iam::111122223333:role/resolved-trust",
+            "max_session_duration": 3600,
+            "inline_policy": [
+              {
+                "name": "read-pipeline-token",
+                "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"ssm:GetParameter\"],\"Resource\":[\"arn:aws:ssm:us-east-1:111122223333:parameter/prod/pipeline-token\"]}]}"
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.pipeline_token",
+          "mode": "managed",
+          "type": "aws_ssm_parameter",
+          "name": "pipeline_token",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "/prod/pipeline-token",
+            "type": "SecureString",
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/prod/pipeline-token",
+            "key_id": "alias/aws/ssm"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret_version.fixture_sentinel",
+          "mode": "managed",
+          "type": "aws_secretsmanager_secret_version",
+          "name": "fixture_sentinel",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "secret_id": "prod/fixture-sentinel",
+            "version_id": "FIXTURE-VERSION-0002",
+            "secret_string": "FIXTURE_ONLY_SENSITIVE_SENTINEL_7c1e9a_not_a_credential"
+          },
+          "sensitive_values": {
+            "secret_string": true
+          }
+        }
+      ],
+      "child_modules": []
+    }
+  },
+  "prior_state": {
+    "format_version": "1.0",
+    "terraform_version": "1.9.8",
+    "values": {
+      "root_module": {
+        "resources": [
+          {
+            "address": "data.aws_iam_policy_document.resolve_trust",
+            "mode": "data",
+            "type": "aws_iam_policy_document",
+            "name": "resolve_trust",
+            "provider_name": "registry.terraform.io/hashicorp/aws",
+            "schema_version": 0,
+            "values": {
+              "json": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"},\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"},\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/shop:ref:refs/heads/main\"}}}]}"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "resource_changes": [
+    {
+      "address": "aws_iam_role.unknown_trust",
+      "mode": "managed",
+      "type": "aws_iam_role",
+      "name": "unknown_trust",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "unknown-trust"
+        },
+        "after_unknown": {
+          "assume_role_policy": true
+        },
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_iam_role.resolved_trust",
+      "mode": "managed",
+      "type": "aws_iam_role",
+      "name": "resolved_trust",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "resolved-trust"
+        },
+        "after_unknown": {
+          "assume_role_policy": true
+        },
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_secretsmanager_secret_version.fixture_sentinel",
+      "mode": "managed",
+      "type": "aws_secretsmanager_secret_version",
+      "name": "fixture_sentinel",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "secret_id": "prod/fixture-sentinel"
+        },
+        "after_unknown": {},
+        "after_sensitive": {
+          "secret_string": true
+        }
+      }
+    }
+  ],
+  "configuration": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_iam_role.unknown_trust",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "unknown_trust",
+          "provider_config_key": "aws",
+          "expressions": {}
+        },
+        {
+          "address": "aws_iam_role.resolved_trust",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "resolved_trust",
+          "provider_config_key": "aws",
+          "expressions": {
+            "assume_role_policy": {
+              "references": [
+                "data.aws_iam_policy_document.resolve_trust"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

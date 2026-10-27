@@ -1,0 +1,8 @@
+name: Deep 6
+description: Fixture composite action depth-chain link 6 of 6.
+runs:
+  using: composite
+  steps:
+    - name: End of chain
+      shell: bash
+      run: echo "deep chain"
