@@ -17,7 +17,7 @@ class SelectorKind(StrEnum):
     ACTION_ANY = "action-any"
     JOB = "job"
     WORKFLOW = "workflow"
-    SECRET = "secret"  # noqa: S105
+    SECRET = "secret"  # noqa: S105 - selector alias, not a credential value
     ROLE = "role"
     REPO_WRITE = "repo-write"
     FORK_PR = "fork-pr"

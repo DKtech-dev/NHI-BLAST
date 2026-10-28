@@ -66,7 +66,7 @@ able to break, derived from `docs/SPEC.md` section 2.5 and `AGENTS.md` section 5
 | Safe YAML | `yaml.compose` plus `SafeLoader`; duplicate keys detected; only the first document read; node, depth and alias limits fail closed | `tests/test_security.py` and `tests/test_workflows.py` |
 | Resource limits | Byte, file-count, YAML node/depth/alias, graph-node, closure-depth and time budgets from `core/limits.py` | `tests/test_security.py` boundary cases; performance and slow tests |
 | No secret values | Literal credentials are represented as kind plus length; Terraform sensitive leaves are skipped; renderers never receive values | `tests/test_report_security.py` proves a synthetic token is absent from JSON, console, SARIF and HTML while the finding remains; corpus artifact audit |
-| Inert hostile strings | HTML data is escaped as Unicode escapes inside `application/json`; DOM built with `textContent` and `setAttribute`; restrictive CSP with inline hashes; vendored scripts and embedded fonts recorded in `MANIFEST.json` | `tests/test_report_security.py`, `tests/test_html.py`, browser, axe and Lighthouse runs |
+| Inert hostile strings | HTML data is escaped as Unicode escapes inside `application/json`; DOM built with `textContent` and `setAttribute`; restrictive CSP hashes the embedded data, the vendored Motion runtime and the application script; embedded fonts and the runtime are recorded in `MANIFEST.json` | `tests/test_report_security.py`, `tests/test_html.py`, browser, axe and Lighthouse runs |
 | Deterministic output | Sorted traversal, stable identifiers and no wall-clock content unless requested | `tests/test_determinism.py`; corpus byte-comparison; three-build digest comparison |
 | Claim hygiene | Report templates contain no proof, guarantee, exploitability or takeover assertion; the HTML footer states evidence is not proof of exploitation | `tests/test_report_security.py::test_report_templates_do_not_assert_claims`; `tests/test_docs.py` |
 | Evidence honesty | Weakest-class edge confidence; UNKNOWN excluded from R/E/Z and reported as potential | `tests/test_solver.py`, `tests/test_trust.py`, `tests/test_reach.py`, `tests/test_partition.py` |
@@ -131,6 +131,18 @@ Lighthouse simulated-mobile performance score (65) is a document-size and thrott
 observation, not a security finding; the desktop profile used for an offline file is
 98 performance / 100 accessibility / 100 best-practices.
 
+## 4b. Vermilion Noir and Motion review (0.2.0 working tree)
+
+| Property checked | Evidence | Result |
+| --- | --- | --- |
+| Runtime provenance | Motion 14.7.1 UMD is copied from the official npm package, 176,646 bytes, SHA-256 `9d626ab…e923e`, and is accompanied by the upstream MIT licence. `MANIFEST.json` records name, kind, version, global, digest, licence file and registry URL; `report/html.py` rejects any other asset name, version, global, licence, source host, digest, non-UTF-8 payload or closing script tag | Pass |
+| CSP unchanged in strength | The document contains three inline scripts, each covered by its own SHA-256 in `script-src`; `default-src 'none'`, no `unsafe-inline` and no `unsafe-eval`. A browser run of the generated report produced zero console errors and zero outbound requests | Pass |
+| No active-content sink | The vendored runtime contains no `innerHTML`, `insertAdjacentHTML`, `document.write`, `eval(` or `new Function`; the report-wide assertions that reject those sinks still pass | Pass |
+| Presentation-only scope | Motion only animates opacity, a small translate and CSS custom properties for the header atmosphere, first-view analytical panels, genuine summary-value changes and graph detail presence. It never reads or rewrites report facts, R/E/Z partitions, evidence classes or graph geometry | Pass |
+| Reduced motion | With `prefers-reduced-motion: reduce`, `MotionGlobalConfig.skipAnimations` is true, the title and atmosphere render at their final values, no reveal targets are hidden and every interaction remains available | Pass |
+| Print integrity | Print CSS and the `beforeprint` handler force title, source line and reveal targets to full opacity with no transform; the regenerated fixture PDF and the 16-page current report PDF contain the title, summary and analytical sections, and the graph is vector content on an A3 landscape page | Pass |
+| Font provenance (0.2.0) | Instrument Serif was added as a third embedded WOFF2 subset with its SHA-256 and upstream source in `MANIFEST.json`; `OFL-InstrumentSerif.txt` ships beside `OFL.txt`. The manifest test, report tests and artifact checker require all three fonts and both licence files. The report makes no font request | Pass |
+
 ## 5. Tool results
 
 All commands were run on Windows 11 (10.0.26200, x64) on 2026-10-27 unless a GitHub
@@ -148,7 +160,7 @@ results can be reproduced or superseded.
 | OSV advisories | OSV-Scanner 2.7.0 | `osv-scanner scan source -r <copied locks>` | 18 runtime and 42 development package instances; "No issues found" |
 | SBOM | syft 1.55.0 | CycloneDX JSON from each lock (copied as `requirements.txt`) | 43 dependency components |
 | SBOM vulnerability match | Grype 0.121.0 | `grype requirements-dev.txt` and `grype sbom:<dependency SBOM>` | 0 matches in both |
-| License inventory | pip-licenses 5.5.5 | Locked project packages, 41 packages | MIT 27, Apache-2.0 family 6, BSD 4, ISC 1, MPL-2.0 2, PSF-2.0 1; no GPL, AGPL, SSPL or proprietary licenses. Embedded fonts are OFL-1.1, shipped with `OFL.txt` |
+| License inventory | pip-licenses 5.5.5 | Locked project packages, 41 packages | MIT 27, Apache-2.0 family 6, BSD 4, ISC 1, MPL-2.0 2, PSF-2.0 1; no GPL, AGPL, SSPL or proprietary licenses. Embedded fonts are OFL-1.1, shipped with their licence files; the vendored Motion runtime is MIT, shipped with `MIT-Motion.txt` |
 | Release age and yanks | PyPI JSON API | 42 unique pins across both locks | Minimum age 15 days; 0 yanked; 0 policy violations |
 | Secret scan (history) | gitleaks 8.30.1 | `gitleaks git . --redact --config .gitleaks.toml` | 9 commits and 2.32 MB scanned; no leaks |
 | Secret scan (tree) | gitleaks 8.30.1 | `gitleaks dir . --redact --config .gitleaks.toml` | 96.51 MB scanned; 6 generic-api-key hits, all in the gitignored `docs/research/_cache/aws-operators*.raw` AWS documentation captures. Manual triage: each is a documentation `BinaryEquals` example key string, not a credential. No tracked or packaged file produced a hit |

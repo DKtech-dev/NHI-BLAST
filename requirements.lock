@@ -3,7 +3,7 @@
 # This is a version lock, not a hash lock: pip still verifies TLS and PyPI
 # metadata, but there are no distribution hashes here. Install with:
 #
-#   python -m pip install -c requirements.lock "nhi-blast-0.1.1-py3-none-any.whl[hcl]"
+#   python -m pip install -c requirements.lock "nhi-blast-<version>-py3-none-any.whl[hcl]"
 #
 # or, from a checkout:
 #

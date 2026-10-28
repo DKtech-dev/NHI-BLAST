@@ -1,13 +1,15 @@
 # NHI-Blast — Architecture and Execution Plan
 
-Status: active build plan, derived from `docs/SPEC.md`, `AGENTS.md` and the verified
-repository state on 2026-10-25. The specification is normative; this document turns
-it into an ordered, executable programme. Where this plan and the specification
-disagree, the specification wins and this plan must be corrected.
+Status: historical. This plan was written on 2026-10-25 and M0–M8 were completed from
+it. It is retained as a record of how the build was sequenced, not as a description of
+the current tree: later work replaced the report graph engine, restyled the screen
+report and added the Motion runtime. `docs/SPEC.md` remains normative,
+`docs/architecture.md` describes the current system, and where this plan disagrees
+with either, they win.
 
-This plan is written so a less capable agent can execute it without inventing
-architecture. Follow it in order. Do not skip a milestone. Do not weaken a test or a
-gate to get a green result.
+This plan was written so a less capable agent could execute it without inventing
+architecture. The milestones were followed in order, and no test or gate was weakened
+to get a green result.
 
 ---
 

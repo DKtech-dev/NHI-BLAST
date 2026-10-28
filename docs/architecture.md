@@ -105,9 +105,16 @@ All renderers consume the same validated `Report` model:
 - **SARIF 2.1.0** carries one run, all catalog rules, stable fingerprints and
   code-flow locations, capped at 5,000 results with a warning.
 - **HTML** is one file with data in `<script type="application/json">`, escaped
-  `<`, `>`, `&`, U+2028 and U+2029, a restrictive CSP with inline-script hashes, and
-  DOM construction through `textContent`/`setAttribute` only. Vendored scripts and the
-  embedded Geist fonts are hash-verified against `assets/MANIFEST.json`; a boot gate
+  `<`, `>`, `&`, U+2028 and U+2029, a restrictive CSP with a hash for each of the three
+  inline scripts, and DOM construction through `textContent`/`setAttribute` only. The
+  authority graph is deterministic layered SVG computed in Python and inlined, so the
+  same geometry is used on screen and in print. The embedded Instrument Serif, Geist
+  and Geist Mono fonts and the vendored Motion 14.7.1 runtime (MIT) are hash-verified
+  against `assets/MANIFEST.json`.
+  Motion controls only presentation: the title entrance, the atmospheric header
+  introduction, first-view analytical panels, real summary-value changes and graph
+  detail presence. `prefers-reduced-motion` disables all of it, print forces revealed
+  content visible, and the animation layer never touches analysis data. A boot gate
   hides the shell until the first hydrated render, with a no-script override.
 - **DOT** uses numeric vertex IDs so hostile labels cannot inject syntax.
 

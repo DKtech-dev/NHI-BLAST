@@ -16,6 +16,10 @@ Tests make no network calls and execute no scanned content.
 
 ## 2. Gates
 
+The table below is the published 0.1.1 acceptance snapshot measured on 2026-10-27.
+The current 0.2.0 source tree is measured in `docs/implementation-status.md`; this
+document continues to describe what each gate does.
+
 | Gate | Command | Result on 2026-10-27 |
 | --- | --- | --- |
 | Full suite | `./.venv/Scripts/python.exe -m pytest -q` | 418 passed, 1 skipped in 23.23 s |
@@ -90,7 +94,7 @@ can discover false negatives but do not claim completeness of either filter.
 
 | File | What it proves |
 | --- | --- |
-| `tests/test_console.py`, `test_json_report.py`, `test_sarif.py`, `test_html.py` | Artifact shape, schema, CSP, accessible table/heading structure, scrollable table regions, and graph focus mapping |
+| `tests/test_console.py`, `test_json_report.py`, `test_sarif.py`, `test_html.py` | Artifact shape, schema, CSP, accessible table/heading structure, scrollable table regions, embedded font and Motion manifest hashes, Motion licence and runtime rejection paths, and graph focus mapping |
 | `tests/test_report_security.py` | Injection and secret-leak checks at every output boundary |
 | `tests/test_cli.py` | Commands, options, exit codes and error paths |
 | `tests/test_pipeline.py` | Discovery through reporting, configuration and strictness |
@@ -189,10 +193,10 @@ must be run separately; their results are recorded in
 
 - Build one wheel and one sdist with the pinned hatchling version, then run
   `scripts/check_artifacts.py dist`. It requires all eight platform data files, the
-  three vendored scripts, both font files, `OFL.txt` and `MANIFEST.json`, rejects test
-  tooling in runtime requirements, rejects caches, scratch files and the private
-  research cache in either artifact, and rejects any sdist top-level entry outside an
-  explicit allowlist.
+  three font files, both font licence files, `MANIFEST.json`, the vendored Motion
+  runtime and its MIT licence, rejects test tooling in runtime requirements, rejects
+  caches, scratch files and the private research cache in either artifact, and rejects
+  any sdist top-level entry outside an explicit allowlist.
 - Install the wheel into a fresh virtual environment with `requirements.lock` and
   exercise all six CLI commands on fx07. The 0.1.1 record found
   `version`, `version --data`, `schema`, `scan`, `rank`, `export` and `explain`

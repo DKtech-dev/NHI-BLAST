@@ -9,28 +9,10 @@ Versions 0.1.0 and 0.1.1 were previously published under the MIT License and
 remain available under those terms. The proprietary terms apply to this source
 tree and to versions released from it.
 
-Vendored third-party assets
----------------------------
+Embedded font assets
+--------------------
 
-The offline HTML report inlines the following MIT-licensed JavaScript libraries.
-They are shipped as part of the installed wheel and are not fetched at runtime.
-Versions, SHA-256 digests and upstream URLs are recorded in
-src/nhi_blast/report/assets/MANIFEST.json.
-
-  Cytoscape.js 3.30.4
-  Copyright (c) 2016-2024, The Cytoscape Consortium.
-  https://github.com/cytoscape/cytoscape.js
-  License: MIT (full text retained in the vendored file header)
-
-  dagre 0.8.5
-  https://github.com/dagrejs/dagre
-  License: MIT
-
-  cytoscape-dagre 2.5.0
-  https://github.com/cytoscape/cytoscape.js-dagre
-  License: MIT
-
-The offline HTML report also embeds two WOFF2 font subsets as data URIs. They are
+The offline HTML report embeds three WOFF2 font subsets as data URIs. They are
 shipped in the installed wheel, are not fetched at runtime, and are recorded with
 digests in src/nhi_blast/report/assets/MANIFEST.json.
 
@@ -45,6 +27,26 @@ digests in src/nhi_blast/report/assets/MANIFEST.json.
   https://github.com/vercel/geist-font
   License: SIL Open Font License 1.1 (full text in
   src/nhi_blast/report/assets/fonts/OFL.txt)
+
+  Instrument Serif (latin subset)
+  Copyright (c) 2022 The Instrument Serif Project Authors
+  https://github.com/Instrument/instrument-serif
+  License: SIL Open Font License 1.1 (full text in
+  src/nhi_blast/report/assets/fonts/OFL-InstrumentSerif.txt)
+
+Vendored JavaScript
+-------------------
+
+The offline HTML report embeds the official Motion 14.7.1 UMD build as an
+inline script behind a CSP hash. It is shipped in the installed wheel, is not
+fetched at runtime, and is recorded with its digest in
+src/nhi_blast/report/assets/MANIFEST.json.
+
+  Motion
+  Copyright (c) 2024 Motion B.V.
+  https://motion.dev
+  License: MIT (full text in
+  src/nhi_blast/report/assets/vendor/MIT-Motion.txt)
 
 Platform data
 -------------

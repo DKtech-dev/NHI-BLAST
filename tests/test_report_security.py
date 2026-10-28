@@ -103,7 +103,7 @@ def test_html_font_faces_are_embedded_and_never_fetched() -> None:
     style = document.split("<style>", 1)[1].split("</style>", 1)[0]
     faces = re.findall(r"@font-face \{.*?\}", style, re.DOTALL)
 
-    assert len(faces) == 2
+    assert len(faces) == 3
     for face in faces:
         sources = re.findall(r"url\(([^)]+)\)", face)
         assert sources
@@ -162,7 +162,7 @@ def test_hostile_strings_do_not_create_html_elements_or_event_handlers() -> None
 
     tags = [tag for tag, _ in collector.tags]
     assert not {"img", "iframe", "object", "embed"} & set(tags)
-    assert tags.count("script") == 5
+    assert tags.count("script") == 3
     assert not any(name.lower().startswith("on") for _, attrs in collector.tags for name in attrs)
     assert "<img" not in document.lower()
 

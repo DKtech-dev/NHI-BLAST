@@ -9,27 +9,30 @@ The specification sets two performance budgets (section 12.8):
 `tests/test_performance.py` asserts both budgets with the `slow` marker. The test is
 excluded from coverage runs because tracing changes the measured time.
 
-## Measured result
+## Current-tree re-run
 
-Recorded on 2026-10-26:
+Recorded on 2026-10-28 on the current source tree with the `slow` marker:
 
 | Measurement | Result | Budget |
 | --- | --- | --- |
-| Repository load | 0.623 s | — |
-| Graph build plus one `repo-write` scenario | **1.568 s** | 5 s |
-| `rank` | **6.285 s** | 60 s |
-| Graph size | 4,202 nodes, 4,199 edges | — |
-| Scenario partition | R=400, E=200, Z=1,000 | — |
-| Rank rows | 400 | ≥300 |
+| Graph build plus one `repo-write` scenario | **2.30 s** | 5 s |
+| `rank` over 400 mutable actions | **5.36 s** | 60 s |
 
 Machine: Windows 11 (10.0.26200), 12th Gen Intel Core i5-12450H, 15.7 GiB RAM,
-Python 3.12.14 (64-bit), local SSD, project virtual environment.
+Python 3.12.14 (64-bit), local SSD, project virtual environment. These are
+single-run timings from `pytest -m slow --durations=0`, not a distribution.
+
+The earlier full run on 2026-10-26 recorded 0.623 s for repository load, 1.568 s for
+the graph-and-scenario budget, 6.285 s for `rank`, and a graph of 4,202 nodes and
+4,199 edges with R=400, E=200, Z=1,000 and 400 rank rows. The structural counts come
+from the deterministic scale fixture; the timings vary with the machine and load.
 
 ## Real-world corpus
 
-A separate harness scanned ten public repositories (1,959 files: 163 workflow files,
-101 Terraform files) twice each with `--simulate-compromise all-mutable-actions`, then
-ran `rank` and `export`.
+A separate harness recorded on 2026-10-26 scanned ten public repositories (1,959
+files: 163 workflow files, 101 Terraform files) twice each with
+`--simulate-compromise all-mutable-actions`, then ran `rank` and `export`. It was not
+re-run for the presentation pass.
 
 | Measurement | Result |
 | --- | --- |

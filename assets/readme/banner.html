@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NHI-Blast banner</title>
+<script>
+  if (new URLSearchParams(location.search).get("scheme") === "light") {
+    document.documentElement.classList.add("light");
+  }
+</script>
+<link rel="stylesheet" href="identity.css">
+<style>
+  html, body { width: 1600px; height: 600px; overflow: hidden; }
+  .banner { position: relative; isolation: isolate; width: 1600px; height: 600px; padding: 38px 64px 36px; display: flex; flex-direction: column; }
+  .banner::before {
+    content: ""; position: absolute; z-index: -1; top: -300px; right: -110px;
+    width: 940px; height: 820px;
+    background:
+      radial-gradient(40% 48% at 56% 46%, var(--glow), transparent 72%),
+      radial-gradient(26% 34% at 38% 62%, var(--glow-deep), transparent 76%);
+    filter: blur(34px);
+    transform: rotate(-8deg);
+    pointer-events: none;
+  }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .mark { flex: none; width: 20px; height: 20px; color: var(--accent); }
+  .brand-name { font: 600 15px/1 var(--sans); letter-spacing: .005em; }
+  .brand-sub { padding-left: 12px; border-left: 1px solid var(--line); color: var(--muted); font: 400 12px/1 var(--sans); }
+  .topmeta { display: flex; gap: 26px; font: 400 10.5px/1 var(--mono); letter-spacing: .02em; color: var(--faint); }
+
+  .main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 764px; gap: 60px; padding-top: 34px; }
+  .left { display: flex; flex-direction: column; min-width: 0; }
+  .rule { width: 46px; height: 2px; background: var(--accent); margin-bottom: 20px; }
+  .headline { max-width: 640px; color: var(--ink); font: 400 77px/.98 var(--serif); letter-spacing: -.015em; }
+  .headline .z { color: var(--accent); }
+  .support { margin-top: 18px; max-width: 545px; color: var(--muted); font: 400 16px/1.55 var(--sans); }
+  .support strong { color: var(--ink); font-weight: 500; }
+  .command { margin-top: auto; display: flex; align-items: center; gap: 9px; font: 400 11.5px/1.4 var(--mono); color: var(--faint); letter-spacing: .01em; }
+  .command .prompt { color: var(--accent); }
+
+  .panel {
+    position: relative; display: flex; flex-direction: column; min-height: 0;
+    padding: 24px 26px 0; overflow: hidden;
+    border: 1px solid var(--line); border-radius: 16px; background: var(--surface);
+  }
+  .panel::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, var(--panel-sheen), transparent 34%);
+  }
+  .panel > * { position: relative; }
+  .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; }
+  .panel-title { font: 600 12px/1 var(--sans); color: var(--ink-2); }
+  .scenario { font: 400 10.5px/1 var(--mono); color: var(--accent); white-space: nowrap; }
+  .rail { display: flex; gap: 3px; height: 12px; margin-top: 16px; overflow: hidden; border-radius: 6px; }
+  .rail span { display: block; height: 100%; border-radius: 3px; }
+  .rail .r { width: 30%; background: var(--R); }
+  .rail .e { width: 20%; background: repeating-linear-gradient(135deg, var(--E) 0 4px, #57431f 4px 8px); }
+  .rail .z { width: 50%; background: var(--Z); }
+
+  .columns { display: grid; grid-template-columns: 1.02fr 1fr 1.28fr; margin-top: 22px; }
+  .col { min-width: 0; padding-right: 18px; }
+  .col + .col { border-left: 1px solid var(--line); padding-left: 20px; }
+  .col-head { display: flex; align-items: flex-start; gap: 9px; padding-bottom: 10px; }
+  .letter { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 6px; font: 600 11px/1 var(--mono); }
+  .col.r .letter { background: var(--raised); color: var(--R); }
+  .col.e .letter { background: rgba(233, 182, 101, .12); color: var(--E); }
+  .col.z .letter { background: var(--accent-soft); color: var(--critical-ink); }
+  .count { font: 400 31px/.9 var(--serif); letter-spacing: -.01em; color: var(--ink); }
+  .col-label { margin-left: auto; max-width: 112px; text-align: right; color: var(--muted); font: 400 11px/1.4 var(--sans); padding-top: 3px; }
+  .entry { padding: 7px 0 8px; border-top: 1px solid var(--line); }
+  .entry-name { color: var(--ink); font: 500 14px/1.3 var(--sans); letter-spacing: -.005em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .entry-name .entry-kind { color: var(--muted); font-family: var(--mono); font-size: 11px; }
+  .entry-kind { margin-top: 3px; color: var(--faint); font: 400 10.5px/1.4 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .more .entry-name { color: var(--muted); font-weight: 400; }
+
+  .panel-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0 13px; border-top: 1px solid var(--line); color: var(--faint); font: 400 10px/1.4 var(--mono); letter-spacing: .015em; }
+  .panel-foot b { font-weight: 400; color: var(--muted); }
+</style>
+</head>
+<body>
+  <div class="banner">
+    <div class="topbar">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="2.2" fill="currentColor"></circle>
+          <path d="M12 5.4a6.6 6.6 0 0 1 0 13.2M12 2.2a9.8 9.8 0 0 1 0 19.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".55"></path>
+        </svg>
+        <span class="brand-name">NHI-Blast</span>
+        <span class="brand-sub">Incident exposure analysis</span>
+      </div>
+      <div class="topmeta">
+        <span>Offline</span>
+        <span>No execution</span>
+        <span>No network</span>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="left">
+        <div class="rule"></div>
+        <div class="headline">Which credentials<br><span class="z">survive</span> the revocation?</div>
+        <p class="support">An offline CLI for non-human identity in CI. It reads <strong>GitHub Actions, Terraform and IAM policy</strong>, then maps what a compromised entrypoint can reach and what outlives its revocation.</p>
+        <div class="command"><span class="prompt">$</span> nhi-blast scan . --simulate-compromise repo-write --format html</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Survival panel</span>
+          <span class="scenario">action:tj-actions/changed-files@v45</span>
+        </div>
+        <div class="rail"><span class="r"></span><span class="e"></span><span class="z"></span></div>
+
+        <div class="columns">
+          <div class="col r">
+            <div class="col-head">
+              <span class="letter">R</span>
+              <span class="count">3</span>
+              <span class="col-label">Ends with the entrypoint</span>
+            </div>
+            <div class="entry">
+              <div class="entry-name">GITHUB_TOKEN <span class="entry-kind">&times;2</span></div>
+              <div class="entry-kind">job-bound runner token</div>
+            </div>
+            <div class="entry">
+              <div class="entry-name">OIDC request token</div>
+              <div class="entry-kind">job-bound &middot; id-token: write</div>
+            </div>
+          </div>
+
+          <div class="col e">
+            <div class="col-head">
+              <span class="letter">E</span>
+              <span class="count">2</span>
+              <span class="col-label">Expires on its own</span>
+            </div>
+            <div class="entry">
+              <div class="entry-name">STS session</div>
+              <div class="entry-kind">deploy-prod &middot; TTL 3600 s</div>
+            </div>
+            <div class="entry">
+              <div class="entry-name">STS session</div>
+              <div class="entry-kind">legacy-ci &middot; TTL 3600 s</div>
+            </div>
+          </div>
+
+          <div class="col z">
+            <div class="col-head">
+              <span class="letter">Z</span>
+              <span class="count">5</span>
+              <span class="col-label">Potentially survives revocation</span>
+            </div>
+            <div class="entry">
+              <div class="entry-name">prod/db-master</div>
+              <div class="entry-kind">secretsmanager &middot; no rotation</div>
+            </div>
+            <div class="entry">
+              <div class="entry-name">/prod/stripe/live_key</div>
+              <div class="entry-kind">ssm parameter &middot; no rotation</div>
+            </div>
+            <div class="entry">
+              <div class="entry-name">/legacy/ci-token</div>
+              <div class="entry-kind">ssm parameter &middot; no rotation</div>
+            </div>
+            <div class="entry more">
+              <div class="entry-name">+2 more</div>
+              <div class="entry-kind">see the rotation plan</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-foot">
+          <span><b>10 credentials tracked</b> &middot; 7 findings &middot; 2 critical</span>
+          <span>Unknown edges stay potential</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

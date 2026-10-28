@@ -136,13 +136,14 @@ registry. The registry is in `docs/assumptions.md`.
 - The HTML report needs JavaScript to render its embedded data. Without JavaScript the
   document remains visible (a no-script override defeats the hydration boot gate) and
   shows a notice that the data cannot be displayed; use the console or JSON report
-  instead. Geist and Geist Mono are embedded in the file, so the report makes no font
-  request and renders identically offline. The graph canvas is pointer-operated and is
-  not keyboard operable; the scenario, survival, findings and cross-scenario matrix
-  sections present the same evidence as text, with labelled tables, a skip link and
-  keyboard-operable trace and zoom buttons, so the report remains usable without
-  interacting with the graph. Wide tables scroll inside labelled, keyboard-focusable
-  regions instead of widening the page.
+  instead. Instrument Serif, Geist and Geist Mono are embedded in the file, so the
+  report makes no font request and renders identically offline. The graph is an SVG
+  with focusable node buttons: Tab enters the graph, arrow keys move, Enter selects and
+  Escape clears; it also supports pointer pan and zoom. The scenario, survival, findings
+  and cross-scenario matrix sections present the same evidence as text, with labelled
+  tables, a skip link and keyboard-operable trace and zoom buttons, so the report
+  remains usable without interacting with the graph. Wide tables scroll inside labelled,
+  keyboard-focusable regions instead of widening the page.
 - SARIF output is capped at 5,000 results with a notification, matching GitHub
   code-scanning limits. Findings beyond the cap are counted but not listed.
 - A suppressed rule is removed from the findings list. Suppression does not alter the

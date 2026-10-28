@@ -14,6 +14,7 @@ htmlcov/
 nhi-blast-out/
 node_modules/
 .agents/
+.claude/
 .taste-skill/
 skills-lock.json
 _t.py

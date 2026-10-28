@@ -2,10 +2,14 @@
 
 Living record of what is actually built and verified. Every row must correspond to a
 command that was run, with its real result. When a gate is not met, it says so.
+Entries are chronological: earlier dated sections describe the implementation of that
+date, including components that later changed or were removed.
 
-Last updated: 2026-10-27
+Last updated: 2026-10-28
 Overall verdict: **0.1.1 RELEASED; 0.1.0 remains available; `main` is a public,
-proprietary 0.2.0 source tree with no published 0.2.0 artifact.**
+proprietary 0.2.0 source tree with no published 0.2.0 artifact.** The 0.2.0 report and
+graph redesign is implemented, tested and verified locally but is not committed or
+released.
 M0–M8 are implemented and verified locally and in remote CI, including packaging,
 clean-environment installation, documentation, CI policy, dependency and secret audits,
 three-build reproducibility, Python 3.12/3.13/3.14 suites on Ubuntu and Windows, a
@@ -780,13 +784,60 @@ not external benchmarks or an audit.
 | Dependabot | Pull request #1 | `actions/setup-python` 7.0.0 → 7.1.0 pinned by SHA; all eight checks green; squash-merged as `0d86433` |
 | Private vulnerability reporting | `gh api` PUT and GET | Enabled; `SECURITY.md` directs reports there; secret-scanning and Dependabot alert counts are both 0 |
 
+### 2026-10-28 — 0.2.0 report, graph and print redesign
+
+Scope: replace the browser graph layout with deterministic, Python-computed SVG;
+redesign the report shell, summary, survival rail, findings and tables; repair print/PDF;
+retain the CSP, output escaping, evidence semantics and R/E/Z classifications. This
+working tree is not committed or released.
+
+| Check | Command / run | Actual result |
+| --- | --- | --- |
+| Report, security and graph tests | `pytest -q tests/test_html.py tests/test_report_security.py tests/test_graph_layout.py` | 52 passed in 0.86 s |
+| Full suite | `pytest -q` | 436 passed, 1 skipped in 15.71 s; the skip is the Windows real-symlink privilege case |
+| Slow suite | `pytest -q -m slow` | 2 passed, 435 deselected in 9.08 s |
+| Coverage | `scripts/check_coverage.py` | 87.21% overall; every enforced package ≥80%; `report/ui.py` and `report/html.py` at 100% |
+| Lint | `ruff check .` | All checks passed |
+| Format | `ruff format --check .` | 115 files already formatted |
+| Types | `mypy --strict src` | Success: no issues found in 72 source files |
+| Graph layout | `pytest -q tests/test_graph_layout.py` | 10 passed; deterministic byte-stable JSON, stage ordering, no node overlap, confidence classes, entrypoint metadata, no active SVG content, explicit empty state and render-limit message |
+| Browser accessibility | `node nhi-blast-out/pw/audit-current.mjs` on the current `nhi-blast-out/readme-shots/report.html` | `AXE clean`, `NAV clean`, `TOUCH clean`, `RUNTIME clean` at 1440×900, 1024×768, 768×1024 and 390×844 with dark and light color-scheme emulation; 0 shown hidden links; no console errors and no external requests. The screen theme is dark-only; light tokens are print-only |
+| Graph interaction | `node nhi-blast-out/pw/interact.mjs` | `ALL PASS`: roving focus, spatial arrow navigation, Enter selection, Escape clear, zoom, pan, fit, wheel zoom, pinch and reduced-motion handling; no outbound requests |
+| Viewport sweep | `node nhi-blast-out/pw/viewports.mjs` | `ALL VIEWPORTS CLEAN` |
+| Multi-scenario report | `node nhi-blast-out/pw/multi.mjs` on `nhi-blast-out/multi07/report.html` | Both scenarios switch correctly; the exposure matrix has a sticky header and first column; axe clean at 1440 light and 390 dark |
+| Boot failure | `node nhi-blast-out/pw/bootfail.mjs` on a copy with corrupted embedded JSON | Status shown: "The embedded report data could not be read. Regenerate the report from the NHI-Blast CLI."; `main` hidden; exactly the expected JSON parse console error |
+| Print/PDF | Playwright with system Chrome; inspected with PyMuPDF | `report-final.pdf` 16 pages; graph page 8 is A3 landscape with 127 vector drawings; title, summary, survival and rotation text present; print palette and forced-visible reveal states applied |
+| HTML validation | `npx html-validate@11.17.0` on the current report | Exit 0, no validation errors |
+| Dependency and secret audit | pip-audit 2.10.1 on both locks; gitleaks 8.30.1 on history and the working tree; Bandit 1.9.4 on `src` and `scripts` | No known vulnerabilities; no leaks in 19 commits or the 1.90 MB tracked/untracked non-ignored tree; Bandit 0 medium/high and 2 low (`B404`/`B603` in `scripts/check_coverage.py`, a fixed `subprocess.run` without a shell), reviewed as accepted |
+| Document reduction | renderer, manifest and artifact-check tests | Cytoscape, dagre and cytoscape-dagre removed; the authority graph is Python-computed SVG; `MANIFEST.json` pins the fonts and the Motion runtime; the CSP hashes three inline scripts (embedded data, Motion runtime and application code) |
+| Motion vendor | `src/nhi_blast/report/assets/vendor`, `MANIFEST.json`, `report/html.py` | Official Motion 14.7.1 UMD, 176,646 bytes, SHA-256 `9d626ab329c703b3fa824651166973900fd425a84b752f2f53411ad85b3e923e`, MIT licence shipped; embedded inline under its own CSP hash; validator rejects an unpinned asset set, version, global, licence, source host, digest, non-UTF-8 payload or closing script tag |
+| Motion runtime checks | `node motionverify.mjs`; `node kpiverify.mjs`; `node presenceverify.mjs` | `window.Motion.animate` is a function; title opacity 0→1 with 8px displacement; header atmosphere CSS variables 0→0.6/0.55; three first-view reveals 0→1; real scenario change called `Motion.animate` numerically with value callbacks; graph detail panel faded and translated in; zero console errors and zero external requests |
+| Reduced motion | `node motionverify.mjs` with `reducedMotion: 'reduce'` | Media query matches, `MotionGlobalConfig.skipAnimations` true, title and atmosphere at final values, zero reveal targets hidden, no overflow at 390×844 |
+| Keyboard and navigation | `node keyboardnav2.mjs`; `node navcheck2.mjs` | Keyboard focus reached the Findings nav link with a 2px visible outline; Enter activated `#findings`; the persistent indicator tracked every section at 1440, 1024, 768 and 390; graph arrow navigation and Enter selection still pass |
+| Motion tooling | `npx motion-ai` installer | The installer does not offer Qoder; the official Motion skill content was copied manually into the gitignored `.agents/skills/motion` directory and used for guidance. The report vendors only the free core runtime, with no Motion+ features and no duplicate animation library |
+| Header spacing | Browser measurement at 1440, 1024, 768 and 390 px | `#finding-lead { margin-top: 20px; }` adds exactly 20 px between the "Review rotation order" button and the critical-finding banner at every width, with no overlap and no horizontal overflow |
+| Identity artwork | `assets/readme`, `node render.mjs` with system Chrome | Banner in dark and light; both README report screenshots were recaptured from the final 502,204-byte fx07 report (input digest `bfa811ede0aa`): the 1600×1500 summary/survival view and a 1600×1200 graph view. The recaptured files are byte-identical to the reviewed assets. The social preview is 1280×640 (126,310 bytes) and composes a genuine summary/survival crop of that report inside the typographic card; the stale light social variant and old report image were removed. The social card audited clean at 1280×640 with three fonts loaded, no overflow and no console errors |
+| Build and artifacts | hatchling wheel/sdist into scratch directories; `scripts/check_artifacts.py` | Final tree: wheel 94 files (997,889 bytes uncompressed, SHA-256 `47ead0ee400a…`), sdist 246 files; both digests identical across three builds from the frozen tree; artifact check passed. The sdist digest is not pinned because this file is itself part of the archive. The checker found the Motion runtime, its MIT licence and every font; the sdist allowlist permits the intentional `assets/` tree and still rejects scratch roots; no forbidden cache, scratch or private-cache content |
+| Clean install | fresh venvs: wheel with and without the HCL extra, and sdist with HCL; `version`, `scan`, `rank`, `export`, `explain`, `schema` | `nhi-blast 0.2.0`; fx07 generated a 502,204-byte HTML report that is byte-identical across repeated runs (SHA-256 `62cec746268b…`); JSON and SARIF were also byte-identical; fx10 produced 14 nodes with HCL versus 8 without, and the strict no-HCL run exited 3; `pip check` clean in every environment |
+
+Known limitations at this checkpoint: the Vermilion Noir and Motion changes are
+uncommitted; no 0.2.0 artifact has been published; the independent human audit remains
+not performed and is not claimed. Browser checks used headless Chromium (including a
+390×844 mobile emulation and reduced-motion emulation), not Firefox, Safari or a
+physical printer; the Chromium PDFs were inspected programmatically and as images. The
+refreshed identity artwork is present in the working tree, but the GitHub social preview
+has not been uploaded and no repository metadata has been changed; those are external
+actions requiring owner authorization.
+
 ## Next action
 
 No implementation or publication task remains for 0.1.1. Remote CI, Linux execution,
 advisory automation, the internal audit and the authorized 0.1.0 and 0.1.1 GitHub
 Releases are complete. The repository was made public and the source tree relicensed as
-proprietary 0.2.0 on 2026-10-27; no 0.2.0 artifact has been published. The remaining
-actions are:
+proprietary 0.2.0 on 2026-10-27; no 0.2.0 artifact has been published. The 0.2.0 report
+and graph redesign passed the local gates recorded above and still needs a reviewed
+commit, a rebuilt artifact set and, if the owner authorizes a release, a new tag. The
+remaining assurance actions are:
 
 1. **Independent human audit.** This cannot be supplied by the implementation agent.
    `docs/external-audit-package.md` defines the target and materials; until a reviewer

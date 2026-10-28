@@ -829,11 +829,14 @@ Each entry carries source_url  and verified_on  (ISO date). nhi-blast version --
 data  prints data versions and ages. Reports warn when a data file is older than 180 days.
 Concern Choice Notes
 CLI typer; rich as optional extra Plain-text fallback when rich is absent
-HTML string.Template  plus
-vendored Cytoscape.js and a
-dagre layout plugin
-No Jinja. Record SHA-256 of each
-vendored file in assets/MANIFEST.json .
+HTML string.Template  plus a
+deterministic layered SVG
+layout computed in Python
+No Jinja or runtime layout
+engine. The same geometry is
+used by screen and print. Record
+SHA-256 of each embedded font in
+assets/MANIFEST.json .
 Dev pytest, hypothesis, pytest-cov,
 ruff, mypy, jsonschema,
 subvectors
@@ -1842,10 +1845,11 @@ dropped. Validate output against the vendored SARIF 2.1.0 JSON Schema in tests.
 Sections: Scope and Limits, Summary, Scenario picker, Graph, Survival panel (R, E, Z
 tables), Rotation plan (print-friendly), Findings, Assumptions and Unknowns,
 Diagnostics.
-Graph: vendored Cytoscape.js with a dagre layout, inlined in the file. Node colour by
-layer, edge style by evidence class (solid for DECLARED and DERIVED, dashed for
-ASSUMED, dotted for UNKNOWN). Clicking a node or edge shows its evidence with
-file and line.
+Graph: deterministic layered SVG computed by the reporter and inlined in the file
+(no browser layout engine). Node colour by layer, edge style by evidence class
+(solid for DECLARED and DERIVED, dashed for ASSUMED, dotted for UNKNOWN). Clicking a
+node or edge shows its evidence with file and line. The print stylesheet emits the same
+layout on an A3 landscape page.
 Security (MUST): the report data is embedded in <script
 type='application/json'>  with < , >  and &  escaped as unicode escapes. All text
 reaches the DOM through textContent  or setAttribute  with escaped values, never

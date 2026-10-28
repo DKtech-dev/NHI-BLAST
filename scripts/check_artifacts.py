@@ -32,11 +32,12 @@ REQUIRED_WHEEL_ASSETS = frozenset(
     {
         "nhi_blast/report/assets/MANIFEST.json",
         "nhi_blast/report/assets/fonts/OFL.txt",
+        "nhi_blast/report/assets/fonts/OFL-InstrumentSerif.txt",
         "nhi_blast/report/assets/fonts/geist-latin.woff2",
         "nhi_blast/report/assets/fonts/geist-mono-latin.woff2",
-        "nhi_blast/report/assets/vendor/cytoscape-dagre.js",
-        "nhi_blast/report/assets/vendor/cytoscape.min.js",
-        "nhi_blast/report/assets/vendor/dagre.min.js",
+        "nhi_blast/report/assets/fonts/instrument-serif-latin.woff2",
+        "nhi_blast/report/assets/vendor/MIT-Motion.txt",
+        "nhi_blast/report/assets/vendor/motion-14.7.1.min.js",
     }
 )
 REQUIRED_SDIST = frozenset(
@@ -58,6 +59,7 @@ ALLOWED_SDIST_ROOTS = frozenset(
     {
         ".gitignore",
         "PKG-INFO",
+        "assets",
         "pyproject.toml",
         "README.md",
         "LICENSE",

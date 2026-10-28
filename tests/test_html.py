@@ -20,7 +20,6 @@ from tests.report_support import HOSTILE, make_report
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "src" / "nhi_blast" / "report" / "assets"
-VENDOR = ASSETS / "vendor"
 FONTS = ASSETS / "fonts"
 MANIFEST = ASSETS / "MANIFEST.json"
 
@@ -109,7 +108,9 @@ def test_csp_hashes_every_inline_script_and_forbids_inline_execution() -> None:
     policy = html_module.unescape(match.group(1))
     scripts = _scripts(document)
 
-    assert len(scripts) == 5
+    assert len(scripts) == 3
+    assert scripts[0][0].get("type") == "application/json"
+    assert scripts[1][1] == (ASSETS / "vendor" / "motion-14.7.1.min.js").read_text(encoding="utf-8")
     for attrs, body in scripts:
         assert "src" not in attrs
         digest = base64.b64encode(hashlib.sha256(body.encode("utf-8")).digest()).decode("ascii")
@@ -145,14 +146,64 @@ def test_report_hides_until_hydrated_and_remains_usable_without_script() -> None
     document = html_report(make_report())
 
     assert '<html lang="en" class="booting">' in document
-    hidden = "html.booting body { visibility: hidden; }"
-    visible = "<noscript><style>html.booting body { visibility: visible; }</style></noscript>"
+    hidden = "html.booting body > :not(#boot-status):not(script) { visibility: hidden; }"
+    visible = (
+        "<noscript><style>html.booting body > :not(#boot-status):not(script) "
+        "{ visibility: visible; } #boot-status { display: none; }</style></noscript>"
+    )
     assert hidden in document
     assert visible in document
+    failed_hidden = "html.boot-failed body > :not(#boot-status):not(script) { visibility: hidden; }"
+    assert failed_hidden in document
+    assert "html.booting #boot-status, html.boot-failed #boot-status {" in document
+    assert 'id="boot-status" role="status"' in document
     # The no-script override must come after the hiding rule so it wins.
     assert document.index(hidden) < document.index(visible)
     app = _scripts(document)[-1][1]
     assert 'classList.remove("booting")' in app
+    assert "reportBootFailure" in app
+    assert "could not be read" in app
+
+
+def test_design_tokens_cover_reduced_motion_and_local_pointer_lighting() -> None:
+    document = html_report(make_report())
+    app = _scripts(document)[-1][1]
+
+    assert "--dur-2: 140ms" in document
+    assert "--bg: #050505" in document
+    assert "--accent: #ff382f" in document
+    assert "--r-panel: 16px" in document
+    assert '--serif: "Instrument Serif"' in document
+    assert "prefers-reduced-motion: reduce" in document
+    assert "--dur-1: 1ms" in document
+    assert 'class="summary-band" id="summary-grid" data-light' in document
+    assert "hover: hover" in app
+    assert "requestAnimationFrame(paint)" in app
+    assert "bindSectionNav" in app
+    assert 'setAttribute("aria-current", "location")' in app
+    assert ".toc a[hidden] { display: none; }" in document
+    assert 'window.addEventListener("scroll", schedule, { passive: true })' in app
+
+
+def test_motion_drives_intro_reveals_readouts_and_presence_with_reduced_motion_support() -> None:
+    document = html_report(make_report())
+    app = _scripts(document)[-1][1]
+
+    assert 'window.Motion && typeof window.Motion.animate === "function"' in app
+    assert "MotionGlobalConfig.skipAnimations = prefersReducedMotion()" in app
+    assert "function startMotionIntro()" in app
+    assert "function startMotionReveals()" in app
+    assert "motion.inView(" in app
+    assert "function animatePresence(" in app
+    assert "motion.animate(from, to, {" in app
+    assert '["#survival-content", "#rotation-content", "#graph .graph-frame"]' in app
+    assert "startMotionIntro();" in app
+    assert "startMotionReveals();" in app
+    assert "[data-motion-reveal] { opacity: 1 !important; transform: none !important; }" in document
+    assert 'document.querySelectorAll("[data-motion-reveal]")' in app
+    assert "@keyframes title-in" not in document
+    assert "@keyframes ambient-glow-in" not in document
+    assert "@keyframes ambient-ring-in" not in document
 
 
 def test_embedded_json_escapes_html_metacharacters_and_preserves_exact_strings() -> None:
@@ -196,7 +247,6 @@ def test_report_has_accessible_structure_and_table_semantics() -> None:
     assert 'aria-label="Report sections"' in document
     assert 'aria-live="polite"' in document
     assert 'id="graph-note"' in document
-    assert "not keyboard operable" in document
 
     app_script = _scripts(document)[-1][1]
     assert 'append(table, "caption"' in app_script
@@ -248,57 +298,70 @@ def test_html_exposes_cross_scenario_matrix_path_trace_and_finding_filters() -> 
     assert "insertAdjacentHTML" not in app_script
 
 
-def test_graph_focus_maps_expiring_credentials_to_their_node_ids() -> None:
+def test_graph_status_map_uses_partition_and_potential_credentials() -> None:
     app_script = _scripts(html_report(make_report()))[-1][1]
 
-    assert "scenario.partition.R.forEach((id) => focus.add(id));" in app_script
-    assert "scenario.partition.E.forEach((entry) => focus.add(entry.credential));" in app_script
-    assert "scenario.partition.Z.forEach((entry) => focus.add(entry.credential));" in app_script
-    assert "scenario.partition.E.forEach((item) => focus.add(id));" not in app_script
+    assert "function scenarioCredentialStatuses(scenario)" in app_script
+    assert '(partition.R || []).forEach((id) => add(id, "R"));' in app_script
+    assert '(partition.E || []).forEach((entry) => add(entry.credential, "E"));' in app_script
+    assert '(partition.Z || []).forEach((entry) => add(entry.credential, "Z"));' in app_script
+    assert 'node.kind === "CREDENTIAL"' in app_script
+    assert "(scenario.potential_nodes || []).forEach" in app_script
 
 
-def test_vendored_assets_match_the_pinned_manifest() -> None:
+def test_asset_manifest_pins_the_fonts_and_the_motion_runtime() -> None:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    assets = {entry["name"]: entry for entry in manifest["assets"]}
 
     assert manifest["format"] == "nhi-blast-assets/1"
-    entries = {entry["name"]: entry for entry in manifest["assets"]}
-    assert set(entries) == {
-        "cytoscape.min.js",
-        "dagre.min.js",
-        "cytoscape-dagre.js",
+    assert set(assets) == {"motion-14.7.1.min.js"}
+    runtime = assets["motion-14.7.1.min.js"]
+    payload = (ASSETS / "vendor" / "motion-14.7.1.min.js").read_bytes()
+    assert payload.startswith(b"!function")
+    assert hashlib.sha256(payload).hexdigest() == runtime["sha256"]
+    assert runtime["kind"] == "javascript"
+    assert runtime["version"] == "14.7.1"
+    assert runtime["global"] == "Motion"
+    assert runtime["license"] == "MIT"
+    assert runtime["source_url"].startswith("https://registry.npmjs.org/motion/")
+    licence = (ASSETS / "vendor" / runtime["license_file"]).read_text(encoding="utf-8")
+    assert "MIT License" in licence
+    assert "Motion" in licence
+    assert {entry["name"] for entry in manifest["fonts"]} == {
+        "geist-latin.woff2",
+        "geist-mono-latin.woff2",
+        "instrument-serif-latin.woff2",
     }
-    for name, entry in entries.items():
-        payload = (VENDOR / name).read_bytes()
-        assert hashlib.sha256(payload).hexdigest() == entry["sha256"]
-        assert entry["version"]
-        assert entry["source_url"].startswith("https://")
-        assert entry["license"] == "MIT"
 
 
 def test_embedded_fonts_match_the_pinned_manifest_and_carry_their_licence() -> None:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     entries = {entry["name"]: entry for entry in manifest["fonts"]}
 
-    assert set(entries) == {"geist-latin.woff2", "geist-mono-latin.woff2"}
+    assert set(entries) == {
+        "geist-latin.woff2",
+        "geist-mono-latin.woff2",
+        "instrument-serif-latin.woff2",
+    }
     for name, entry in entries.items():
         payload = (FONTS / name).read_bytes()
         assert payload[:4] == b"wOF2"
         assert hashlib.sha256(payload).hexdigest() == entry["sha256"]
-        assert entry["family"] in {"Geist", "Geist Mono"}
+        assert entry["family"] in {"Geist", "Geist Mono", "Instrument Serif"}
         assert entry["license"] == "OFL-1.1"
-        assert entry["license_file"] == "OFL.txt"
+        assert (FONTS / entry["license_file"]).is_file()
         assert entry["source_url"].startswith("https://")
-    licence = (FONTS / "OFL.txt").read_text(encoding="utf-8")
-    assert "SIL OPEN FONT LICENSE" in licence
-    assert "Version 1.1" in licence
+        licence = (FONTS / entry["license_file"]).read_text(encoding="utf-8")
+        assert "SIL OPEN FONT LICENSE" in licence
+        assert "Version 1.1" in licence
 
 
 def test_fonts_are_embedded_as_data_uris_and_csp_allows_only_data_fonts() -> None:
     document = html_report(make_report())
     style = document.split("<style>", 1)[1].split("</style>", 1)[0]
 
-    assert len(re.findall(r"@font-face \{", style)) == 2
-    assert style.count('url("data:font/woff2;base64,') == 2
+    assert len(re.findall(r"@font-face \{", style)) == 3
+    assert style.count('url("data:font/woff2;base64,') == 3
     assert "font-display: optional" in style
     assert "http://" not in style
     assert "https://" not in style
@@ -319,11 +382,15 @@ def test_embedded_font_payloads_are_byte_identical_to_the_licensed_files() -> No
     document = html_report(make_report())
     payloads = re.findall(r'url\("data:font/woff2;base64,([A-Za-z0-9+/=]+)"\)', document)
 
-    assert len(payloads) == 2
+    assert len(payloads) == 3
     embedded = sorted(hashlib.sha256(base64.b64decode(item)).hexdigest() for item in payloads)
     source = sorted(
         hashlib.sha256((FONTS / name).read_bytes()).hexdigest()
-        for name in ("geist-latin.woff2", "geist-mono-latin.woff2")
+        for name in (
+            "geist-latin.woff2",
+            "geist-mono-latin.woff2",
+            "instrument-serif-latin.woff2",
+        )
     )
     assert embedded == source
 
@@ -343,12 +410,12 @@ def test_html_is_deterministic_and_app_script_uses_text_content() -> None:
 @pytest.fixture
 def report_html() -> Iterator[Any]:
     report_html_module._manifest.cache_clear()
-    report_html_module._asset_texts.cache_clear()
     report_html_module._font_css.cache_clear()
+    report_html_module._runtime_js.cache_clear()
     yield report_html_module
     report_html_module._manifest.cache_clear()
-    report_html_module._asset_texts.cache_clear()
     report_html_module._font_css.cache_clear()
+    report_html_module._runtime_js.cache_clear()
 
 
 def _manifest() -> dict[str, Any]:
@@ -376,24 +443,145 @@ def test_asset_manifest_rejects_an_unknown_format(
         report_html._manifest()
 
 
-def test_asset_manifest_must_pin_every_vendor_script(
-    report_html: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(report_html, "_manifest", lambda: {"assets": [], "fonts": []})
-
-    with pytest.raises(RuntimeError, match="does not pin the expected assets"):
-        report_html._asset_texts()
-
-
-def test_asset_texts_reject_a_changed_vendor_file(
+def test_runtime_rejects_an_unpinned_asset_set(
     report_html: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     manifest = _manifest()
-    manifest["assets"][0]["sha256"] = "0" * 64
+    manifest["assets"].append({"name": "vendor.js"})
+    monkeypatch.setattr(report_html, "_manifest", lambda: manifest)
+    report_html._runtime_js.cache_clear()
+
+    with pytest.raises(RuntimeError, match="expected animation runtime"):
+        report_html._runtime_js()
+
+
+def test_runtime_requires_the_official_motion_build(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest = _manifest()
+    manifest["assets"][0]["version"] = "0.0.0"
+    monkeypatch.setattr(report_html, "_manifest", lambda: manifest)
+    report_html._runtime_js.cache_clear()
+
+    with pytest.raises(RuntimeError, match="official Motion build"):
+        report_html._runtime_js()
+
+
+class _FakeAssetFile:
+    def __init__(self, payload: bytes) -> None:
+        self.payload = payload
+
+    def read_text(self, *_args: Any, **_kwargs: Any) -> str:
+        return self.payload.decode("utf-8")
+
+    def read_bytes(self, *_args: Any, **_kwargs: Any) -> bytes:
+        return self.payload
+
+
+class _FakeAssetRoot:
+    def __init__(self, payload: bytes) -> None:
+        self.payload = payload
+
+    def joinpath(self, *parts: str) -> _FakeAssetFile:
+        if parts[-1].endswith(".txt"):
+            return _FakeAssetFile(b"MIT License\nMotion\n")
+        return _FakeAssetFile(self.payload)
+
+
+def _fake_asset_files(payload: bytes) -> Any:
+    def fake_files(*_args: Any, **_kwargs: Any) -> _FakeAssetRoot:
+        return _FakeAssetRoot(payload)
+
+    return fake_files
+
+
+def test_runtime_requires_the_motion_mit_licence(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class FakeFile:
+        def read_text(self, *_args: Any, **_kwargs: Any) -> str:
+            return "All rights reserved."
+
+    class FakeRoot:
+        def joinpath(self, *_args: Any, **_kwargs: Any) -> FakeFile:
+            return FakeFile()
+
+    def fake_files(*_args: Any, **_kwargs: Any) -> FakeRoot:
+        return FakeRoot()
+
+    monkeypatch.setattr(report_html, "_manifest", _manifest)
+    monkeypatch.setattr(report_html.resources, "files", fake_files)
+    report_html._runtime_js.cache_clear()
+
+    with pytest.raises(RuntimeError, match="Motion MIT licence"):
+        report_html._runtime_js()
+
+
+def test_runtime_rejects_a_changed_binary_or_non_utf8_payload(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(report_html, "_manifest", _manifest)
+    monkeypatch.setattr(report_html.resources, "files", _fake_asset_files(b"!function(){}"))
+    report_html._runtime_js.cache_clear()
+
+    with pytest.raises(RuntimeError, match="runtime hash mismatch"):
+        report_html._runtime_js()
+
+    payload = b"\xff\xfe\x00"
+    manifest = _manifest()
+    manifest["assets"][0]["sha256"] = hashlib.sha256(payload).hexdigest()
+    monkeypatch.setattr(report_html, "_manifest", lambda: manifest)
+    monkeypatch.setattr(report_html.resources, "files", _fake_asset_files(payload))
+    report_html._runtime_js.cache_clear()
+
+    with pytest.raises(RuntimeError, match="not UTF-8"):
+        report_html._runtime_js()
+
+
+def test_runtime_rejects_a_closing_script_tag(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = b"window.Motion = {};</script>"
+    manifest = _manifest()
+    manifest["assets"][0]["sha256"] = hashlib.sha256(payload).hexdigest()
+    monkeypatch.setattr(report_html, "_manifest", lambda: manifest)
+    monkeypatch.setattr(report_html.resources, "files", _fake_asset_files(payload))
+    report_html._runtime_js.cache_clear()
+
+    with pytest.raises(RuntimeError, match="closing script tag"):
+        report_html._runtime_js()
+
+
+def test_asset_manifest_requires_an_asset_list(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class FakeFile:
+        def read_text(self, *_args: Any, **_kwargs: Any) -> str:
+            return '{"format": "nhi-blast-assets/1"}'
+
+    class FakeRoot:
+        def joinpath(self, *_args: Any, **_kwargs: Any) -> FakeFile:
+            return FakeFile()
+
+    def fake_files(*_args: Any, **_kwargs: Any) -> FakeRoot:
+        return FakeRoot()
+
+    monkeypatch.setattr(report_html.resources, "files", fake_files)
+    report_html._manifest.cache_clear()
+
+    with pytest.raises(TypeError, match="no runtime asset list"):
+        report_html._manifest()
+
+
+def test_font_css_rejects_an_untrusted_weight(
+    report_html: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest = _manifest()
+    manifest["fonts"][0]["weight"] = "bold"
     monkeypatch.setattr(report_html, "_manifest", lambda: manifest)
 
-    with pytest.raises(RuntimeError, match="report asset hash mismatch"):
-        report_html._asset_texts()
+    with pytest.raises(RuntimeError, match="font weight is not a trusted value"):
+        report_html._font_css()
 
 
 def test_font_css_requires_every_dealt_font(
@@ -456,14 +644,11 @@ def test_font_css_rejects_a_non_ofl_licence_file(
         report_html._font_css()
 
 
-def test_inline_scripts_reject_a_vendor_closing_tag(report_html: Any) -> None:
-    assets = dict.fromkeys(
-        ("cytoscape.min.js", "dagre.min.js", "cytoscape-dagre.js"), "window.x = 1;"
-    )
-    assets["dagre.min.js"] = "</script><script>alert(1)</script>"
-
+def test_inline_scripts_reject_a_script_closing_tag(report_html: Any) -> None:
     with pytest.raises(RuntimeError, match="closing script tag"):
-        report_html._inline_scripts("{}", assets)
+        report_html._inline_scripts("</script><script>alert(1)</script>", "window.Motion = {};")
+    with pytest.raises(RuntimeError, match="closing script tag"):
+        report_html._inline_scripts("{}", "window.Motion = {};</script>")
 
 
 def test_write_html_creates_parent_directories_and_ends_with_one_newline(

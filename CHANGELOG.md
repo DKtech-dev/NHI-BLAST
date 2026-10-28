@@ -6,9 +6,10 @@ use semantic versioning from its first published release.
 
 ## 0.2.0 — unreleased
 
-Source-licensing change; no runtime or schema changes. Versions 0.1.0 and 0.1.1 were
-published under the MIT License and remain under those terms. This source tree and
-future releases are proprietary.
+Source-licensing change plus an offline-report and graph redesign. JSON
+(`nhi-blast-report/1.0`), SARIF and the analysis semantics are unchanged. Versions 0.1.0
+and 0.1.1 were published under the MIT License and remain under those terms. This source
+tree and future releases are proprietary.
 
 ### Changed
 
@@ -19,8 +20,31 @@ future releases are proprietary.
 - Updated package metadata to `LicenseRef-Proprietary` and removed the MIT classifier.
 - Bumped the source version to 0.2.0 so unreleased builds cannot be confused with the
   MIT-licensed 0.1.1 artifacts.
-- Kept the vendored report libraries under MIT and the embedded fonts under SIL OFL
-  1.1; their notices are unchanged in `NOTICE`.
+- Removed the vendored Cytoscape, dagre and cytoscape-dagre scripts. The authority graph
+  is now deterministic layered SVG computed in Python, so screen, print and PDF share
+  one layout and no browser layout engine runs. The CSP hashes three inline scripts
+  (report data, the vendored Motion runtime and application code); the embedded
+  Instrument Serif, Geist and Geist Mono fonts remain under SIL OFL 1.1.
+- Rebuilt the offline report interface around the Vermilion Noir identity: near-black
+  surfaces, warm ivory editorial typography, vermilion accents, rounded panels, a report
+  header with scenario scope, a sticky section bar with a persistent active indicator, a
+  four-part summary, an R/E/Z survival rail with distinct zero and unavailable states,
+  scoped findings, responsive tables and print-safe light tokens.
+- Vendored the official Motion 14.7.1 UMD build (MIT, SHA-256 pinned in
+  `report/assets/MANIFEST.json`) and used it for the orchestrated title and metadata
+  entrance, the atmospheric header introduction, first-view analytical panel reveals,
+  real summary-value transitions and graph detail presence. Simple hover state uses CSS;
+  `prefers-reduced-motion` disables ambient movement, reveals and count transitions while
+  keeping every value and interaction available. The report still makes no network
+  requests and adds no runtime Python dependency.
+- Added graph node buttons with roving focus, spatial arrow navigation, Enter selection,
+  Escape clear, zoom, pan, fit, wheel and pinch support, and print expansion of details.
+- Added a print layout with an A3 landscape graph page, automatic table layout and
+  wrapping, and page-break control. A fresh Chromium PDF was generated and the graph
+  page inspected.
+- Added `tests/test_graph_layout.py` and extended the HTML and report-security suites
+  for deterministic geometry, confidence styles, accessible node metadata, the boot
+  failure state, navigation state and print rules.
 
 ## 0.1.1 — 2026-10-27
 

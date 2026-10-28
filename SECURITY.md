@@ -82,9 +82,10 @@ injection, CSP integrity and secret leakage across every output format. Run:
 
 ```
 python -m pytest -m security
-python -m pytest tests/test_security.py tests/test_html_security.py
+python -m pytest tests/test_security.py tests/test_report_security.py
 ```
 
 The HTML report embeds data as an escaped JSON block and builds the DOM without
-HTML-string concatenation. It inlines its JavaScript libraries, recorded by hash in
-`src/nhi_blast/report/assets/MANIFEST.json`; it does not load code from a CDN.
+HTML-string concatenation. It inlines the vendored Motion runtime and its application
+code, pins both by SHA-256 in the CSP and in
+`src/nhi_blast/report/assets/MANIFEST.json`, and loads no code from a CDN.

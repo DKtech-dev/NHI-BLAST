@@ -1,22 +1,27 @@
 # Release procedure
 
-This document describes how a release is prepared and checked. Version `0.1.1` is
-published as GitHub Release assets (wheel, sdist and SHA-256 sums); there is no
-package-index upload or deployment. `0.1.1` is the current release and `0.1.0` remains
-available for comparison. The current gate results and run URLs are in
-`docs/production-readiness.md`. No independent human audit has been performed.
+This document describes how a release is prepared and checked. The latest published
+release is `0.1.1`, distributed as GitHub Release assets (wheel, sdist and SHA-256 sums)
+under the MIT License; `0.1.0` remains available. There is no package-index upload or
+deployment. The source tree on `main` is version `0.2.0` under the proprietary licence
+and is not released. The gate record for `0.1.1` and its run URLs are in
+`docs/production-readiness.md`; a 0.2.0 release needs a new record. No independent
+human audit has been performed.
 
 ## Preconditions
 
 1. The working tree is clean and reviewed. Do not build a release from a dirty tree.
 2. `CHANGELOG.md` describes the release and the version in `pyproject.toml` matches.
-3. `requirements.lock` and `requirements-dev.lock` are regenerated and audited.
-4. The primary-source dates in the data files are current enough for the release; see
+3. The licence state is confirmed before the build: `0.1.0` and `0.1.1` are MIT
+   releases; the 0.2.0 source tree is proprietary. Do not relicense published artifacts
+   or publish a source version under the wrong terms.
+4. `requirements.lock` and `requirements-dev.lock` are regenerated and audited.
+5. The primary-source dates in the data files are current enough for the release; see
    `docs/data-provenance.md`.
-5. Every gate in `docs/production-readiness.md` has a recorded command and result.
-6. Explicit authorization to tag or publish has been given. The maintainer authorized
+6. Every gate in `docs/production-readiness.md` has a recorded command and result.
+7. Explicit authorization to tag or publish has been given. The maintainer authorized
    GitHub Releases with wheel, sdist and SHA-256 sums for `v0.1.0` and, separately, for
-   this `v0.1.1` report patch; that authorization does not extend to package indexes,
+   the `v0.1.1` report patch; that authorization does not extend to package indexes,
    deployments or later versions.
 
 ## 1. Run the full gate set
@@ -46,10 +51,10 @@ python scripts/check_artifacts.py dist
 ```
 
 The artifact checker requires exactly one wheel and one sdist. It verifies that the
-wheel contains all eight platform data files, the three vendored report scripts, both
-embedded fonts, `OFL.txt` and `MANIFEST.json`, that runtime metadata excludes test
-tooling, and that neither artifact contains caches, the private research cache, scratch
-files or the local output directory.
+wheel contains all eight platform data files, the three embedded fonts and both font
+licence files, the Motion runtime and its MIT licence, and `MANIFEST.json`; that
+runtime metadata excludes test tooling; and that neither artifact contains caches, the
+private research cache, scratch files or the local output directory.
 
 ## 3. Verify installation in a clean environment
 
@@ -60,11 +65,12 @@ Install the runtime lock alongside it so dependency versions are exact:
 python -m venv /tmp/nhi-blast-consumer
 /tmp/nhi-blast-consumer/bin/python -m pip install --upgrade pip
 /tmp/nhi-blast-consumer/bin/python -m pip install \
-  -c requirements.lock dist/nhi_blast-0.1.1-py3-none-any.whl
+  -c requirements.lock dist/nhi_blast-<version>-py3-none-any.whl
 ```
 
-On Windows use `\Scripts\python.exe` and quote extras as
-`"dist/nhi_blast-0.1.1-py3-none-any.whl[hcl]"` when testing the HCL extra.
+Substitute the version from `pyproject.toml`. On Windows use `\Scripts\python.exe` and
+quote extras as `"dist/nhi_blast-<version>-py3-none-any.whl[hcl]"` when testing the HCL
+extra.
 
 Check the installed surface:
 

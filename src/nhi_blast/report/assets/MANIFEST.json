@@ -2,25 +2,14 @@
   "format": "nhi-blast-assets/1",
   "assets": [
     {
-      "name": "cytoscape.min.js",
-      "version": "3.30.4",
-      "sha256": "1bb5340e549511e111b31e5684872c949ad33d40ea5dba0ad8e7d90c62c7b3b9",
+      "name": "motion-14.7.1.min.js",
+      "kind": "javascript",
+      "version": "14.7.1",
+      "global": "Motion",
+      "sha256": "9d626ab329c703b3fa824651166973900fd425a84b752f2f53411ad85b3e923e",
       "license": "MIT",
-      "source_url": "https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"
-    },
-    {
-      "name": "dagre.min.js",
-      "version": "0.8.5",
-      "sha256": "62eb9787ccfdbdf4148d4d99d31dbf9ee4770eafee81e637d759b52aac22cd51",
-      "license": "MIT",
-      "source_url": "https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"
-    },
-    {
-      "name": "cytoscape-dagre.js",
-      "version": "2.5.0",
-      "sha256": "bf70fe402991dcbff33e05a7e4a5271c78020bb75e85d1c80ab7538e4157112e",
-      "license": "MIT",
-      "source_url": "https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"
+      "license_file": "MIT-Motion.txt",
+      "source_url": "https://registry.npmjs.org/motion/-/motion-14.7.1.tgz"
     }
   ],
   "fonts": [
@@ -31,7 +20,8 @@
       "sha256": "19f9c92546aa300c312235e3125af1b81394d8db9a4bc4a425cd5b641d2d54e1",
       "license": "OFL-1.1",
       "license_file": "OFL.txt",
-      "source_url": "https://fonts.gstatic.com/s/geist/v5/gyByhwUxId8gMEwcGFU.woff2"
+      "source_url": "https://fonts.gstatic.com/s/geist/v5/gyByhwUxId8gMEwcGFU.woff2",
+      "weight": "400 700"
     },
     {
       "name": "geist-mono-latin.woff2",
@@ -40,7 +30,18 @@
       "sha256": "684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc",
       "license": "OFL-1.1",
       "license_file": "OFL.txt",
-      "source_url": "https://fonts.gstatic.com/s/geistmono/v6/or3nQ6H-1_WfwkMZI_qYFrcdmg.woff2"
+      "source_url": "https://fonts.gstatic.com/s/geistmono/v6/or3nQ6H-1_WfwkMZI_qYFrcdmg.woff2",
+      "weight": "400 700"
+    },
+    {
+      "name": "instrument-serif-latin.woff2",
+      "family": "Instrument Serif",
+      "version": "google-fonts-v5",
+      "sha256": "5eb09b5ac0e28b67c2f041c8ba6d244604ca0c0980d65912ab2d47fed84ddc31",
+      "license": "OFL-1.1",
+      "license_file": "OFL-InstrumentSerif.txt",
+      "source_url": "https://fonts.gstatic.com/s/instrumentserif/v5/jizBRFtNs2ka5fXjeivQ4LroWlx-6zUTjg.woff2",
+      "weight": "400"
     }
   ]
 }

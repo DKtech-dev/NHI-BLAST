@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NHI-Blast social preview</title>
+<!-- The __REPORT_CROP__ placeholder is replaced by render.mjs from a live report capture. -->
+<link rel="stylesheet" href="identity.css">
+<style>
+  html, body { width: 1280px; height: 640px; overflow: hidden; background: var(--bg); }
+  .card { position: relative; isolation: isolate; width: 1280px; height: 640px; padding: 40px 56px 34px; display: flex; flex-direction: column; }
+  .card::before {
+    content: ""; position: absolute; z-index: -1; top: -300px; right: -140px;
+    width: 860px; height: 780px;
+    background: radial-gradient(42% 46% at 52% 50%, var(--glow), transparent 72%);
+    filter: blur(34px);
+    transform: rotate(-7deg);
+    pointer-events: none;
+  }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 9px; }
+  .mark { flex: none; width: 18px; height: 18px; color: var(--accent); }
+  .brand-name { font: 600 14px/1 var(--sans); letter-spacing: .005em; }
+  .brand-sub { padding-left: 11px; border-left: 1px solid var(--line); color: var(--muted); font: 400 11.5px/1 var(--sans); }
+  .topmeta { color: var(--faint); font: 400 10px/1 var(--mono); letter-spacing: .02em; }
+
+  .layout { flex: 1; display: flex; align-items: center; gap: 28px; padding-top: 18px; min-height: 0; }
+  .copy { width: 500px; flex: none; }
+  .rule { width: 40px; height: 2px; background: var(--accent); margin-bottom: 18px; }
+  .headline { color: var(--ink); font: 400 55px/1.02 var(--serif); letter-spacing: -.015em; }
+  .headline .z { color: var(--accent); }
+  .support { margin-top: 14px; max-width: 400px; color: var(--muted); font: 400 15.5px/1.55 var(--sans); }
+  .scope { margin-top: 24px; color: var(--ink-2); font: 500 12px/1.6 var(--sans); }
+  .scope span { display: block; color: var(--faint); font: 400 10px/1.6 var(--mono); letter-spacing: .015em; }
+
+  .shot { margin-left: auto; width: 648px; flex: none; }
+  .shot-frame {
+    padding: 9px; border: 1px solid var(--line); border-radius: 16px;
+    background: var(--surface); box-shadow: 0 28px 70px rgba(0, 0, 0, .6);
+  }
+  .shot-frame img { display: block; width: 628px; height: 408px; object-fit: cover; border-radius: 9px; }
+  .shot-caption { display: flex; justify-content: space-between; margin-top: 10px; color: var(--faint); font: 400 10px/1.4 var(--mono); letter-spacing: .015em; }
+  .shot-caption b { font-weight: 400; color: var(--muted); }
+
+  .foot { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; color: var(--faint); font: 400 10px/1.4 var(--mono); letter-spacing: .015em; }
+  .foot b { font-weight: 400; color: var(--muted); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="topbar">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="2.2" fill="currentColor"></circle>
+          <path d="M12 5.4a6.6 6.6 0 0 1 0 13.2M12 2.2a9.8 9.8 0 0 1 0 19.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".55"></path>
+        </svg>
+        <span class="brand-name">NHI-Blast</span>
+        <span class="brand-sub">Incident exposure analysis</span>
+      </div>
+      <div class="topmeta">Local-first · offline · deterministic</div>
+    </div>
+
+    <div class="layout">
+      <div class="copy">
+        <div class="rule"></div>
+        <div class="headline">Which credentials<br><span class="z">survive</span> the revocation?</div>
+        <p class="support">Offline blast-radius analysis for non-human identity in CI. Reach, revocation survival and rotation order from repository configuration.</p>
+        <p class="scope">Reach · Revocation survival · Rotation order<span>From repository files, without cloud access</span></p>
+      </div>
+
+      <div class="shot">
+        <div class="shot-frame">
+          <img src="__REPORT_CROP__" alt="NHI-Blast offline report: summary and survival panel for a compromised GitHub Action">
+        </div>
+        <div class="shot-caption">
+          <span><b>Offline HTML report</b> · synthetic fx07-incident fixture</span>
+          <span>R / E / Z</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <span><b>No execution</b> · No network · Deterministic artifacts</span>
+      <span>github.com/DKtech-dev/nhi-blast</span>
+    </div>
+  </div>
+</body>
+</html>
