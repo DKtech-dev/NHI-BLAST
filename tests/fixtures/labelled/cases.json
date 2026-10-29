@@ -1,0 +1,107 @@
+{
+  "format_version": "1.0",
+  "provenance": {
+    "source": "verify_installed_final_r2.py, the installed-CLI harness used by the independent review of b85f012 on 2026-10-29 (case table at lines 48-75)",
+    "recovered_on": "2026-10-29",
+    "method": "Case files, rule ids and expected labels are transcribed statically from the audit harness. Expectations are never regenerated from scanner output.",
+    "canary_note": "The synthetic-literal case stores its token as YAML \\u005A escapes, so this repository contains no token-shaped text. YAML decoding yields the same value the harness scanned."
+  },
+  "scan": {
+    "repo_slug": "acme/shop",
+    "selectors": ["all-mutable-actions"]
+  },
+  "limitations": [
+    "All 14 cases are synthetic and were authored by the reviewing agent alongside the rules they exercise.",
+    "The sample targets 8 rules (NHB-OIDC-001..004, NHB-GHA-001, NHB-GHA-003, NHB-GHA-004, NHB-GHA-005), not the full rule set.",
+    "TP/FP/FN/TN counts describe this sample only. They are not real-world precision or recall and have no independent human labels.",
+    "Each case asserts presence or absence of one rule in the findings; it is not a full-report or severity comparison.",
+    "This sample cannot support claims about public-corpus or production detection accuracy."
+  ],
+  "cases": [
+    {
+      "id": "exact-trust",
+      "rule": "NHB-OIDC-001",
+      "expected": false,
+      "rationale": "Exact audience and branch subject positively constrain this Allow."
+    },
+    {
+      "id": "exact-trust-audience",
+      "rule": "NHB-OIDC-004",
+      "expected": false,
+      "rationale": "This Allow explicitly checks the STS audience."
+    },
+    {
+      "id": "org-wildcard",
+      "rule": "NHB-OIDC-002",
+      "expected": true,
+      "rationale": "Wildcard repository and context admit other same-owner repositories."
+    },
+    {
+      "id": "repo-wildcard",
+      "rule": "NHB-OIDC-003",
+      "expected": true,
+      "rationale": "Any context in this repository is accepted."
+    },
+    {
+      "id": "alternative-allows-sub",
+      "rule": "NHB-OIDC-001",
+      "expected": true,
+      "rationale": "The audience-only Allow lacks a positive subject control; alternatives are not conjuncts."
+    },
+    {
+      "id": "alternative-allows-aud",
+      "rule": "NHB-OIDC-004",
+      "expected": true,
+      "rationale": "The subject-only Allow has no audience check."
+    },
+    {
+      "id": "mutable-action",
+      "rule": "NHB-GHA-001",
+      "expected": true,
+      "rationale": "A mutable third-party action shares a job with a referenced persistent secret."
+    },
+    {
+      "id": "pinned-action",
+      "rule": "NHB-GHA-001",
+      "expected": false,
+      "rationale": "A full-SHA pinned action does not meet the mutable-action predicate."
+    },
+    {
+      "id": "benign-action",
+      "rule": "NHB-GHA-001",
+      "expected": false,
+      "rationale": "A mutable action alone has neither OIDC minting nor a persistent secret in this job."
+    },
+    {
+      "id": "wildcard-secrets",
+      "rule": "NHB-GHA-004",
+      "expected": true,
+      "rationale": "toJSON(secrets) references the wildcard secret set."
+    },
+    {
+      "id": "self-hosted",
+      "rule": "NHB-GHA-003",
+      "expected": true,
+      "rationale": "The job explicitly selects a self-hosted runner."
+    },
+    {
+      "id": "hosted",
+      "rule": "NHB-GHA-003",
+      "expected": false,
+      "rationale": "ubuntu-latest is not a self-hosted runner declaration."
+    },
+    {
+      "id": "synthetic-literal",
+      "rule": "NHB-GHA-005",
+      "expected": true,
+      "canary_absent": true,
+      "rationale": "A synthetic token matches the bundled GitHub token heuristic; only kind/length may be reported."
+    },
+    {
+      "id": "no-literal",
+      "rule": "NHB-GHA-005",
+      "expected": false,
+      "rationale": "No value matches a bundled literal heuristic."
+    }
+  ]
+}

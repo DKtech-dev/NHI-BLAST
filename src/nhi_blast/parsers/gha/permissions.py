@@ -15,6 +15,25 @@ def _has_expression(text: str) -> bool:
     return ("${{") in text
 
 
+def _scope_label(scope: str) -> str:
+    """Render a scope name inert for diagnostics: plain names bare, others quoted and escaped."""
+    if scope and all(ch.isascii() and (ch.isalnum() or ch in "-_.") for ch in scope):
+        return scope
+    escaped: list[str] = []
+    for ch in scope:
+        if ch == "\\":
+            escaped.append("\\\\")
+        elif ch == '"':
+            escaped.append('\\"')
+        elif ch.isascii() and ch.isprintable():
+            escaped.append(ch)
+        elif ord(ch) <= 0xFFFF:
+            escaped.append(f"\\u{ord(ch):04x}")
+        else:
+            escaped.append(f"\\U{ord(ch):08x}")
+    return '"' + "".join(escaped) + '"'
+
+
 def _expand_all(level: PermLevel, *, read_all: bool, write_all: bool, line: int) -> Perms:
     scopes = permission_scopes().scopes
     return Perms(
@@ -51,7 +70,7 @@ def parse_permissions(
         diagnostics.append(
             warning(
                 "D-GHA-PERM-VALUE",
-                f"unrecognised permissions value {text!r}; treated as unknown",
+                "unrecognised permissions value; treated as unknown",
                 file=rel_path,
                 line=line,
             )
@@ -59,16 +78,16 @@ def parse_permissions(
         return Perms(all_read=False, all_write=False, has_expression=True, line=line), tuple(
             diagnostics
         )
-    if isinstance(node.value, tuple):
+    if not node.is_mapping():
         diagnostics.append(
             warning(
                 "D-GHA-PERM-SHAPE",
-                "permissions must be a mapping or read-all/write-all; ignored",
+                "permissions must be a mapping or read-all/write-all; treated as unknown",
                 file=rel_path,
                 line=line,
             )
         )
-        return None, tuple(diagnostics)
+        return Perms(has_expression=True, line=line), tuple(diagnostics)
     raw_mapping = node.as_mapping()
     if not raw_mapping:
         return Perms(empty=True, line=line), ()
@@ -83,7 +102,7 @@ def parse_permissions(
             diagnostics.append(
                 warning(
                     "D-GHA-PERM-SCOPE",
-                    f"unknown permission scope {scope_name!r}; ignored",
+                    "unknown permission scope; ignored",
                     file=rel_path,
                     line=value_node.line,
                 )
@@ -96,7 +115,8 @@ def parse_permissions(
             diagnostics.append(
                 warning(
                     "D-EXPR-VALUE",
-                    f"permission {scope_name} is set by an expression; treated as unknown",
+                    f"permission {_scope_label(scope_name)} is set by an expression; "
+                    "treated as unknown",
                     file=rel_path,
                     line=value_node.line,
                 )
@@ -107,7 +127,7 @@ def parse_permissions(
             diagnostics.append(
                 warning(
                     "D-GHA-PERM-VALUE",
-                    f"unknown level {value!r} for permission {scope_name}",
+                    f"unknown level for permission {_scope_label(scope_name)}",
                     file=rel_path,
                     line=value_node.line,
                 )

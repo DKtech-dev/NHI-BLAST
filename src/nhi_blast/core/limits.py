@@ -7,6 +7,7 @@ offending input rather than aborting the scan.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from typing import Any
@@ -62,10 +63,18 @@ class Limits:
             if isinstance(budget, bool) or not isinstance(budget, (int, float)):
                 msg = "scenario_time_budget_seconds must be a number"
                 raise TypeError(msg)
-            if budget < 0:
+            try:
+                finite_budget = float(budget)
+            except OverflowError:
+                msg = "scenario_time_budget_seconds must be finite"
+                raise ValueError(msg) from None
+            if not math.isfinite(finite_budget):
+                msg = "scenario_time_budget_seconds must be finite"
+                raise ValueError(msg)
+            if finite_budget < 0:
                 msg = "scenario_time_budget_seconds must be non-negative"
                 raise ValueError(msg)
-            parsed["scenario_time_budget_seconds"] = float(budget)
+            parsed["scenario_time_budget_seconds"] = finite_budget
         return cls(**parsed)
 
     def as_dict(self) -> dict[str, int | float]:

@@ -25,7 +25,6 @@ _CLOSURE_EDGES = frozenset(
     {
         EdgeKind.AUTHENTICATES_AS,
         EdgeKind.CAN_READ_VALUE,
-        EdgeKind.CAN_MODIFY,
         EdgeKind.STORES,
     }
 )
@@ -95,7 +94,7 @@ def _close_persistent(
                 if auth.kind is not EdgeKind.AUTHENTICATES_AS:
                     continue
                 for read in outgoing.get(auth.dst, ()):
-                    if read.kind not in {EdgeKind.CAN_READ_VALUE, EdgeKind.CAN_MODIFY}:
+                    if read.kind is not EdgeKind.CAN_READ_VALUE:
                         continue
                     for stores in outgoing.get(read.dst, ()):
                         if stores.kind is not EdgeKind.STORES:

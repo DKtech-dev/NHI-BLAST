@@ -22,7 +22,7 @@ from nhi_blast.core.limits import Limits
 
 
 class _AbortWalkError(Exception):
-    """Raised internally when a structural limit is exceeded."""
+    """Raised internally for structural limits or invalid Unicode scalars."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,12 +130,18 @@ class _Walker:
         line = node.start_mark.line + 1
         end_line = node.end_mark.line + 1
         if isinstance(node, ScalarNode):
+            # PyYAML accepts escaped surrogates; reject them rather than collapse IDs
+            # by replacing invalid characters during later UTF-8 serialization.
+            try:
+                node.value.encode("utf-8")
+            except UnicodeEncodeError:
+                self._fail("D-YAML-UNICODE", "invalid Unicode in YAML scalar", line=line)
             if not node.tag.startswith("tag:yaml.org,2002:") and not self._unknown_tag_reported:
                 self._unknown_tag_reported = True
                 self.diagnostics.append(
                     warning(
                         "D-YAML-TAG",
-                        f"unknown YAML tag {node.tag} treated as text",
+                        "unknown YAML tag treated as text",
                         file=self._rel_path,
                         line=line,
                     )
@@ -160,7 +166,7 @@ class _Walker:
                     self.diagnostics.append(
                         warning(
                             "D-YAML-DUPKEY",
-                            f"duplicate mapping key {key!r}; the last value wins",
+                            "duplicate mapping key; the last value wins",
                             file=self._rel_path,
                             line=key_lines[key],
                         )
@@ -173,8 +179,8 @@ class _Walker:
         msg = "unreachable after _fail"
         raise AssertionError(msg)
 
-    def _fail(self, code: str, message: str) -> None:
-        self.diagnostics.append(error(code, message, file=self._rel_path))
+    def _fail(self, code: str, message: str, *, line: int | None = None) -> None:
+        self.diagnostics.append(error(code, message, file=self._rel_path, line=line))
         raise _AbortWalkError
 
 
@@ -192,17 +198,28 @@ def load_marked_document(
             node = next(documents, None)
         finally:
             documents.close()
-    except yaml.YAMLError as exc:
+    except RecursionError:
+        return None, (
+            error("D-YAML-DEPTH", "YAML nesting exceeds the parser recursion limit", file=rel_path),
+        )
+    except (yaml.YAMLError, ValueError, OverflowError) as exc:
         mark = getattr(exc, "problem_mark", None)
         line = mark.line + 1 if mark is not None else None
-        problem = getattr(exc, "problem", None) or "invalid YAML"
-        return None, (error("D-YAML-PARSE", str(problem), file=rel_path, line=line),)
+        # Exception messages can echo arbitrary source text, including credentials.
+        return None, (
+            error("D-YAML-PARSE", "invalid YAML or Unicode escape", file=rel_path, line=line),
+        )
     if node is None:
         return None, (error("D-YAML-EMPTY", "document is empty", file=rel_path),)
     walker = _Walker(limits, rel_path)
     try:
         marked = walker.walk(node, 0)
     except _AbortWalkError:
+        return None, tuple(walker.diagnostics)
+    except RecursionError:
+        walker.diagnostics.append(
+            error("D-YAML-DEPTH", "YAML nesting exceeds the walker recursion limit", file=rel_path)
+        )
         return None, tuple(walker.diagnostics)
     return marked, tuple(walker.diagnostics)
 

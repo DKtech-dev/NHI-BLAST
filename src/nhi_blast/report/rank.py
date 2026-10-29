@@ -7,10 +7,11 @@ from pathlib import Path
 
 from nhi_blast.core.models import RankReport
 from nhi_blast.report._text import safe_text
+from nhi_blast.report.redaction import redact_payload
 
 
 def rank_json(report: RankReport) -> str:
-    data = report.model_dump(mode="json", by_alias=True, exclude_none=True)
+    data = redact_payload(report.model_dump(mode="json", by_alias=True, exclude_none=True))
     return (
         json.dumps(data, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":"))
         + "\n"

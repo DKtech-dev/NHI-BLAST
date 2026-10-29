@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from fnmatch import fnmatchcase
 
 from nhi_blast.analysis.reach import PathInfo, reach
-from nhi_blast.analysis.selectors import SelectorKind, parse_selector
+from nhi_blast.analysis.selectors import Selector, matching_action_nodes, parse_selector
 from nhi_blast.core.config import Config
 from nhi_blast.core.data import rules
 from nhi_blast.core.diagnostics import Diagnostic, info
@@ -25,6 +25,7 @@ from nhi_blast.core.models import (
     EdgeKind,
     Finding,
     GraphData,
+    Node,
     NodeKind,
     ScenarioReport,
     Severity,
@@ -142,6 +143,21 @@ class _FindingsBuilder:
                     return True
         return False
 
+    def _broad_trust_severity(self, role_id: str, edges: Sequence[Edge]) -> Severity:
+        untrusted = any(
+            self.nodes[edge.src].attrs.get("job") is not None
+            and self.nodes[str(self.nodes[edge.src].attrs["job"])].attrs.get("untrusted_checkout")
+            is True
+            for edge in edges
+        )
+        return (
+            Severity.CRITICAL
+            if any(edge.attrs.get("breadth") == "ANY_ORG" for edge in edges)
+            or self._role_reads_persistent(role_id)
+            or untrusted
+            else Severity.HIGH
+        )
+
     def _trust_findings(self) -> None:
         assume_by_role: dict[str, list[Edge]] = {}
         for edge in self.graph.edges:
@@ -150,7 +166,8 @@ class _FindingsBuilder:
         audited_roles = {
             node.id
             for node in self.graph.nodes
-            if node.kind is NodeKind.AWS_ROLE and node.attrs.get("trust_audit")
+            if node.kind is NodeKind.AWS_ROLE
+            and (node.attrs.get("trust_audit") or node.attrs.get("trust_policy_audit"))
         }
         for role_id in sorted(set(assume_by_role) | audited_roles):
             edges = assume_by_role.get(role_id, [])
@@ -168,25 +185,10 @@ class _FindingsBuilder:
                 )
             broad = [edge for edge in edges if edge.attrs.get("breadth") in {"ANY_ORG", "SAME_ORG"}]
             if broad:
-                untrusted = any(
-                    self.nodes[identity].attrs.get("job") is not None
-                    and self.nodes[str(self.nodes[identity].attrs["job"])].attrs.get(
-                        "untrusted_checkout"
-                    )
-                    is True
-                    for identity in (edge.src for edge in broad)
-                )
-                severity = (
-                    Severity.CRITICAL
-                    if any(edge.attrs.get("breadth") == "ANY_ORG" for edge in broad)
-                    or self._role_reads_persistent(role_id)
-                    or untrusted
-                    else Severity.HIGH
-                )
                 groups.append(
                     (
                         "NHB-OIDC-002",
-                        severity,
+                        self._broad_trust_severity(role_id, broad),
                         (
                             f"Trust policy for {role.label} accepts organisation-wide "
                             "or global subjects."
@@ -199,7 +201,7 @@ class _FindingsBuilder:
                 groups.append(
                     (
                         "NHB-OIDC-003",
-                        Severity.HIGH,
+                        self._broad_trust_severity(role_id, repo_wide),
                         f"Trust policy for {role.label} accepts any repository context.",
                         repo_wide,
                     )
@@ -260,9 +262,7 @@ class _FindingsBuilder:
                     path_edges=path_info[0].ids if path_info else (),
                     scenario=path_info[1] if path_info else None,
                 )
-            if edges:
-                continue
-            audits = role.attrs.get("trust_audit", [])
+            audits = role.attrs.get("trust_policy_audit", [])
             if not isinstance(audits, list):
                 continue
             audit_rules = (
@@ -279,12 +279,17 @@ class _FindingsBuilder:
                 matched_audits = [audit for audit in audits if audit.get(attribute)]
                 if not matched_audits:
                     continue
+                statement_evidence = tuple(
+                    Evidence.model_validate(row)
+                    for audit in matched_audits
+                    for row in audit.get("evidence", [])
+                )
                 self._add(
                     rule_id,
                     severity,
                     f"Trust policy for {role.label} {description}.",
-                    nodes=(role_id, *(str(audit["job"]) for audit in matched_audits)),
-                    evidence=(role.evidence,),
+                    nodes=(role_id,),
+                    evidence=(role.evidence, statement_evidence),
                     path=(role_id,),
                 )
 
@@ -307,6 +312,26 @@ class _FindingsBuilder:
             if job_id in scenario.start_nodes and scenario.partition.Z:
                 return scenario.selector
         return None
+
+    def _checkout_evidence(self, job: Node) -> tuple[Evidence, ...]:
+        path = job.attrs.get("path")
+        line = job.attrs.get("untrusted_checkout_line")
+        # The parser records the first executing step after the head-ref checkout.
+        execution = Evidence(
+            cls=EvidenceClass.ASSUMED,
+            rule="A-STEP-SHARE",
+            file=path if isinstance(path, str) else None,
+            line=line if isinstance(line, int) else None,
+            detail="a step after the untrusted checkout may execute contributor-controlled content",
+        )
+        callsites = (
+            runs.evidence
+            for runs in self.outgoing.get(job.id, ())
+            if runs.kind is EdgeKind.RUNS_IN
+            and str(self.nodes[runs.dst].attrs.get("owner", "")).lower() == "actions"
+            and str(self.nodes[runs.dst].attrs.get("repo", "")).lower() == "checkout"
+        )
+        return _evidence(((execution,), *callsites))
 
     def _job_findings(self) -> None:
         for job in self.graph.nodes:
@@ -332,7 +357,7 @@ class _FindingsBuilder:
                         f"job {job.label}."
                     ),
                     nodes=(job.id, action.id),
-                    evidence=(job.evidence, action.evidence, runs.evidence, privileges[0].evidence),
+                    evidence=(job.evidence, runs.evidence, privileges[0].evidence),
                     path=(job.id, action.id),
                     path_edges=(runs.id,),
                     scenario=scenario,
@@ -354,6 +379,7 @@ class _FindingsBuilder:
                     nodes=(job.id, *((role_path.node,) if role_path else ())),
                     evidence=(
                         job.evidence,
+                        self._checkout_evidence(job),
                         privileges[0].evidence,
                         role_path.edges[-1].evidence if role_path else (),
                     ),
@@ -411,6 +437,29 @@ class _FindingsBuilder:
                         path_edges=(hold.id,),
                     )
 
+    def _mutable_entrypoint_paths(
+        self, selector: Selector, scenario: ScenarioReport
+    ) -> dict[str, PathInfo]:
+        actions = {
+            node.id
+            for node in matching_action_nodes(selector, self.graph)
+            if node.attrs.get("mutable") is True
+        }
+        starts = tuple(
+            job_id
+            for job_id in scenario.start_nodes
+            if any(
+                edge.kind is EdgeKind.RUNS_IN and edge.dst in actions
+                for edge in self.outgoing.get(job_id, ())
+            )
+        )
+        if not starts:
+            return {}
+        if starts == scenario.start_nodes:
+            return self.paths[scenario.selector]
+        # An action-any scenario may also start at pinned refs in unrelated jobs.
+        return reach(self.graph, starts)
+
     def _scenario_findings(self) -> None:
         for scenario in self.scenarios:
             paths = self.paths[scenario.selector]
@@ -461,13 +510,8 @@ class _FindingsBuilder:
                         path_edges=path.ids,
                         scenario=scenario.selector,
                     )
-            if selector.kind not in {
-                SelectorKind.ACTION,
-                SelectorKind.ACTION_ANY,
-                SelectorKind.ALL_MUTABLE_ACTIONS,
-            }:
-                continue
-            for role_id, path in sorted(paths.items()):
+            mutable_paths = self._mutable_entrypoint_paths(selector, scenario)
+            for role_id, path in sorted(mutable_paths.items()):
                 if self.nodes[role_id].kind is not NodeKind.AWS_ROLE:
                     continue
                 for modify in self.outgoing.get(role_id, ()):

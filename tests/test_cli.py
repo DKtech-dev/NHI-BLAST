@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
-import sysconfig
 from pathlib import Path
 
 import pytest
@@ -14,6 +12,7 @@ from typer.testing import CliRunner
 
 from nhi_blast.cli.app import app
 from nhi_blast.report.model_json import report_schema
+from tests.entrypoint_support import resolve_cli_entrypoint
 
 FIXTURES = Path(__file__).parent / "fixtures"
 FX03 = FIXTURES / "fx03-wildcard-trust"
@@ -283,9 +282,7 @@ def test_scan_no_color_flag_is_accepted() -> None:
 
 
 def test_installed_console_script_runs() -> None:
-    name = "nhi-blast.exe" if os.name == "nt" else "nhi-blast"
-    executable = Path(sysconfig.get_path("scripts")) / name
-    assert executable.is_file(), f"console script was not installed at {executable}"
+    executable = resolve_cli_entrypoint()
 
     completed = subprocess.run(
         [str(executable), "version"],

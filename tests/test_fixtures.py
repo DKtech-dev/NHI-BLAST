@@ -39,7 +39,7 @@ EXPECTATIONS = {
         1, 2, 2, 16, 14, 1, 4, 1, 0, 1, frozenset({"D-EXPR-VALUE"})
     ),
     "fx05-pull-request": FixtureExpectation(
-        2, 2, 2, 14, 12, 2, 3, 1, 0, 0, frozenset({"D-GHA-UNTRUSTED-CHECKOUT"})
+        2, 2, 2, 14, 12, 1, 3, 1, 0, 0, frozenset({"D-GHA-UNTRUSTED-CHECKOUT"})
     ),
     "fx06-composite": FixtureExpectation(
         1,
@@ -58,7 +58,7 @@ EXPECTATIONS = {
     "fx08-tf-plan-unknowns": FixtureExpectation(
         1, 1, 6, 13, 11, 0, 2, 0, 0, 2, frozenset({"D-TF-UNKNOWN"})
     ),
-    "fx09-no-id-token": FixtureExpectation(1, 2, 3, 11, 8, 3, 2, 1, 1),
+    "fx09-no-id-token": FixtureExpectation(1, 2, 3, 11, 8, 2, 2, 1, 1),
     "fx10-hcl-fallback": FixtureExpectation(
         1,
         1,
@@ -72,9 +72,9 @@ EXPECTATIONS = {
         1,
         frozenset({"D-TF-HCL-LIMIT", "D-TF-UNKNOWN"}),
     ),
-    "fx11-rotation-cycle": FixtureExpectation(1, 1, 7, 19, 17, 4, 2, 1, 3),
+    "fx11-rotation-cycle": FixtureExpectation(1, 1, 7, 19, 17, 4, 2, 3, 3),
     "fx12-untrusted-checkout": FixtureExpectation(
-        2, 2, 2, 15, 13, 5, 3, 1, 1, 0, frozenset({"D-GHA-UNTRUSTED-CHECKOUT"})
+        2, 2, 2, 15, 13, 3, 3, 1, 1, 0, frozenset({"D-GHA-UNTRUSTED-CHECKOUT"})
     ),
     "fx13-secrets-inherit": FixtureExpectation(
         2, 3, 3, 28, 26, 5, 6, 3, 2, 2, frozenset({"D-GHA-SECRETS-ALL"})

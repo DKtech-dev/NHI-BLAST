@@ -26,7 +26,7 @@ from nhi_blast.aws.trust import (
     trust_subject_filter,
 )
 from nhi_blast.core.config import Config
-from nhi_blast.core.data import condition_keys, credential_heuristics
+from nhi_blast.core.data import ConditionKeyRegistry, condition_keys, credential_heuristics
 from nhi_blast.core.diagnostics import Diagnostic, DiagnosticBag, error, info
 from nhi_blast.core.evidence import (
     Evidence,
@@ -63,6 +63,7 @@ from nhi_blast.core.models import (
     RoleFact,
     SinkFact,
     SinkType,
+    Statement,
     SubFormat,
     SubjectCandidate,
     TrustMatch,
@@ -85,7 +86,7 @@ def _repo_write_candidates(repository: RepoIdentity) -> tuple[SubjectCandidate, 
     if repository.slug is None or "/" not in repository.slug:
         return ()
     owner, name = repository.slug.split("/", 1)
-    ref = f"refs/heads/{repository.default_branch}"
+    ref = "refs/heads/*"
     evidence = Evidence(
         cls=EvidenceClass.ASSUMED,
         rule="A-REPO-WRITE",
@@ -95,6 +96,7 @@ def _repo_write_candidates(repository: RepoIdentity) -> tuple[SubjectCandidate, 
         "repository": repository.slug,
         "repository_owner": owner,
         "ref": ref,
+        "job_workflow_ref": f"{repository.slug}/.github/workflows/*@{ref}",
     }
     return (
         SubjectCandidate(
@@ -196,6 +198,8 @@ class _Builder:
         self.intended: dict[tuple[str, str], frozenset[str]] = {}
         self.candidates: dict[tuple[str, str], tuple[SubjectCandidate, ...]] = {}
         self.trust_audit: dict[str, list[dict[str, object]]] = {}
+        self.trust_policy_audit: dict[str, list[dict[str, object]]] = {}
+        self.trust_matched_statements: dict[str, list[Statement]] = {}
         self.repo_write_roles: set[str] = set()
         self.roles = tuple(sorted(inputs.cloud.roles, key=lambda role: role.id))
         self.sinks = tuple(sorted(inputs.cloud.sinks, key=lambda sink: sink.id))
@@ -340,6 +344,8 @@ class _Builder:
                         role, candidates, evaluation, job_id=item.job.id
                     )
                 self.trust_matches[cache_key] = match
+                if match is not None:
+                    self._record_trust_matches(role.id, evaluation)
                 audited_job = self.job_nodes.get(key, job_node_id(item.workflow.path, item.job.id))
                 audit: dict[str, object]
                 if match is not None:
@@ -371,8 +377,45 @@ class _Builder:
                 job_id="repo-write",
                 registry=registry,
             )
-            if match is not None:
+            if match is not None and match.confidence is not EvidenceClass.UNKNOWN:
                 self.repo_write_roles.add(role.id)
+        self._collect_trust_policy_audit(registry)
+
+    def _record_trust_matches(self, role_id: str, evaluation: TrustEvaluation) -> None:
+        bucket = self.trust_matched_statements.setdefault(role_id, [])
+        for match in evaluation.matches:
+            if match.statement not in bucket:
+                bucket.append(match.statement)
+
+    def _collect_trust_policy_audit(self, registry: ConditionKeyRegistry) -> None:
+        """Record policy-wide audit alternatives not already matched by an edge.
+
+        Matched edges describe only the statements that accepted a candidate; a
+        different offending Allow still needs its own provenance and weakest class.
+        """
+        for role in self.roles:
+            if role.id not in self.trust_audit:
+                continue
+            evaluation = self.no_match_evaluations.get(role.id)
+            if evaluation is None:
+                evaluation = no_match_evaluation(role, registry)
+            matched = self.trust_matched_statements.get(role.id, [])
+            remaining = [
+                item
+                for item in evaluation.audit_alternatives
+                if all(item.statement != statement for statement in matched)
+            ]
+            if not remaining:
+                continue
+            self.trust_policy_audit[role.id] = [
+                {
+                    "unconstrained": item.unconstrained,
+                    "missing_audience": item.missing_audience,
+                    "dead_condition_keys": list(item.dead_keys),
+                    "evidence": [row.model_dump(mode="json") for row in item.statement.evidence],
+                }
+                for item in remaining
+            ]
 
     def _expanded_for_ref(self, path: str, job: JobFact) -> ExpandedJob | None:
         return self.expanded_by_key.get((path, job.id))
@@ -969,6 +1012,7 @@ class _Builder:
                     "has_boundary": role.boundary_supplied,
                     "inline_statement_count": len(role.inline_statements),
                     "trust_audit": self.trust_audit.get(role.id, []),
+                    "trust_policy_audit": self.trust_policy_audit.get(role.id, []),
                     "repo_write_accepted": role.id in self.repo_write_roles,
                 },
             )

@@ -15,6 +15,7 @@ from nhi_blast.core.models import (
     Severity,
 )
 from nhi_blast.report._text import safe_text
+from nhi_blast.report.redaction import redact_model
 
 _SEVERITY_COLOUR = {
     Severity.CRITICAL: "1;31",
@@ -263,6 +264,7 @@ def _diagnostics_section(report: Report) -> list[str]:
 
 def render_console(report: Report, *, color: bool = False) -> str:
     """Render a human-readable report; colour is used only when requested."""
+    report = redact_model(report)
     nodes = {node.id: node for node in report.graph.nodes}
     edges = {edge.id: edge for edge in report.graph.edges}
     lines = [

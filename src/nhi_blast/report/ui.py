@@ -804,7 +804,7 @@ footer::before { content: ""; position: absolute; top: 0; left: 24px; right: 24p
 <body>
 <div id="boot-status" role="status" aria-live="polite">Reading the embedded report data…</div>
 <a class="skip-link" href="#main">Skip to report content</a>
-<div class="viewer-bar">
+<div class="viewer-bar" role="region" aria-label="Report controls">
   <div class="viewer-inner">
     <a class="brand" href="#top">
       <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">

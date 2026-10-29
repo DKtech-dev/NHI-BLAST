@@ -14,6 +14,8 @@ from typing import Any
 from nhi_blast.core.diagnostics import Diagnostic, error, warning
 from nhi_blast.core.evidence import Evidence, EvidenceClass
 from nhi_blast.core.models import PolicyEffect, Statement
+from nhi_blast.parsers._json import decode_json
+from nhi_blast.parsers._unicode import validate_unicode
 from nhi_blast.parsers.terraform.facts import IamDocumentFact
 
 
@@ -128,12 +130,13 @@ def parse_policy_text(
 ) -> tuple[tuple[Statement, ...], tuple[Diagnostic, ...]]:
     """Parse a policy document held as a JSON string."""
     try:
-        payload = json.loads(text)
-    except (json.JSONDecodeError, ValueError) as exc:
+        payload = decode_json(text)
+        validate_unicode(payload)
+    except (ValueError, RecursionError):
         return (), (
             error(
                 "D-IAM-PARSE",
-                f"policy document is not valid JSON: {exc.msg if hasattr(exc, 'msg') else exc}",
+                "invalid policy JSON, invalid Unicode or excessive nesting/numeric size",
                 file=file,
                 line=line,
             ),
@@ -172,10 +175,18 @@ def parse_iam_document(
     """Parse --iam-json input: a policy document, get-role-policy or get-role output."""
     diagnostics: list[Diagnostic] = []
     try:
-        payload = json.loads(text)
-    except (json.JSONDecodeError, ValueError) as exc:
-        message = getattr(exc, "msg", str(exc))
-        return None, (error("D-IAM-PARSE", f"invalid JSON: {message}", file=label),)
+        payload = decode_json(text)
+        validate_unicode(payload)
+    except (ValueError, RecursionError) as exc:
+        line = exc.lineno if isinstance(exc, json.JSONDecodeError) else None
+        return None, (
+            error(
+                "D-IAM-PARSE",
+                "invalid JSON, invalid Unicode or excessive nesting/numeric size",
+                file=label,
+                line=line,
+            ),
+        )
     if not isinstance(payload, Mapping):
         return None, (error("D-IAM-SHAPE", "input is not a JSON object", file=label),)
     role_arn: str | None = None

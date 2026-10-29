@@ -55,16 +55,27 @@ class Config:
 
     @classmethod
     def from_file(cls, path: Path) -> Config:
+        # A config cannot raise the cap used to read its own limit overrides.
+        limit = Limits().max_yaml_policy_file_bytes
         try:
-            raw_bytes = path.read_bytes()
-        except OSError as exc:
-            msg = f"cannot read config file {path}: {exc}"
-            raise ConfigError(msg) from exc
+            with path.open("rb") as handle:
+                raw_bytes = handle.read(limit + 1)
+        except OSError:
+            msg = "cannot read config file"
+            raise ConfigError(msg) from None
+        if len(raw_bytes) > limit:
+            msg = f"config file exceeds the {limit}-byte limit"
+            raise ConfigError(msg)
         try:
             data = tomllib.loads(raw_bytes.decode("utf-8"))
-        except (UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
-            msg = f"invalid config file {path}: {exc}"
-            raise ConfigError(msg) from exc
+        except (ValueError, RecursionError):
+            # TOML errors can disclose keys and values, and CPython rejects very long
+            # integer literals with a bare ValueError; expose only the boundary failure.
+            msg = (
+                "invalid config file: malformed TOML, invalid UTF-8, "
+                "excessive nesting or an oversized number literal"
+            )
+            raise ConfigError(msg) from None
         return cls.from_mapping(data, path=str(path))
 
     @classmethod

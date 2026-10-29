@@ -25,8 +25,10 @@ from nhi_blast.core.diagnostics import Diagnostic, DiagnosticBag, DiagnosticLeve
 from nhi_blast.core.ids import digest_pairs
 from nhi_blast.core.limits import Limits
 from nhi_blast.core.models import (
+    NODE_KIND_ORDER,
     AssumptionUse,
     DataFileInfo,
+    Edge,
     Finding,
     GraphData,
     InputFile,
@@ -53,6 +55,7 @@ from nhi_blast.parsers.iam.policy_doc import parse_iam_document
 from nhi_blast.parsers.terraform.facts import IamDocumentFact, TfModelFact
 from nhi_blast.parsers.terraform.tfhcl import parse_tf_hcl
 from nhi_blast.parsers.terraform.tfjson import parse_tf_json
+from nhi_blast.report._text import safe_text
 from nhi_blast.report.console import render_console
 from nhi_blast.report.graph_export import graph_export_dot, graph_export_json
 from nhi_blast.report.html import write_html
@@ -494,10 +497,14 @@ def _merged_findings(
 ) -> tuple[tuple[Finding, ...], tuple[Diagnostic, ...]]:
     preliminary = tuple(analysis.to_report() for analysis in analyses)
     base = build_findings(graph, scenarios=preliminary)
-    merged: dict[str, Finding] = {finding.id: finding for finding in base.findings}
+    scenario_rules = {"NHB-SURV-001", "NHB-ROT-001", "NHB-ROT-002"}
+    merged: dict[str, Finding] = {
+        finding.id: finding for finding in base.findings if finding.rule not in scenario_rules
+    }
     for analysis in analyses:
         for finding in analysis.findings:
-            merged[finding.id] = finding
+            if finding.rule in scenario_rules:
+                merged[finding.id] = finding
     filtered = filter_findings(merged.values(), config=config, strict=strict)
     return filtered.findings, filtered.diagnostics
 
@@ -671,6 +678,15 @@ def run_scan(options: ScanOptions, *, color: bool = False) -> ScanOutcome:
     findings, filter_diagnostics = _merged_findings(graph, analyses, parsed.config, options.strict)
     final_ids = {finding.id for finding in findings}
     scenario_reports = _scenario_reports(analyses, final_ids)
+    nodes = {node.id: node for node in graph.nodes}
+    edges = {edge.id: edge for edge in graph.edges}
+    for analysis in analyses:
+        nodes.update((node.id, node) for node in analysis.synthetic_nodes)
+        edges.update((edge.id, edge) for edge in analysis.synthetic_edges)
+    graph = GraphData(
+        nodes=tuple(sorted(nodes.values(), key=lambda node: (NODE_KIND_ORDER[node.kind], node.id))),
+        edges=tuple(sorted(edges.values(), key=Edge.sort_key)),
+    )
     assumptions_used, assumption_diagnostics = _collect_assumptions(
         graph, build.assumptions_used, findings, analyses
     )
@@ -774,7 +790,10 @@ def run_export(options: ExportOptions) -> ExportOutcome:
     exit_code = 3 if options.strict and _has_error(diagnostics.sorted()) else 0
     return ExportOutcome(
         exit_code=exit_code,
-        text=(f"Exported {node_count} nodes and {edge_count} edges to {target.as_posix()}\n"),
+        text=(
+            f"Exported {node_count} nodes and {edge_count} edges to "
+            f"{safe_text(target.as_posix(), 500)}\n"
+        ),
         written=(target,),
         node_count=node_count,
         edge_count=edge_count,

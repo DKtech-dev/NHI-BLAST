@@ -14,6 +14,7 @@ from typing import Any
 from nhi_blast.core.models import Report
 from nhi_blast.report.graph_layout import build_layout, render_graph_svg
 from nhi_blast.report.model_json import report_dict
+from nhi_blast.report.redaction import redact_model
 from nhi_blast.report.ui import APP_JS, TEMPLATE
 
 _FONT_ASSETS = (
@@ -183,6 +184,7 @@ def _inline_scripts(data: str, runtime: str) -> str:
 
 def html_report(report: Report) -> str:
     """Render one deterministic, self-contained HTML document."""
+    report = redact_model(report)
     data = _embedded_json(report)
     runtime = _runtime_js()
     scripts = _inline_scripts(data, runtime)

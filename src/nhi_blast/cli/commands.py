@@ -94,7 +94,7 @@ def _use_color(no_color: bool) -> bool:
 
 
 def _written(paths: tuple[Path, ...]) -> str:
-    return " ".join(path.as_posix() for path in paths)
+    return " ".join(safe_text(path.as_posix(), 500) for path in paths)
 
 
 def scan(

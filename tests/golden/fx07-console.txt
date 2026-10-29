@@ -81,31 +81,31 @@ Rotation plan
 
 Findings
   Total: 7
-  [CRITICAL] NHB-OIDC-002 NHB-OIDC-002-ebd9705d: Organisation-wide or global wildcard in sub [declared tfstate.json:43]
+  [CRITICAL] NHB-OIDC-002 NHB-OIDC-002-f3384765: Organisation-wide or global wildcard in sub [declared tfstate.json:43]
     Trust policy for arn:aws:iam::111122223333:role/legacy-ci accepts organisation-wide or global subjects. Evidence class: derived. [declared tfstate.json:43]
     scenario: action:tj-actions/changed-files@v45
     path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/legacy-ci
-  [CRITICAL] NHB-SURV-001 NHB-SURV-001-4b5ea811: Credentials survive revocation of the entrypoint [declared .github/workflows/release.yml:7]
+  [CRITICAL] NHB-SURV-001 NHB-SURV-001-233ec620: Credentials survive revocation of the entrypoint [declared .github/workflows/release.yml:7]
     5 persistent credential(s) survive revocation of the entrypoint if the authority path was exercised. Evidence class: assumed. Assumptions: H-SECRET-NAME. [declared .github/workflows/release.yml:7]
     scenario: action:tj-actions/changed-files@v45
     path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/deploy-prod -> aws:secret:prod/db-master -> cred:aws:secret:prod/db-master:stored
-  [HIGH] NHB-GHA-001 NHB-GHA-001-089a8486: Mutable third-party action in a job that holds secrets or OIDC [declared .github/workflows/ci.yml:11]
-    Mutable third-party action tj-actions/changed-files@v45 runs in privileged job publish. Evidence class: declared. [declared .github/workflows/ci.yml:11]
+  [HIGH] NHB-GHA-001 NHB-GHA-001-69442ef8: Mutable third-party action in a job that holds secrets or OIDC [declared .github/workflows/release.yml:12]
+    Mutable third-party action tj-actions/changed-files@v45 runs in privileged job publish. Evidence class: declared. [declared .github/workflows/release.yml:12]
     scenario: action:tj-actions/changed-files@v45
     path: job:.github/workflows/release.yml#publish -> action:tj-actions/changed-files@v45
-  [LOW] NHB-OIDC-005 NHB-OIDC-005-5cfb5d56: Subject format drift [declared tfstate.json:43]
+  [LOW] NHB-OIDC-005 NHB-OIDC-005-39d43eb0: Subject format drift [declared tfstate.json:43]
     Trust policy for arn:aws:iam::111122223333:role/legacy-ci matches only the classic subject format. Evidence class: derived. [declared tfstate.json:43]
     scenario: action:tj-actions/changed-files@v45
     path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/legacy-ci
-  [LOW] NHB-ROT-001 NHB-ROT-001-2bef5238: Reachable credential sink without rotation [declared .github/workflows/release.yml:7]
-    Reachable credential sink /prod/stripe/live_key has no rotation configured. Evidence class: derived. [declared .github/workflows/release.yml:7]
-    scenario: action:tj-actions/changed-files@v45
-    path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/deploy-prod -> aws:ssm:/prod/stripe/live_key
-  [LOW] NHB-ROT-001 NHB-ROT-001-470989f8: Reachable credential sink without rotation [declared .github/workflows/release.yml:7]
+  [LOW] NHB-ROT-001 NHB-ROT-001-142a69ca: Reachable credential sink without rotation [declared .github/workflows/release.yml:7]
     Reachable credential sink prod/db-master has no rotation configured. Evidence class: derived. [declared .github/workflows/release.yml:7]
     scenario: action:tj-actions/changed-files@v45
     path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/deploy-prod -> aws:secret:prod/db-master
-  [LOW] NHB-ROT-001 NHB-ROT-001-be3e6d21: Reachable credential sink without rotation [declared .github/workflows/release.yml:7]
+  [LOW] NHB-ROT-001 NHB-ROT-001-88df584d: Reachable credential sink without rotation [declared .github/workflows/release.yml:7]
+    Reachable credential sink /prod/stripe/live_key has no rotation configured. Evidence class: derived. [declared .github/workflows/release.yml:7]
+    scenario: action:tj-actions/changed-files@v45
+    path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/deploy-prod -> aws:ssm:/prod/stripe/live_key
+  [LOW] NHB-ROT-001 NHB-ROT-001-f1aba26d: Reachable credential sink without rotation [declared .github/workflows/release.yml:7]
     Reachable credential sink /legacy/ci-token has no rotation configured. Evidence class: derived. [declared .github/workflows/release.yml:7]
     scenario: action:tj-actions/changed-files@v45
     path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/legacy-ci -> aws:ssm:/legacy/ci-token

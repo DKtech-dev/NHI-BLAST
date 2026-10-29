@@ -76,6 +76,33 @@ def _resource(
     )
 
 
+def test_malformed_provider_url_returns_diagnostic_without_losing_valid_provider() -> None:
+    resources = tuple(
+        _resource(
+            f"aws_iam_openid_connect_provider.{name}",
+            "aws_iam_openid_connect_provider",
+            {"url": url, "client_id_list": ["sts.amazonaws.com"]},
+        )
+        for name, url in (
+            ("invalid", "https://["),
+            ("valid", "https://token.actions.githubusercontent.com"),
+        )
+    )
+    model = TfModelFact(
+        resources={resource.address: resource for resource in resources},
+        file="main.tfstate.json",
+        source=TfSource.STATE,
+    )
+    facts = resolve_cloud_facts([model], [], config=Config.empty())
+
+    assert [provider.host for provider in facts.providers] == [
+        "token.actions.githubusercontent.com"
+    ]
+    assert any(
+        d.code == "D-TF-UNKNOWN" and d.file == "main.tfstate.json" for d in facts.diagnostics
+    )
+
+
 def test_fx02_exact_trust_role_sink_and_provider(fixtures_dir: Path) -> None:
     facts = resolve_fixture(fixtures_dir, "fx02-exact-trust")
 

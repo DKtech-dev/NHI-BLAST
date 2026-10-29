@@ -847,3 +847,154 @@ remaining assurance actions are:
    secret scanning, push protection, CodeQL default setup and private vulnerability
    reporting are enabled; secret-scanning validity checks and non-provider patterns
    remain disabled at the account level and are not claimed.
+
+## Final continuation evidence — 2026-10-29
+
+Final working tree based on `7ea7c19`: four boundary/analytical defects were repaired
+with regression tests — export confirmation path redaction, per-statement trust-audit
+provenance (policy-wide flags no longer broaden matched edges), corpus harness
+referential integrity, and an explicit interpreter-independent JSON nesting limit
+because CPython 3.14 no longer raises `RecursionError` for hostile deep input. The
+repairs are covered by `tests/test_output_redaction.py`,
+`tests/test_trust_boundary_regressions.py`, `tests/test_benchmark_corpus.py` and
+`tests/test_cloud_parser_regressions.py`.
+
+Executed on this tree: full suite **751 passed, 2 skipped** on Python 3.12.14, 3.13.17
+and 3.14.7; slow suite **2 passed**; ruff check/format clean; `mypy --strict` clean in 80
+files; schema check exit 0; coverage **88.73%**; Bandit 0 medium/high (23 low, triaged);
+pip-audit 0 on both locks; Semgrep `p/ci`+`p/python` 0 findings; zizmor 0 (2 disclosed
+suppressions) and actionlint 0 on production workflows; wheel/sdist artifact check passed
+(wheel 97 files, SHA-256 `97bc7238c09c…`); fresh wheel `[hcl]` install with clean
+`pip check`; installed CLI **42/42** expected exits and 14 labelled synthetic cases
+(TP 8, FP 0, FN 0, TN 6); **15/15** corpus datasets deterministic over two repeats
+(3,620 files, 0 errors); headless Chrome/axe **44/44** checks with 0 violations in eight
+viewport/theme views and a 609,273-byte PDF.
+
+Known gaps: Linux/macOS were not executed locally for this tree and the recorded remote
+CI predates it; browser verification used headless Chrome only; the labelled sample is
+small and synthetic, not public-corpus ground truth; the independent human audit remains
+not performed and is not claimed; no release was published. This tree was committed to
+`audit/nhi-blast-2026-10-29` after verification.
+
+## Independent audit continuation — 2026-10-29
+
+A further independent pass reproduced two defects and fixed both with failing-first
+regression tests. **F-01**: a `nhi-blast.toml` containing an integer literal longer than
+CPython's 4,300-digit conversion limit raised a bare `ValueError` through `tomllib`,
+surfacing as `internal error: ValueError` (exit 4); `Config.from_file` now maps every
+parser-level `ValueError`/`RecursionError` to the sanitized `ConfigError`, so the CLI
+returns exit 2 (`tests/test_input_limit_regressions.py`). **F-02**: axe-core found the
+report utility bar outside every landmark; the viewer bar is now
+`role="region" aria-label="Report controls"` (`tests/test_html.py`). A synthetic PEM
+header in a redaction test was assembled at runtime so gitleaks stays strict without an
+allowlist.
+
+Re-executed on the final tree: full suite **752 passed, 2 skipped** on Python 3.12.14,
+3.13.17 and 3.14.7; slow suite **2 passed**; ruff/format clean; `mypy src` clean (75
+files); schema exit 0; coverage **88.73%** and gate passed; Bandit, pip-audit (both
+locks), Semgrep (`p/ci`+`p/python`), zizmor, actionlint and gitleaks (276 files) all
+clean; two wheel/sdist builds byte-identical (wheel SHA-256 `ec2c02a6…`, sdist
+`5f6378b2…`); wheel and sdist installs both reject the hostile config with exit 2;
+installed verification 42 commands and 14 labelled cases (TP 8, FP 0, FN 0, TN 6);
+installed and working-tree reports byte-identical; corpus **15/15** datasets
+deterministic; axe 0 violations in light and dark; headless Chrome no console errors,
+exceptions or network requests at 1440×900 and 390×844; PDF 10 pages, 888,067 bytes.
+
+Gaps unchanged: no Linux/macOS execution for this tree, remote CI predates it, browser
+verification is headless Chrome only, the labelled sample is synthetic, no human audit
+was performed, and no release was published. This tree is recorded on
+`audit/nhi-blast-2026-10-29`.
+
+## Low-severity remediation — 2026-10-29
+
+The independent review of `b85f012` reported no confirmed vulnerabilities or
+release-blocking defects and three low-severity observations. All three are addressed
+with failing-first regression tests on `audit/nhi-blast-2026-10-29`.
+
+**AUD-01 — reproducible labelled evaluation.** The 14 labelled synthetic cases and
+their expected results were recovered verbatim from the audit harness
+(`verify_installed_final_r2.py`, case table at lines 48-75) and are now static scan
+roots under `tests/fixtures/labelled/`. `cases.json` records each rule, expectation,
+rationale and the provenance; expectations are never regenerated from scanner output.
+The synthetic-literal token is stored as YAML `\u005A` escapes, so the repository
+holds no token-shaped text while YAML decoding still supplies the harness value.
+`scripts/evaluate_labelled.py` runs the real pipeline in-process with the harness
+settings, prints one result per case plus TP/FP/FN/TN, exits 1 on any mismatch and
+writes a deterministic JSON summary with `--json-out`. `tests/test_labelled_evaluation.py`
+requires TP 8 / FP 0 / FN 0 / TN 6 twice with identical summaries. A deliberate
+expectation flip makes the script exit 1, so the check is not self-fulfilling.
+`docs/testing.md` records that the sample is synthetic, covers 8 rules, asserts one
+rule per case and is not real-world precision, recall or ground truth.
+
+**AUD-03 — redaction recursion.** `redact_payload` traversed payloads recursively; a
+5,000-level payload raised `RecursionError`, and a non-string mapping key raised
+`TypeError` from the literal regex. Collection and rewriting are now iterative,
+preserving identifier cross-references, hashed keys, idempotence and non-JSON value
+identity. Tests cover 5,000-level nesting, non-string keys and opaque objects, and a
+200-level normal payload (`tests/test_output_redaction.py`).
+
+**AUD-04 — diagnostic quoting.** Permission diagnostics interpolated `scope_name` into
+warning text. Every reachable value is a known data-file scope because unknown keys
+take a generic diagnostic, so this was defence in depth; `_scope_label` now returns
+plain scope names bare and quotes/escapes everything else to ASCII, including control,
+bidi and non-ASCII characters. Tests cover plain names, quotes, backslashes, control
+characters, non-ASCII text, the empty string and repeated-diagnostic consistency
+(`tests/test_permission_diagnostics.py`).
+
+Re-executed on this tree: full suite **770 passed, 2 skipped** on Python 3.12.14,
+3.13.17 and 3.14.7; security subset **182 passed, 1 skipped**; slow suite **2 passed**;
+ruff check/format clean (130 files); `mypy src` clean (75 files); schema exit 0;
+coverage **88.76%** and gate passed; Bandit 0 (all severities, 16,838 LOC), pip-audit
+0 on both locks, Semgrep `p/ci`+`p/python` 0 findings (164 rules, 86 files), zizmor
+1.31.1 0, actionlint exit 0, gitleaks 0 leaks across 300 committable files (2.86 MB);
+wheel and sdist built twice byte-identically (wheel SHA-256 `eba5a1cfffad…`, 97 files;
+sdist `b9dddabdc7ac…`, 284 files) and the artifact check passed; fresh wheel install
+with clean `pip check`, CLI version/version --data/schema/scan/rank/export/explain
+exercised; installed verification **42/42** expected exits and **14/14** recovered
+labelled cases through the installed CLI; the evaluation script also passes against the
+installed wheel (TP 8, FP 0, FN 0, TN 6); corpus **15/15** datasets deterministic over
+two repeats (3,620 files, 0 failures).
+
+Gaps unchanged: no Linux/macOS execution for this tree, remote CI predates it, browser
+verification was not re-run because no report serialization or UI code changed, the
+labelled sample is synthetic and is not real-world accuracy, no human audit was
+performed, and no release was published.
+
+## Windows CI entrypoint resolution — 2026-10-29
+
+The `cli` fixture in `tests/test_benchmark_corpus.py` derived the installed console
+script from `Path(sys.executable).parent`. That assumption only holds in virtual
+environments, where `python.exe` itself lives in `Scripts`. GitHub-hosted runners use
+the python.org layout: `python.exe` sits at the toolcache prefix root and pip installs
+console scripts into `<prefix>/Scripts`. Run 40806824836 (`pull_request`, SHA
+`820549d`) therefore ended with 744 passed and 28 fixture errors on every Windows job
+while all Ubuntu jobs passed. `tests/test_cli.py::test_installed_console_script_runs`
+already resolved through `sysconfig.get_path("scripts")` and passed on those same
+runs, which confirms the entrypoint was installed at
+`C:/hostedtoolcache/windows/Python/<version>/x64/Scripts/nhi-blast.exe`; the workflow
+install step needed no change. A wheel installed into a temporary nt-scheme prefix
+reproduced the same location (`Scripts/nhi-blast.exe`, nothing beside the interpreter).
+
+`tests/entrypoint_support.py` now provides one resolver: the interpreter's configured
+scripts directory (sysconfig), then `shutil.which`, then the legacy directory beside
+`python.exe`. It accepts only an existing regular file and raises
+`EntrypointNotFoundError` naming the interpreter and every searched path. The corpus
+fixture and `tests/test_cli.py` both use it. Seven regression tests cover the
+toolcache layout, the POSIX layout, precedence, the PATH fallback, the
+interpreter-adjacent fallback, the missing-entrypoint diagnostic (including a
+directory bearing the entrypoint name) and Windows `.exe` naming
+(`tests/test_entrypoint_support.py`). No Windows skip, weakened assertion or
+source-import substitution was introduced.
+
+Re-executed on this tree: full suite **777 passed, 2 skipped** on Python 3.12.14,
+3.13.17 and 3.14.7; security subset **182 passed, 1 skipped**; slow suite **2 passed**;
+ruff check/format clean (132 files); `mypy src` clean (75 files); schema exit 0;
+coverage **89%** and gate passed; wheel rebuilt byte-identically (`eba5a1cfffad…`,
+97 files; unchanged because no runtime code changed), sdist `887d485e…` (286 files),
+artifact check passed; a fresh consumer install passed `pip check`, `version`,
+`version --data`, `schema` and an fx07 scan producing JSON, SARIF and HTML. CI run
+40881803232 on commit `6559488` then passed all six test jobs (Ubuntu and Windows,
+Python 3.12-3.14), including the installed-CLI integration tests that had failed in
+run 40806824836, and the package job; the advisory workflow (run 40881803387) also
+passed. The GitHub-hosted Windows toolcache was not reproduced locally; that remote
+run is the evidence for the toolcache layout.

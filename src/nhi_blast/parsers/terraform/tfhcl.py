@@ -18,6 +18,8 @@ from typing import Any
 from nhi_blast.core.diagnostics import Diagnostic, error, warning
 from nhi_blast.core.limits import Limits
 from nhi_blast.core.models import ParseResult, TfSource
+from nhi_blast.parsers._json import JsonDepthError, decode_json
+from nhi_blast.parsers._unicode import validate_unicode
 from nhi_blast.parsers.terraform.facts import (
     TfModelFact,
     TfPolicyDocumentFact,
@@ -84,8 +86,8 @@ def _resolve_string(
         if not ok:
             return None, False
         try:
-            return json.loads(inner), True
-        except (json.JSONDecodeError, ValueError):
+            return decode_json(inner), True
+        except json.JSONDecodeError:
             return None, False
     if (
         value.startswith("${")
@@ -174,8 +176,8 @@ def _normalise_policy_value(value: Any) -> tuple[str | None, bool]:
         stripped = value.strip()
         if stripped.startswith("{"):
             try:
-                json.loads(stripped)
-            except (json.JSONDecodeError, ValueError):
+                decode_json(stripped)
+            except json.JSONDecodeError:
                 return None, False
             return stripped, True
         return None, False
@@ -194,12 +196,16 @@ def _json_configuration(
     text: str, rel_path: str
 ) -> tuple[Mapping[str, Any] | None, Diagnostic | None]:
     try:
-        document = json.loads(text)
-    except json.JSONDecodeError as exc:
+        document = decode_json(text)
+        validate_unicode(document)
+    except (ValueError, RecursionError) as exc:
+        line = exc.lineno if isinstance(exc, json.JSONDecodeError) else None
         return None, error(
             "D-TF-HCL-PARSE",
-            f"Terraform JSON configuration could not be parsed: {exc.msg} at line {exc.lineno}",
+            "Terraform JSON configuration could not be parsed: invalid JSON/Unicode "
+            "or excessive nesting/numeric size",
             file=rel_path,
+            line=line,
         )
     if not isinstance(document, Mapping):
         return None, error(
@@ -344,6 +350,24 @@ def parse_tf_hcl(rel_path: str, text: str, *, limits: Limits) -> ParseResult[TfM
     only required for HCL text; ``*.tf.json`` configuration is read with the standard
     library JSON decoder.
     """
+    try:
+        validate_unicode(text)
+        return _parse_tf_hcl(rel_path, text, limits=limits)
+    except (JsonDepthError, RecursionError, UnicodeEncodeError):
+        # Normalization and policy-string decoding can fail after the initial parse.
+        return ParseResult(
+            facts=None,
+            diagnostics=(
+                error(
+                    "D-TF-HCL-PARSE",
+                    "HCL configuration has invalid Unicode or excessive nesting",
+                    file=rel_path,
+                ),
+            ),
+        )
+
+
+def _parse_tf_hcl(rel_path: str, text: str, *, limits: Limits) -> ParseResult[TfModelFact]:
     del limits  # the loader enforces the byte limit before parsing
     # python-hcl2 rejects CRLF inside blocks; Windows checkouts commonly use it.
     text = text.replace("\r\n", "\n").replace("\r", "\n")
@@ -374,6 +398,7 @@ def parse_tf_hcl(rel_path: str, text: str, *, limits: Limits) -> ParseResult[TfM
             )
         try:
             document = hcl2.loads(text)
+            validate_unicode(document)
         except Exception as exc:  # parser boundary: third-party parser may raise any error
             return ParseResult(
                 facts=None,

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from nhi_blast.core.ids import action_node_id, job_node_id
-from nhi_blast.core.models import EdgeKind, GraphData, Node, NodeKind
+from nhi_blast.core.models import CredentialKind, EdgeKind, GraphData, Lifetime, Node, NodeKind
 from nhi_blast.parsers.gha.uses import parse_uses
 from nhi_blast.resolvers.composite import ExpandedJob
 
@@ -39,6 +39,8 @@ def _valid_action(value: str) -> bool:
     if any(character.isspace() for character in value):
         return False
     uses = parse_uses(value, 0)
+    if uses.kind == "DOCKER":
+        return bool(value.removeprefix("docker://"))
     return uses.kind == "REMOTE" and bool(uses.owner and uses.repo and uses.ref)
 
 
@@ -54,8 +56,11 @@ def _valid_action_any(value: str) -> bool:
 
 def parse_selector(text: str) -> Selector:
     raw = text.strip()
-    if raw in {kind.value for kind in SelectorKind} and ":" not in raw:
+    if raw in {"repo-write", "fork-pr", "all-mutable-actions"}:
         return Selector(raw=raw, kind=SelectorKind(raw))
+    # all-mutable-actions emits Docker uses strings as exact action selectors.
+    if raw.startswith("docker://") and _valid_action(raw):
+        return Selector(raw=raw, kind=SelectorKind.ACTION, value=raw)
     prefix, separator, value = raw.partition(":")
     if not separator or prefix not in {kind.value for kind in SelectorKind}:
         msg = f"invalid compromise selector: {text!r}"
@@ -140,21 +145,30 @@ def _jobs_for_actions(graph: GraphData, action_ids: set[str]) -> tuple[str, ...]
     )
 
 
-def _action_starts(selector: Selector, graph: GraphData) -> tuple[str, ...]:
+def matching_action_nodes(selector: Selector, graph: GraphData) -> tuple[Node, ...]:
+    """Share exact-ref, any-ref and Docker matching with finding predicates."""
+    if selector.kind is SelectorKind.ALL_MUTABLE_ACTIONS:
+        return mutable_action_nodes(graph)
+    actions = tuple(node for node in graph.nodes if node.kind is NodeKind.ACTION_REF)
     if selector.kind is SelectorKind.ACTION:
         uses = parse_uses(selector.value, 0)
+        if uses.kind == "DOCKER":
+            return tuple(node for node in actions if node.attrs.get("raw") == uses.raw)
         action_id = action_node_id(uses.owner or "", uses.repo or "", uses.subpath, uses.ref)
-        action_ids = {action_id} if _node(graph, action_id) is not None else set()
-    else:
+        return tuple(node for node in actions if node.id == action_id)
+    if selector.kind is SelectorKind.ACTION_ANY:
         owner, repo = selector.value.split("/", 1)
-        action_ids = {
-            node.id
-            for node in graph.nodes
-            if node.kind is NodeKind.ACTION_REF
-            and str(node.attrs.get("owner", "")).lower() == owner.lower()
+        return tuple(
+            node
+            for node in actions
+            if str(node.attrs.get("owner", "")).lower() == owner.lower()
             and str(node.attrs.get("repo", "")).lower() == repo.lower()
-        }
-    return _jobs_for_actions(graph, action_ids)
+        )
+    return ()
+
+
+def _action_starts(selector: Selector, graph: GraphData) -> tuple[str, ...]:
+    return _jobs_for_actions(graph, {node.id for node in matching_action_nodes(selector, graph)})
 
 
 def _secret_starts(selector: Selector, graph: GraphData) -> tuple[str, ...]:
@@ -181,7 +195,10 @@ def _role_starts(selector: Selector, graph: GraphData) -> tuple[str, ...]:
     sessions = {
         node.id
         for node in graph.nodes
-        if node.kind is NodeKind.CREDENTIAL and node.attrs.get("role") in roles
+        if node.kind is NodeKind.CREDENTIAL
+        and node.attrs.get("role") in roles
+        and node.attrs.get("credential_kind") == CredentialKind.STS_SESSION.value
+        and node.attrs.get("lifetime") == Lifetime.SESSION_TTL.value
     }
     return tuple(sorted(roles | sessions))
 
@@ -234,6 +251,7 @@ __all__ = [
     "Selector",
     "SelectorError",
     "SelectorKind",
+    "matching_action_nodes",
     "mutable_action_nodes",
     "mutable_action_scenarios",
     "parse_selector",

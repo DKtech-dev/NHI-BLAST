@@ -16,6 +16,8 @@ from typing import Any
 from nhi_blast.core.diagnostics import Diagnostic, error, warning
 from nhi_blast.core.limits import Limits
 from nhi_blast.core.models import ParseResult, TfSource
+from nhi_blast.parsers._json import decode_json
+from nhi_blast.parsers._unicode import validate_unicode
 from nhi_blast.parsers.terraform.facts import (
     TfModelFact,
     TfPolicyDocumentFact,
@@ -44,24 +46,35 @@ def _flatten_unknown(tree: Any, prefix: str = "") -> tuple[str, ...]:
     return tuple(paths)
 
 
-def _strip_paths(values: Mapping[str, Any], paths: tuple[str, ...]) -> dict[str, Any]:
-    """Remove sensitive dotted paths from a copy of resource values."""
-    result: dict[str, Any] = dict(values)
-    for path in paths:
-        current = result
-        parts = path.split(".")
-        for position, part in enumerate(parts):
-            if part not in current:
-                break
-            if position == len(parts) - 1:
-                current.pop(part, None)
-                break
-            child = current[part]
-            if not isinstance(child, Mapping):
-                break
-            copied = dict(child)
-            current[part] = copied
-            current = copied
+def _strip_sensitive(values: Mapping[str, Any], mask: Any) -> dict[str, Any]:
+    """Apply the boolean tree without interpreting keys or shifting list indices."""
+    if mask is True:
+        return {}
+    result = dict(values)
+    stack: list[tuple[Any, Any]] = [(result, mask)]
+    while stack:
+        current, tree = stack.pop()
+        if isinstance(current, dict) and isinstance(tree, Mapping):
+            children = [(key, child) for key, child in tree.items() if key in current]
+        elif isinstance(current, list) and isinstance(tree, list):
+            children = list(enumerate(tree[: len(current)]))
+        else:
+            continue
+        for key, child_mask in children:
+            if child_mask is True:
+                if isinstance(current, dict):
+                    del current[key]
+                else:
+                    current[key] = None
+            elif isinstance(child_mask, (Mapping, list)):
+                child = current[key]
+                if isinstance(child, dict):
+                    current[key] = dict(child)
+                elif isinstance(child, list):
+                    current[key] = list(child)
+                else:
+                    continue
+                stack.append((current[key], child_mask))
     return result
 
 
@@ -122,27 +135,22 @@ def _module_block(container: Any) -> Mapping[str, Any] | None:
 
 
 def _collect_iam_policy_documents(
-    root: Mapping[str, Any] | None, *, file: str, lines: Mapping[str, int]
+    resources: Mapping[str, TfResource],
 ) -> dict[str, TfPolicyDocumentFact]:
     documents: dict[str, TfPolicyDocumentFact] = {}
-    if root is None:
-        return documents
-    for resource in _resource_entries(root):
-        if resource.get("type") != "aws_iam_policy_document":
+    for address, resource in resources.items():
+        if resource.type != "aws_iam_policy_document":
             continue
-        address = str(resource.get("address", ""))
-        values = resource.get("values")
         json_text: str | None = None
-        if isinstance(values, Mapping):
-            candidate = values.get("json")
-            if isinstance(candidate, str) and candidate.strip().startswith("{"):
-                json_text = candidate
+        candidate = resource.values.get("json")
+        if isinstance(candidate, str) and candidate.strip().startswith("{"):
+            json_text = candidate
         documents[address] = TfPolicyDocumentFact(
             address=address,
             json_text=json_text,
             unknown=json_text is None,
-            file=file,
-            line=lines.get(address),
+            file=resource.file,
+            line=resource.line,
         )
     return documents
 
@@ -164,24 +172,20 @@ def parse_tf_json(label: str, text: str, *, limits: Limits) -> ParseResult[TfMod
     del limits  # size limits are enforced by the loader before this point
     diagnostics: list[Diagnostic] = []
     try:
-        payload = json.loads(text)
-    except RecursionError:
+        payload = decode_json(text)
+        validate_unicode(payload)
+    except (ValueError, RecursionError) as exc:
+        line = exc.lineno if isinstance(exc, json.JSONDecodeError) else None
         return ParseResult(
             facts=None,
             diagnostics=(
                 error(
                     "D-TF-PARSE",
-                    "JSON nesting exceeds the parser's safe recursion limit",
+                    "invalid JSON, invalid Unicode or excessive nesting/numeric size",
                     file=label,
+                    line=line,
                 ),
             ),
-        )
-    except (json.JSONDecodeError, ValueError) as exc:
-        message = getattr(exc, "msg", str(exc))
-        line = getattr(exc, "lineno", None)
-        return ParseResult(
-            facts=None,
-            diagnostics=(error("D-TF-PARSE", f"invalid JSON: {message}", file=label, line=line),),
         )
     if not isinstance(payload, Mapping):
         return ParseResult(
@@ -258,14 +262,10 @@ def parse_tf_json(label: str, text: str, *, limits: Limits) -> ParseResult[TfMod
             values = resource.get("values")
             plain_values = dict(values) if isinstance(values, Mapping) else {}
             blind: list[str] = []
-            if sensitive_trees.get(address) is not None:
-                blind.extend(_flatten_unknown(sensitive_trees[address]))
-            resource_sensitive = resource.get("sensitive_values")
-            if isinstance(resource_sensitive, Mapping):
-                blind.extend(_flatten_unknown(resource_sensitive))
+            for mask in (sensitive_trees.get(address), resource.get("sensitive_values")):
+                blind.extend(_flatten_unknown(mask))
+                plain_values = _strip_sensitive(plain_values, mask)
             sensitive_fields = tuple(sorted(set(blind)))
-            if sensitive_fields:
-                plain_values = _strip_paths(plain_values, sensitive_fields)
             unknown_tree = unknown_trees.get(address)
             unknown_fields = _flatten_unknown(unknown_tree) if unknown_tree else ()
             expressions = references.get(address)
@@ -296,11 +296,7 @@ def parse_tf_json(label: str, text: str, *, limits: Limits) -> ParseResult[TfMod
     add_resources(primary_root, secondary=False)
     add_resources(prior_root, secondary=True)
 
-    documents = _collect_iam_policy_documents(primary_root, file=label, lines=lines)
-    for address, document in _collect_iam_policy_documents(
-        prior_root, file=label, lines=lines
-    ).items():
-        documents.setdefault(address, document)
+    documents = _collect_iam_policy_documents(resources)
 
     if not resources:
         diagnostics.append(
