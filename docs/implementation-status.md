@@ -992,6 +992,9 @@ ruff check/format clean (132 files); `mypy src` clean (75 files); schema exit 0;
 coverage **89%** and gate passed; wheel rebuilt byte-identically (`eba5a1cfffad…`,
 97 files; unchanged because no runtime code changed), sdist `887d485e…` (286 files),
 artifact check passed; a fresh consumer install passed `pip check`, `version`,
-`version --data`, `schema` and an fx07 scan producing JSON, SARIF and HTML. The pass
-of these same tests on a GitHub-hosted Windows toolcache interpreter is the remaining
-external check; it is not reproduced locally and is not claimed here.
+`version --data`, `schema` and an fx07 scan producing JSON, SARIF and HTML. CI run
+40881803232 on commit `6559488` then passed all six test jobs (Ubuntu and Windows,
+Python 3.12-3.14), including the installed-CLI integration tests that had failed in
+run 40806824836, and the package job; the advisory workflow (run 40881803387) also
+passed. The GitHub-hosted Windows toolcache was not reproduced locally; that remote
+run is the evidence for the toolcache layout.
