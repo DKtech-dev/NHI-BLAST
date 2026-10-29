@@ -244,6 +244,7 @@ def test_report_has_accessible_structure_and_table_semantics() -> None:
     assert '<meta name="viewport"' in document
     assert "<title>NHI-Blast report</title>" in document
     assert 'class="skip-link"' in document
+    assert 'role="region" aria-label="Report controls"' in document
     assert 'aria-label="Report sections"' in document
     assert 'aria-live="polite"' in document
     assert 'id="graph-note"' in document

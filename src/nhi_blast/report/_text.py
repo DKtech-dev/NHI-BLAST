@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+from nhi_blast.parsers.gha.literals import redact_literals
+
 _ANSI_OR_OSC = re.compile(
     r"""
     \x1b
@@ -27,6 +29,7 @@ def safe_text(value: object, limit: int = 500) -> str:
     text = _BIDI.sub("", text)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = _CONTROL.sub("", text)
+    text = redact_literals(text)
     text = _NEWLINES.sub(" ", text)
     text = _SPACES.sub(" ", text).strip()
     if limit >= 0 and len(text) > limit:

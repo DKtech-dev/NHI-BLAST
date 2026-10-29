@@ -55,6 +55,61 @@ def _malformed_repo(tmp_path: Path) -> Path:
     return root
 
 
+def test_role_compromise_session_is_in_serialized_report_graph(tmp_path: Path) -> None:
+    resource = {
+        "address": "aws_iam_role.deploy",
+        "type": "aws_iam_role",
+        "values": {
+            "name": "deploy",
+            "arn": "arn:aws:iam::111122223333:role/deploy",
+            "max_session_duration": 7200,
+            "assume_role_policy": '{"Version":"2012-10-17","Statement":[]}',
+        },
+    }
+    (tmp_path / "state.json").write_text(
+        json.dumps(
+            {
+                "format_version": "1.0",
+                "terraform_version": "1.9.8",
+                "values": {"root_module": {"resources": [resource]}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    outcome = run_scan(
+        ScanOptions(
+            root=tmp_path,
+            selectors=("role:aws_iam_role.deploy",),
+            formats=("json", "sarif", "html"),
+            out_dir=tmp_path / "out",
+        )
+    )
+    report = json.loads((tmp_path / "out/report.json").read_text(encoding="utf-8"))
+    scenario = report["scenarios"][0]
+    assert len(scenario["partition"]["E"]) == 1
+    session = scenario["partition"]["E"][0]
+    assert session["ttl_seconds"] == 7200
+    nodes = {node["id"]: node for node in report["graph"]["nodes"]}
+    assert session["credential"] in nodes
+    assert nodes[session["credential"]]["attrs"]["credential_kind"] == "STS_SESSION"
+    assert "A-STS-TTL" in {item["id"] for item in report["assumptions"]}
+    assert outcome.exit_code == 0
+
+
+def test_scenario_findings_use_one_local_path_and_serialized_edge_references() -> None:
+    report = run_scan(
+        ScanOptions(root=FIXTURES / "fx11-rotation-cycle", selectors=("repo-write",))
+    ).report
+    assert len([item for item in report.findings if item.rule == "NHB-SURV-001"]) == 1
+    rotation = [item for item in report.findings if item.rule == "NHB-ROT-001"]
+    assert len(rotation) == 3
+    assert len({item.path[-1] for item in rotation}) == 3
+    edges = {edge.id for edge in report.graph.edges}
+    assert all(set(item.path_edges) <= edges for item in report.findings)
+    nodes = {node.id for node in report.graph.nodes}
+    assert all(item.credential in nodes for item in report.scenarios[0].partition.E)
+
+
 # ----------------------------------------------------------------- repository load
 
 
@@ -231,7 +286,13 @@ def test_scan_repo_write_scenario_registers_its_assumption() -> None:
     outcome = run_scan(ScanOptions(root=FX07, selectors=("repo-write",)))
 
     entry = next(item for item in outcome.report.assumptions if item.id == "A-REPO-WRITE")
-    assert entry.used_by == ("scenario:repo-write",)
+    hypothetical_edges = {
+        edge.id
+        for edge in outcome.report.graph.edges
+        if any(item.rule == "A-REPO-WRITE" for item in edge.evidence)
+    }
+    assert hypothetical_edges
+    assert set(entry.used_by) == {"scenario:repo-write", *hypothetical_edges}
     assert outcome.exit_code == 0
 
 

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import sys
+from io import TextIOWrapper
+
 import typer
 
 from nhi_blast.cli.commands import explain, export, rank, scan, schema, version
@@ -24,6 +27,9 @@ app.command("version", help="Print tool, schema and data-file versions.")(versio
 
 
 def main() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        if isinstance(stream, TextIOWrapper):
+            stream.reconfigure(errors="backslashreplace")
     app()
 
 

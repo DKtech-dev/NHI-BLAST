@@ -7,6 +7,7 @@ from typing import Any
 
 from nhi_blast import SCHEMA_VERSION
 from nhi_blast.core.models import Report
+from nhi_blast.report.redaction import redact_payload
 
 _SCHEMA_URI = "urn:nhi-blast:report:1.0"
 
@@ -15,7 +16,7 @@ def report_dict(report: Report) -> dict[str, Any]:
     """Return the alias-based JSON shape with stable key ordering and no nulls."""
     payload = report.model_dump(mode="json", by_alias=True, exclude_none=True)
     canonical = json.dumps(
-        payload,
+        redact_payload(payload),
         ensure_ascii=False,
         allow_nan=False,
         sort_keys=True,

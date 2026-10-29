@@ -110,19 +110,18 @@ class InputLoader:
                 )
             )
             return None
-        try:
-            data = resolved.read_bytes()
-        except OSError as exc:
-            self.diagnostics.append(
-                error("D-IO-UNREADABLE", f"cannot read file: {exc.strerror or exc}", file=rel)
-            )
-            return None
         limit = self._size_limit(kind)
+        try:
+            with resolved.open("rb") as handle:
+                data = handle.read(limit + 1)
+        except OSError:
+            self.diagnostics.append(error("D-IO-UNREADABLE", "cannot read file; skipped", file=rel))
+            return None
         if len(data) > limit:
             self.diagnostics.append(
                 error(
                     "D-IO-LIMIT",
-                    f"file is {len(data)} bytes, above the {limit}-byte limit; skipped",
+                    f"file exceeds the {limit}-byte limit; skipped",
                     file=rel,
                 )
             )
@@ -156,11 +155,9 @@ def _is_workflow(rel_parts: tuple[str, ...]) -> bool:
 
 
 def _peek_is_tf_json(path: Path) -> bool:
-    try:
-        with path.open("rb") as handle:
-            head = handle.read(_JSON_SNIFF_BYTES)
-    except OSError:
-        return False
+    # Let discovery distinguish unreadable candidates from readable non-Terraform JSON.
+    with path.open("rb") as handle:
+        head = handle.read(_JSON_SNIFF_BYTES)
     if not any(marker in head for marker in _TF_JSON_MARKERS):
         return False
     return any(marker in head for marker in _TF_JSON_VALUE_MARKERS)
@@ -275,7 +272,15 @@ def discover(
                     warning(code, "skipped path that resolves outside the scan root", file=rel)
                 )
                 continue
-            kind = classify_path(candidate, rel)
+            try:
+                kind = classify_path(candidate, rel)
+            except OSError:
+                diagnostics.append(
+                    error(
+                        "D-IO-UNREADABLE", "cannot read file for JSON detection; skipped", file=rel
+                    )
+                )
+                continue
         if kind is None:
             continue
         if kind is FileKind.TF_HCL and not hcl_enabled:

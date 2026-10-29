@@ -17,6 +17,7 @@ from nhi_blast.core.models import (
     ToolInfo,
 )
 from nhi_blast.report._text import safe_text
+from nhi_blast.report.redaction import redact_model, redact_payload
 
 GRAPH_SCHEMA = "nhi-blast-graph/1.0"
 
@@ -60,7 +61,7 @@ def graph_export_payload(
     }
     if generated_at is not None:
         payload["generated_at"] = generated_at
-    return payload
+    return redact_payload(payload)
 
 
 def graph_export_json(
@@ -114,6 +115,7 @@ def graph_export_dot(
     generated_at: str | None = None,
 ) -> str:
     """Emit DOT with numeric vertex ids so hostile labels cannot inject syntax."""
+    graph = redact_model(graph)
     nodes = _sorted_nodes(graph)
     node_index = {node.id: index for index, node in enumerate(nodes)}
     lines = [

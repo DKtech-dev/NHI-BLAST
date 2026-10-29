@@ -47,6 +47,8 @@ class ScenarioAnalysis:
     findings: tuple[Finding, ...]
     notes: tuple[str, ...]
     diagnostics: tuple[Diagnostic, ...] = ()
+    synthetic_nodes: tuple[Node, ...] = ()
+    synthetic_edges: tuple[Edge, ...] = ()
 
     def to_report(self) -> ScenarioReport:
         return ScenarioReport(
@@ -80,7 +82,10 @@ def _repo_write_graph(graph: GraphData, starts: Sequence[str]) -> GraphData:
             (
                 node
                 for node in graph.nodes
-                if node.kind is NodeKind.CREDENTIAL and node.attrs.get("role") == role.id
+                if node.kind is NodeKind.CREDENTIAL
+                and node.attrs.get("role") == role.id
+                and node.attrs.get("credential_kind") == CredentialKind.STS_SESSION.value
+                and node.attrs.get("lifetime") == Lifetime.SESSION_TTL.value
             ),
             None,
         )
@@ -147,6 +152,66 @@ def _repo_write_graph(graph: GraphData, starts: Sequence[str]) -> GraphData:
     )
 
 
+def _role_compromise_graph(
+    graph: GraphData, starts: Sequence[str]
+) -> tuple[GraphData, tuple[str, ...]]:
+    nodes = {node.id: node for node in graph.nodes}
+    partition_starts = set(starts)
+    for role_id in sorted(starts):
+        role = nodes[role_id]
+        if role.kind is not NodeKind.AWS_ROLE:
+            continue
+        sessions = {
+            node.id
+            for node in graph.nodes
+            if node.kind is NodeKind.CREDENTIAL
+            and node.attrs.get("role") == role_id
+            and node.attrs.get("credential_kind") == CredentialKind.STS_SESSION.value
+            and node.attrs.get("lifetime") == Lifetime.SESSION_TTL.value
+        }
+        if not sessions:
+            ttl = int(role.attrs.get("max_session_duration", 3600))
+            session_id = credential_node_id(role_id, "sts-session:compromise")
+            session = Node(
+                id=session_id,
+                kind=NodeKind.CREDENTIAL,
+                label=f"Hypothetical STS session for {role.label}",
+                attrs={
+                    "credential_kind": CredentialKind.STS_SESSION.value,
+                    "lifetime": Lifetime.SESSION_TTL.value,
+                    "ttl_seconds": ttl,
+                    "role": role_id,
+                    "hypothetical": True,
+                },
+                evidence=_ordered_evidence(
+                    (
+                        *role.evidence,
+                        Evidence(
+                            cls=EvidenceClass.ASSUMED,
+                            rule="SCENARIO.role-compromise",
+                            detail="the selector posits an already compromised role session",
+                        ),
+                        Evidence(
+                            cls=EvidenceClass.ASSUMED,
+                            rule="A-STS-TTL",
+                            detail=f"session lasts at most {ttl} s",
+                        ),
+                    )
+                ),
+            )
+            nodes[session_id] = session
+            sessions.add(session_id)
+        partition_starts.update(sessions)
+    local_graph = graph.model_copy(
+        update={
+            "nodes": tuple(
+                sorted(nodes.values(), key=lambda node: (NODE_KIND_ORDER[node.kind], node.id))
+            )
+        }
+    )
+    return local_graph, tuple(sorted(partition_starts))
+
+
 def analyze_scenario(
     graph: GraphData,
     starts: Sequence[str],
@@ -166,32 +231,46 @@ def analyze_scenario(
     local_graph = (
         _repo_write_graph(graph, start_nodes) if kind is SelectorKind.REPO_WRITE else graph
     )
+    partition_starts = start_nodes
+    if kind is SelectorKind.ROLE:
+        local_graph, partition_starts = _role_compromise_graph(graph, start_nodes)
     deadline = clock() + effective_limits.scenario_time_budget_seconds
+    timed_out = False
 
     def expired() -> bool:
-        return clock() >= deadline
+        nonlocal timed_out
+        timed_out = timed_out or clock() >= deadline
+        return timed_out
 
     result = partition_graph(
         local_graph,
-        start_nodes,
+        partition_starts,
         max_depth=effective_limits.max_closure_depth if max_depth is None else max_depth,
         should_stop=expired,
     )
-    truncated = result.truncated or expired()
+    expired()
+    truncated = result.truncated or timed_out
     notes: list[str] = []
     if kind is SelectorKind.REPO_WRITE:
         notes.append(
             "Repository-write paths are ASSUMED: the writer can add id-token: write "
             "on an editable branch; branch protection was not evaluated."
         )
+    elif kind is SelectorKind.ROLE:
+        notes.append(
+            "Role compromise posits a hypothetical starting STS session (ASSUMED); "
+            "its remaining lifetime is bounded by the role session TTL (A-STS-TTL)."
+        )
     local_nodes = {node.id: node for node in local_graph.nodes}
+    original_node_ids = {node.id for node in graph.nodes}
+    original_edge_ids = {edge.id for edge in graph.edges}
     if not any(local_nodes[node_id].kind is NodeKind.AWS_ROLE for node_id in result.reach):
         notes.append("No path to any role from the selected entrypoint.")
     if result.potential.unresolved_inputs:
         notes.append(
             f"Result is a lower bound: {len(result.potential.unresolved_inputs)} unresolved inputs."
         )
-    if result.truncated:
+    if result.truncated and not timed_out:
         notes.append("Persistent-credential closure reached the configured depth limit.")
     diagnostics: list[Diagnostic] = []
     rotation = RotationPlan()
@@ -205,26 +284,30 @@ def analyze_scenario(
         unresolved_inputs=result.potential.unresolved_inputs,
         truncated=truncated,
     )
-    if expired():
-        diagnostics.append(
-            warning(
-                "D-ANALYSIS-TIME",
-                "scenario time budget exhausted; results are partial",
-            )
-        )
-        notes.append("Scenario time budget exhausted; rotation and findings were not completed.")
-    else:
+    if not expired():
         rotation = plan_rotation(
             local_graph,
             result.partition,
             selector_kind=kind.value,
             start_nodes=start_nodes,
         )
+        notes.extend(rotation.notes)
+    if not expired():
         generated = build_findings(local_graph, scenarios=(preliminary,))
+        expired()
+        # Completed findings must still honor ignore filters even after a timeout.
         filtered = filter_findings(generated.findings, config=effective_config, strict=strict)
         findings = filtered.findings
         diagnostics.extend(filtered.diagnostics)
-        notes.extend(rotation.notes)
+    if expired():
+        truncated = True
+        diagnostics.append(
+            warning(
+                "D-ANALYSIS-TIME",
+                "scenario time budget exhausted; results are partial",
+            )
+        )
+        notes.append("Scenario time budget exhausted; results are partial.")
     return ScenarioAnalysis(
         selector=selector,
         selector_kind=kind.value,
@@ -239,6 +322,12 @@ def analyze_scenario(
         findings=findings,
         notes=tuple(notes),
         diagnostics=DiagnosticBag(diagnostics).sorted(),
+        synthetic_nodes=tuple(
+            node for node in local_graph.nodes if node.id not in original_node_ids
+        ),
+        synthetic_edges=tuple(
+            edge for edge in local_graph.edges if edge.id not in original_edge_ids
+        ),
     )
 
 

@@ -10,7 +10,7 @@ statically are reported as additional constraints rather than silently ignored.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from nhi_blast.aws.conditions import (
     ConditionMode,
@@ -43,6 +43,16 @@ class TrustCandidateMatch:
 
 
 @dataclass(frozen=True, slots=True)
+class TrustAuditAlternative:
+    """One relevant Allow statement that is missing a policy-wide control."""
+
+    statement: Statement
+    unconstrained: bool
+    missing_audience: bool
+    dead_keys: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class TrustEvaluation:
     role_id: str
     matches: tuple[TrustCandidateMatch, ...] = ()
@@ -53,6 +63,7 @@ class TrustEvaluation:
     sub_patterns: tuple[str, ...] = ()
     job_workflow_ref_patterns: tuple[str, ...] = ()
     confidence: EvidenceClass = EvidenceClass.DERIVED
+    audit_alternatives: tuple[TrustAuditAlternative, ...] = ()
 
 
 def is_github_oidc_statement(statement: Statement, provider_host: str) -> bool:
@@ -74,16 +85,17 @@ def _condition_key_maps(statement: Statement) -> tuple[Mapping[str, Sequence[str
 
 
 def _policy_values_for(statements: Sequence[Statement], claim: str) -> tuple[str, ...]:
+    """Extract positive string bindings, not presence checks or unresolved exclusions.
+
+    Inspect each conjunct separately: adding Null alongside StringEquals must not
+    erase the binding, nor turn the Null operand into a subject breadth pattern.
+    """
     values: set[str] = set()
     for statement in statements:
-        for key_map in _condition_key_maps(statement):
-            for key, raw in key_map.items():
-                if str(key).strip() != claim:
-                    continue
-                if isinstance(raw, str):
-                    values.add(raw)
-                elif isinstance(raw, Sequence):
-                    values.update(str(item) for item in raw)
+        for operator, key_map in statement.conditions.items():
+            patterns = required_positive_patterns({operator: key_map}, claim)
+            if patterns:
+                values.update(patterns)
     return tuple(sorted(values))
 
 
@@ -198,23 +210,57 @@ def no_match_evaluation(role: RoleFact, registry: ConditionKeyRegistry) -> Trust
     Mirrors the no-match return of :func:`evaluate_trust_statements` without
     evaluating conditions against candidates.
     """
-    relevant = _relevant_statements(role, registry)
-    if not relevant:
-        return TrustEvaluation(role_id=role.id)
-    dead: set[str] = set()
-    has_audience = False
+    return _audit_statements(role.id, _relevant_statements(role, registry), registry)
+
+
+def _statement_dead_keys(statement: Statement, registry: ConditionKeyRegistry) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            {
+                str(key).strip()
+                for key_map in _condition_key_maps(statement)
+                for key in key_map
+                if str(key).strip() not in registry.supported
+            }
+        )
+    )
+
+
+def _statement_missing_audience(statement: Statement) -> bool:
+    return not _policy_values_for((statement,), "aud")
+
+
+def _statement_unconstrained(statement: Statement, registry: ConditionKeyRegistry) -> bool:
+    return not any(
+        _policy_values_for((statement,), claim) for claim in registry.required_control_any_of
+    )
+
+
+def _audit_statements(
+    role_id: str, relevant: Sequence[Statement], registry: ConditionKeyRegistry
+) -> TrustEvaluation:
+    # Allow statements are alternatives, not conjuncts. Audit even when no current
+    # job matches so the pre-filter and full evaluator report the same controls.
+    alternatives: list[TrustAuditAlternative] = []
     for statement in relevant:
-        for key_map in _condition_key_maps(statement):
-            for raw_key in key_map:
-                key = str(raw_key).strip()
-                if key == "aud":
-                    has_audience = True
-                if key not in registry.supported:
-                    dead.add(key)
+        dead = _statement_dead_keys(statement, registry)
+        missing_audience = _statement_missing_audience(statement)
+        unconstrained = _statement_unconstrained(statement, registry)
+        if dead or missing_audience or unconstrained:
+            alternatives.append(
+                TrustAuditAlternative(
+                    statement=statement,
+                    unconstrained=unconstrained,
+                    missing_audience=missing_audience,
+                    dead_keys=dead,
+                )
+            )
     return TrustEvaluation(
-        role_id=role.id,
-        dead_keys=tuple(sorted(dead)),
-        missing_audience=not has_audience,
+        role_id=role_id,
+        dead_keys=tuple(sorted({key for item in alternatives for key in item.dead_keys})),
+        missing_audience=any(item.missing_audience for item in alternatives),
+        unconstrained=any(item.unconstrained for item in alternatives),
+        audit_alternatives=tuple(alternatives),
     )
 
 
@@ -225,13 +271,8 @@ def evaluate_trust_statements(
     registry: ConditionKeyRegistry,
 ) -> TrustEvaluation:
     relevant = _relevant_statements(role, registry)
-    if not relevant:
-        return TrustEvaluation(role_id=role.id)
-    missing_audience = not any(
-        "aud" in key_map for statement in relevant for key_map in _condition_key_maps(statement)
-    )
+    audit = _audit_statements(role.id, relevant, registry)
     matches: list[TrustCandidateMatch] = []
-    dead_keys: set[str] = set()
     for statement in relevant:
         for candidate in candidates:
             evaluation = evaluate_conditions(
@@ -240,7 +281,6 @@ def evaluate_trust_statements(
                 mode=ConditionMode.CANDIDATE,
                 supported_keys=registry.supported,
             )
-            dead_keys.update(evaluation.dead_keys)
             if evaluation.truth is ConditionTruth.FALSE:
                 continue
             matches.append(
@@ -255,19 +295,17 @@ def evaluate_trust_statements(
                 )
             )
     if not matches:
-        return TrustEvaluation(
-            role_id=role.id,
-            dead_keys=tuple(sorted(dead_keys)),
-            missing_audience=missing_audience,
-        )
-    matched_statements = [match.statement for match in matches]
+        return audit
+    matched_statements: list[Statement] = []
+    for match in matches:
+        if match.statement not in matched_statements:
+            matched_statements.append(match.statement)
     constrained_claims = {
         str(key).strip()
         for statement in matched_statements
         for key_map in _condition_key_maps(statement)
         for key in key_map
     }
-    unconstrained = not (constrained_claims & set(registry.required_control_any_of))
     additional = tuple(
         sorted(claim for claim in constrained_claims if claim in registry.not_statically_fixable)
     )
@@ -275,14 +313,26 @@ def evaluate_trust_statements(
         EvidenceClass.DERIVED if not match.conditional else EvidenceClass.ASSUMED
         for match in matches
     ] + [match.candidate.evidence_class for match in matches]
-    return TrustEvaluation(
-        role_id=role.id,
+    return replace(
+        audit,
         matches=tuple(matches),
-        dead_keys=tuple(sorted(dead_keys)),
-        missing_audience=missing_audience,
-        unconstrained=unconstrained,
         additional_constraints=additional,
         sub_patterns=_policy_values_for(matched_statements, "sub"),
         job_workflow_ref_patterns=_policy_values_for(matched_statements, "job_workflow_ref"),
         confidence=weakest(*classes) if classes else EvidenceClass.ASSUMED,
+        dead_keys=tuple(
+            sorted(
+                {
+                    key
+                    for statement in matched_statements
+                    for key in _statement_dead_keys(statement, registry)
+                }
+            )
+        ),
+        missing_audience=any(
+            _statement_missing_audience(statement) for statement in matched_statements
+        ),
+        unconstrained=any(
+            _statement_unconstrained(statement, registry) for statement in matched_statements
+        ),
     )

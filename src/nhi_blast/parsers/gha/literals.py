@@ -53,3 +53,26 @@ def find_literals(value: str, *, line: int) -> tuple[LiteralHit, ...]:
     return tuple(
         sorted(hits.values(), key=lambda h: (h.line, h.kind.value, h.length, h.pattern_id))
     )
+
+
+def redact_literals(value: str) -> str:
+    spans: list[tuple[int, int, str]] = []
+    for pattern, regex in _patterns():
+        for match in regex.finditer(value):
+            start, end = match.span()
+            if not _boundary_ok(value, start, end, pattern.boundary):
+                continue
+            if pattern.id == "PRIVATE_KEY":
+                footer = match.group().replace("BEGIN", "END", 1)
+                closing = value.find(footer, end)
+                end = len(value) if closing < 0 else closing + len(footer)
+            spans.append((start, end, pattern.kind.value))
+    result: list[str] = []
+    position = 0
+    for start, end, kind in sorted(spans, key=lambda item: (item[0], -item[1])):
+        if start < position:
+            continue
+        result.extend((value[position:start], f"[REDACTED {kind} {end - start} chars]"))
+        position = end
+    result.append(value[position:])
+    return "".join(result)

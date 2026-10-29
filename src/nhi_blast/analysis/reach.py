@@ -69,24 +69,32 @@ def _traverse(
     for edges in outgoing.values():
         edges.sort(key=Edge.sort_key)
 
-    seen = {start: PathInfo(node=start) for start in initial}
-    queue = deque(initial)
+    # A common weak suffix can erase a stronger prefix's confidence advantage.
+    # Retain the shortest/lexicographically first prefix at each confidence level.
+    states = {(start, EvidenceClass.DECLARED): PathInfo(node=start) for start in initial}
+    queue = deque(states)
     while queue:
         if should_stop is not None and should_stop():
             break
         current = queue.popleft()
-        base = seen[current]
-        for edge in outgoing.get(current, ()):
+        base = states[current]
+        for edge in outgoing.get(current[0], ()):
             candidates = [(edge.dst, base.extend(edge, edge.dst))]
             session = edge.attrs.get("session_credential")
             if edge.kind is EdgeKind.CAN_ASSUME and isinstance(session, str) and session in nodes:
                 candidates.append((session, base.extend(edge, session)))
             for destination, candidate in candidates:
-                existing = seen.get(destination)
+                state = (destination, candidate.weakest)
+                existing = states.get(state)
                 if existing is None or candidate.order_key() < existing.order_key():
-                    seen[destination] = candidate
-                    queue.append(destination)
-    return seen
+                    states[state] = candidate
+                    queue.append(state)
+    seen: dict[str, PathInfo] = {}
+    for (destination, _), candidate in states.items():
+        existing = seen.get(destination)
+        if existing is None or candidate.order_key() < existing.order_key():
+            seen[destination] = candidate
+    return {node_id: seen[node_id] for node_id in sorted(seen)}
 
 
 def reach(

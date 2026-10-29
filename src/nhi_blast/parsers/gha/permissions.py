@@ -51,7 +51,7 @@ def parse_permissions(
         diagnostics.append(
             warning(
                 "D-GHA-PERM-VALUE",
-                f"unrecognised permissions value {text!r}; treated as unknown",
+                "unrecognised permissions value; treated as unknown",
                 file=rel_path,
                 line=line,
             )
@@ -59,16 +59,16 @@ def parse_permissions(
         return Perms(all_read=False, all_write=False, has_expression=True, line=line), tuple(
             diagnostics
         )
-    if isinstance(node.value, tuple):
+    if not node.is_mapping():
         diagnostics.append(
             warning(
                 "D-GHA-PERM-SHAPE",
-                "permissions must be a mapping or read-all/write-all; ignored",
+                "permissions must be a mapping or read-all/write-all; treated as unknown",
                 file=rel_path,
                 line=line,
             )
         )
-        return None, tuple(diagnostics)
+        return Perms(has_expression=True, line=line), tuple(diagnostics)
     raw_mapping = node.as_mapping()
     if not raw_mapping:
         return Perms(empty=True, line=line), ()
@@ -83,7 +83,7 @@ def parse_permissions(
             diagnostics.append(
                 warning(
                     "D-GHA-PERM-SCOPE",
-                    f"unknown permission scope {scope_name!r}; ignored",
+                    "unknown permission scope; ignored",
                     file=rel_path,
                     line=value_node.line,
                 )
@@ -107,7 +107,7 @@ def parse_permissions(
             diagnostics.append(
                 warning(
                     "D-GHA-PERM-VALUE",
-                    f"unknown level {value!r} for permission {scope_name}",
+                    f"unknown level for permission {scope_name}",
                     file=rel_path,
                     line=value_node.line,
                 )

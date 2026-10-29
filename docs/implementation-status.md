@@ -847,3 +847,60 @@ remaining assurance actions are:
    secret scanning, push protection, CodeQL default setup and private vulnerability
    reporting are enabled; secret-scanning validity checks and non-provider patterns
    remain disabled at the account level and are not claimed.
+
+## Final continuation evidence — 2026-10-29
+
+Final working tree based on `7ea7c19`: four boundary/analytical defects were repaired
+with regression tests — export confirmation path redaction, per-statement trust-audit
+provenance (policy-wide flags no longer broaden matched edges), corpus harness
+referential integrity, and an explicit interpreter-independent JSON nesting limit
+because CPython 3.14 no longer raises `RecursionError` for hostile deep input. The
+repairs are covered by `tests/test_output_redaction.py`,
+`tests/test_trust_boundary_regressions.py`, `tests/test_benchmark_corpus.py` and
+`tests/test_cloud_parser_regressions.py`.
+
+Executed on this tree: full suite **751 passed, 2 skipped** on Python 3.12.14, 3.13.17
+and 3.14.7; slow suite **2 passed**; ruff check/format clean; `mypy --strict` clean in 80
+files; schema check exit 0; coverage **88.73%**; Bandit 0 medium/high (23 low, triaged);
+pip-audit 0 on both locks; Semgrep `p/ci`+`p/python` 0 findings; zizmor 0 (2 disclosed
+suppressions) and actionlint 0 on production workflows; wheel/sdist artifact check passed
+(wheel 97 files, SHA-256 `97bc7238c09c…`); fresh wheel `[hcl]` install with clean
+`pip check`; installed CLI **42/42** expected exits and 14 labelled synthetic cases
+(TP 8, FP 0, FN 0, TN 6); **15/15** corpus datasets deterministic over two repeats
+(3,620 files, 0 errors); headless Chrome/axe **44/44** checks with 0 violations in eight
+viewport/theme views and a 609,273-byte PDF.
+
+Known gaps: Linux/macOS were not executed locally for this tree and the recorded remote
+CI predates it; browser verification used headless Chrome only; the labelled sample is
+small and synthetic, not public-corpus ground truth; the independent human audit remains
+not performed and is not claimed; no release was published. This tree was committed to
+`audit/nhi-blast-2026-10-29` after verification.
+
+## Independent audit continuation — 2026-10-29
+
+A further independent pass reproduced two defects and fixed both with failing-first
+regression tests. **F-01**: a `nhi-blast.toml` containing an integer literal longer than
+CPython's 4,300-digit conversion limit raised a bare `ValueError` through `tomllib`,
+surfacing as `internal error: ValueError` (exit 4); `Config.from_file` now maps every
+parser-level `ValueError`/`RecursionError` to the sanitized `ConfigError`, so the CLI
+returns exit 2 (`tests/test_input_limit_regressions.py`). **F-02**: axe-core found the
+report utility bar outside every landmark; the viewer bar is now
+`role="region" aria-label="Report controls"` (`tests/test_html.py`). A synthetic PEM
+header in a redaction test was assembled at runtime so gitleaks stays strict without an
+allowlist.
+
+Re-executed on the final tree: full suite **752 passed, 2 skipped** on Python 3.12.14,
+3.13.17 and 3.14.7; slow suite **2 passed**; ruff/format clean; `mypy src` clean (75
+files); schema exit 0; coverage **88.73%** and gate passed; Bandit, pip-audit (both
+locks), Semgrep (`p/ci`+`p/python`), zizmor, actionlint and gitleaks (276 files) all
+clean; two wheel/sdist builds byte-identical (wheel SHA-256 `ec2c02a6…`, sdist
+`5f6378b2…`); wheel and sdist installs both reject the hostile config with exit 2;
+installed verification 42 commands and 14 labelled cases (TP 8, FP 0, FN 0, TN 6);
+installed and working-tree reports byte-identical; corpus **15/15** datasets
+deterministic; axe 0 violations in light and dark; headless Chrome no console errors,
+exceptions or network requests at 1440×900 and 390×844; PDF 10 pages, 888,067 bytes.
+
+Gaps unchanged: no Linux/macOS execution for this tree, remote CI predates it, browser
+verification is headless Chrome only, the labelled sample is synthetic, no human audit
+was performed, and no release was published. This tree is recorded on
+`audit/nhi-blast-2026-10-29`.

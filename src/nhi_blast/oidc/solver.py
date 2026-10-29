@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from nhi_blast.aws.glob import has_wildcard
 from nhi_blast.aws.trust import TrustEvaluation, evaluate_trust_statements
 from nhi_blast.core.data import ConditionKeyRegistry, condition_keys
-from nhi_blast.core.evidence import Evidence, EvidenceClass, weakest
+from nhi_blast.core.evidence import Evidence, EvidenceClass, dedupe_evidence, weakest
 from nhi_blast.core.models import (
     Breadth,
     RoleFact,
@@ -86,6 +86,7 @@ def _evidence(
 ) -> tuple[Evidence, ...]:
     entries: list[Evidence] = list(role.evidence)
     for match in evaluation.matches:
+        entries.extend(match.statement.evidence)
         entries.extend(match.candidate.evidence)
     if not entries:
         entries.append(
@@ -96,7 +97,7 @@ def _evidence(
                 detail="trust policy evaluated against candidate subjects",
             )
         )
-    return tuple(entries)
+    return dedupe_evidence(entries)
 
 
 def evaluate_trust(
@@ -146,6 +147,8 @@ def trust_match_from_evaluation(
         evaluation.confidence,
         *(match.candidate.evidence_class for match in evaluation.matches),
     )
+    evidence = _evidence(role, evaluation, confidence)
+    confidence = weakest(confidence, *(entry.cls for entry in evidence))
     return TrustMatch(
         job_id=job_id,
         role_id=role.id,
@@ -159,5 +162,5 @@ def trust_match_from_evaluation(
         unconstrained=evaluation.unconstrained,
         dead_condition_keys=evaluation.dead_keys,
         missing_audience=evaluation.missing_audience,
-        evidence=_evidence(role, evaluation, confidence),
+        evidence=evidence,
     )

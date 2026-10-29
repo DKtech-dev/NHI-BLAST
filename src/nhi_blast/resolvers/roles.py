@@ -1101,7 +1101,18 @@ def _providers(snapshot: _Snapshot, diagnostics: list[Diagnostic]) -> tuple[Prov
                 )
             )
             continue
-        host = urlsplit(url).hostname or url
+        try:
+            host = urlsplit(url).hostname or url
+        except ValueError:
+            diagnostics.append(
+                warning(
+                    "D-TF-UNKNOWN",
+                    f"{address}: provider url is malformed",
+                    file=resource.file,
+                    line=resource.line,
+                )
+            )
+            continue
         client_ids = _text_tuple(resource.values, "client_id_list")
         key = (host.lower(), url, client_ids)
         unique.setdefault(key, []).append(

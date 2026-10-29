@@ -14,6 +14,7 @@ from nhi_blast.core.data import RuleDefinition, rules
 from nhi_blast.core.evidence import Evidence, dedupe_evidence, evidence_sort_key
 from nhi_blast.core.models import Edge, Finding, Report, Severity
 from nhi_blast.report._text import safe_text
+from nhi_blast.report.redaction import redact_model
 
 SARIF_VERSION = "2.1.0"
 SARIF_SCHEMA_URI = "https://json.schemastore.org/sarif-2.1.0.json"
@@ -166,6 +167,7 @@ def _result_payload(
 
 def sarif_report(report: Report) -> dict[str, Any]:
     """Build a deterministic SARIF log for the report."""
+    report = redact_model(report)
     catalog = rules()
     definitions = catalog.all()
     rule_index = {definition.id: index for index, definition in enumerate(definitions)}

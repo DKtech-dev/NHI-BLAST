@@ -213,7 +213,7 @@ def make_report(*, hostile: bool = False) -> Report:
                 ),
             ),
         ),
-        potential=("edge-potential-unknown",),
+        potential=("edge-reads",),
         potential_nodes=(sink_id,),
         rotation_plan=rotation,
         findings=(finding.id,),

@@ -177,21 +177,18 @@ def closure_graph():
     return store.data()
 
 
-def test_closure_follows_read_and_modify_edges_and_reports_depth_truncation() -> None:
+def test_closure_does_not_obtain_a_stored_value_through_write_only_authority() -> None:
     graph = closure_graph()
 
     limited = partition_graph(graph, ["job:start"], max_depth=1)
     complete = partition_graph(graph, ["job:start"], max_depth=4)
 
+    # Spec 4.4 requires CAN_READ_VALUE; CAN_MODIFY only informs rotation and findings.
     assert [(item.credential, item.depth) for item in limited.partition.Z] == [
         ("cred:z0", 0),
-        ("cred:z1", 1),
     ]
-    assert limited.truncated
+    assert not limited.truncated
     assert [(item.credential, item.depth) for item in complete.partition.Z] == [
         ("cred:z0", 0),
-        ("cred:z1", 1),
-        ("cred:z2", 2),
-        ("cred:z3", 3),
     ]
     assert not complete.truncated
