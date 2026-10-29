@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 from typer.testing import CliRunner
@@ -54,6 +55,77 @@ def test_redaction_preserves_distinct_keys_and_identifier_references() -> None:
     leaked = any(token in json.dumps(result) for token in tokens)
     assert not leaked
     assert redact_payload(result) == result
+
+
+def test_redact_payload_handles_nesting_beyond_recursion_limit() -> None:
+    token = "ghp_" + "D" * 36
+    depth = 5000
+    payload: dict[str, Any] = {}
+    cursor = payload
+    for _ in range(depth):
+        child: dict[str, Any] = {}
+        cursor["next"] = child
+        cursor = child
+    cursor["id"] = token
+    cursor["mirror"] = token
+
+    result = redact_payload(payload)
+
+    cursor = result
+    for _ in range(depth):
+        cursor = cursor["next"]
+    assert isinstance(cursor["id"], str)
+    assert cursor["id"].startswith("redacted:")
+    assert cursor["mirror"] == cursor["id"]
+    pending: list[Any] = [result]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, dict):
+            for key, child in node.items():
+                assert token not in str(key)
+                pending.append(child)
+        elif isinstance(node, list):
+            pending.extend(node)
+        else:
+            assert node != token
+
+
+def test_redact_payload_handles_non_string_keys_and_unknown_values() -> None:
+    token = "ghp_" + "E" * 36
+    opaque = object()
+    payload: dict[Any, Any] = {
+        1: token,
+        b"bytes": token,
+        "opaque": opaque,
+        "nested": {2: token},
+    }
+
+    result = redact_payload(payload)
+
+    assert result[1].startswith("[REDACTED")
+    assert result[b"bytes"].startswith("[REDACTED")
+    assert result["opaque"] is opaque
+    assert result["nested"][2].startswith("[REDACTED")
+
+
+def test_redact_payload_preserves_references_at_normal_depth() -> None:
+    token = "ghp_" + "F" * 36
+    leaf: dict[str, Any] = {"id": token, "ref": token}
+    wrapped: dict[str, Any] = leaf
+    for _ in range(200):
+        wrapped = {"child": wrapped}
+    payload = {"root": wrapped, "refs": [token, {"id": token}]}
+
+    first = redact_payload(payload)
+    second = redact_payload(first)
+
+    assert first == second
+    node = first["root"]
+    for _ in range(200):
+        node = node["child"]
+    assert node["id"] == node["ref"] == first["refs"][0] == first["refs"][1]["id"]
+    assert first["refs"][0].startswith("redacted:")
+    assert token not in json.dumps({"refs": first["refs"]})
 
 
 def test_rank_json_redacts_recognized_literals_in_action_references(tmp_path: Path) -> None:

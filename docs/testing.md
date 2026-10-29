@@ -100,6 +100,7 @@ can discover false negatives but do not claim completeness of either filter.
 | `tests/test_pipeline.py` | Discovery through reporting, configuration and strictness |
 | `tests/test_fixtures.py` | Reviewed end-to-end counts and diagnostics for fx01-fx15 |
 | `tests/test_golden.py` | Exact reviewed fx07 console and semantic summary |
+| `tests/test_labelled_evaluation.py` | Recovered labelled cases reproduce their stored expectations deterministically |
 | `tests/test_determinism.py` | Byte-identical repeated runs and an offline socket guard |
 | `tests/test_performance.py` | Spec 12.8 budgets at full scale |
 | `tests/test_ci_pins.py` | Full-SHA action pins, read-only CI token, lock-file policy, advisory-free pytest |
@@ -124,6 +125,33 @@ The scale fixture is reproducible:
 
 No fixture contains a real or realistic credential value. Placeholder canaries are
 clearly synthetic and exist only so leak tests can search for them.
+
+### Labelled synthetic evaluation
+
+`tests/fixtures/labelled` holds the 14 labelled synthetic cases recovered from the
+2026-10-29 audit harness (`verify_installed_final_r2.py`). `cases.json` stores the rule
+id, expected presence, rationale and provenance for each case. The expectations were
+transcribed from the harness and are never regenerated from scanner output.
+
+```sh
+./.venv/Scripts/python.exe scripts/evaluate_labelled.py
+```
+
+The script scans each case in-process with the same settings the harness used
+(`--repo-slug acme/shop`, `--simulate-compromise all-mutable-actions`), prints one line
+per case plus TP/FP/FN/TN counts, and exits 1 if any observed result differs from its
+stored label. `--json-out` writes the same summary deterministically.
+`tests/test_labelled_evaluation.py` runs the evaluation twice and requires identical
+summaries and the recorded metrics (TP 8, FP 0, FN 0, TN 6). The synthetic-literal case
+also fails the run if its token value appears in console, JSON, SARIF or HTML output;
+the fixture stores the token as YAML `\u005A` escapes, so the repository itself holds
+no token-shaped text.
+
+This sample is small, synthetic and covers 8 rules (NHB-OIDC-001..004,
+NHB-GHA-001, 003, 004, 005). Each case checks presence or absence of one rule, not a
+full report. Passing it is regression coverage for those labels; it is not real-world
+detection accuracy, precision or recall, has no independent human labels, and is not
+public-corpus ground truth. Do not cite the counts outside that scope.
 
 ## 5. Goldens
 

@@ -8,39 +8,53 @@ from pydantic import BaseModel
 from nhi_blast.parsers.gha.literals import redact_literals
 
 
+def _digest(value: str) -> str:
+    return hashlib.sha256(value.encode()).hexdigest()
+
+
 def redact_payload(payload: dict[str, Any]) -> dict[str, Any]:
     identifiers: dict[str, str] = {}
-
-    def collect(value: Any) -> None:
-        if isinstance(value, dict):
-            identifier = value.get("id")
+    pending: list[Any] = [payload]
+    while pending:
+        current = pending.pop()
+        if isinstance(current, dict):
+            identifier = current.get("id")
             if isinstance(identifier, str) and redact_literals(identifier) != identifier:
-                identifiers[identifier] = (
-                    "redacted:" + hashlib.sha256(identifier.encode()).hexdigest()
-                )
-            for child in value.values():
-                collect(child)
-        elif isinstance(value, list):
-            for child in value:
-                collect(child)
+                identifiers[identifier] = "redacted:" + _digest(identifier)
+            pending.extend(current.values())
+        elif isinstance(current, list):
+            pending.extend(current)
 
-    def clean(value: Any) -> Any:
-        if isinstance(value, str):
-            return identifiers.get(value, redact_literals(value))
-        if isinstance(value, list):
-            return [clean(child) for child in value]
-        if isinstance(value, dict):
-            result: dict[str, Any] = {}
-            for key, child in value.items():
-                safe_key = redact_literals(key)
-                if safe_key != key:
-                    safe_key += ":" + hashlib.sha256(key.encode()).hexdigest()
-                result[safe_key] = clean(child)
-            return result
-        return value
+    def place(parent: Any, key: Any, child: Any, stack: list[tuple[Any, Any]]) -> None:
+        if isinstance(child, str):
+            parent[key] = identifiers.get(child, redact_literals(child))
+        elif isinstance(child, dict):
+            nested: dict[str, Any] = {}
+            parent[key] = nested
+            stack.append((child, nested))
+        elif isinstance(child, list):
+            items: list[Any] = [None] * len(child)
+            parent[key] = items
+            stack.append((child, items))
+        else:
+            parent[key] = child
 
-    collect(payload)
-    result: dict[str, Any] = clean(payload)
+    result: dict[str, Any] = {}
+    stack: list[tuple[Any, Any]] = [(payload, result)]
+    while stack:
+        source, target = stack.pop()
+        if isinstance(source, dict):
+            for key, child in source.items():
+                safe_key = key
+                if isinstance(key, str):
+                    cleaned_key = redact_literals(key)
+                    if cleaned_key != key:
+                        cleaned_key += ":" + _digest(key)
+                    safe_key = cleaned_key
+                place(target, safe_key, child, stack)
+        else:
+            for index, child in enumerate(source):
+                place(target, index, child, stack)
     return result
 
 

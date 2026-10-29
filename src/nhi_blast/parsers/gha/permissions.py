@@ -15,6 +15,25 @@ def _has_expression(text: str) -> bool:
     return ("${{") in text
 
 
+def _scope_label(scope: str) -> str:
+    """Render a scope name inert for diagnostics: plain names bare, others quoted and escaped."""
+    if scope and all(ch.isascii() and (ch.isalnum() or ch in "-_.") for ch in scope):
+        return scope
+    escaped: list[str] = []
+    for ch in scope:
+        if ch == "\\":
+            escaped.append("\\\\")
+        elif ch == '"':
+            escaped.append('\\"')
+        elif ch.isascii() and ch.isprintable():
+            escaped.append(ch)
+        elif ord(ch) <= 0xFFFF:
+            escaped.append(f"\\u{ord(ch):04x}")
+        else:
+            escaped.append(f"\\U{ord(ch):08x}")
+    return '"' + "".join(escaped) + '"'
+
+
 def _expand_all(level: PermLevel, *, read_all: bool, write_all: bool, line: int) -> Perms:
     scopes = permission_scopes().scopes
     return Perms(
@@ -96,7 +115,8 @@ def parse_permissions(
             diagnostics.append(
                 warning(
                     "D-EXPR-VALUE",
-                    f"permission {scope_name} is set by an expression; treated as unknown",
+                    f"permission {_scope_label(scope_name)} is set by an expression; "
+                    "treated as unknown",
                     file=rel_path,
                     line=value_node.line,
                 )
@@ -107,7 +127,7 @@ def parse_permissions(
             diagnostics.append(
                 warning(
                     "D-GHA-PERM-VALUE",
-                    f"unknown level for permission {scope_name}",
+                    f"unknown level for permission {_scope_label(scope_name)}",
                     file=rel_path,
                     line=value_node.line,
                 )

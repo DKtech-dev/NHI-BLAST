@@ -904,3 +904,58 @@ Gaps unchanged: no Linux/macOS execution for this tree, remote CI predates it, b
 verification is headless Chrome only, the labelled sample is synthetic, no human audit
 was performed, and no release was published. This tree is recorded on
 `audit/nhi-blast-2026-10-29`.
+
+## Low-severity remediation — 2026-10-29
+
+The independent review of `b85f012` reported no confirmed vulnerabilities or
+release-blocking defects and three low-severity observations. All three are addressed
+with failing-first regression tests on `audit/nhi-blast-2026-10-29`.
+
+**AUD-01 — reproducible labelled evaluation.** The 14 labelled synthetic cases and
+their expected results were recovered verbatim from the audit harness
+(`verify_installed_final_r2.py`, case table at lines 48-75) and are now static scan
+roots under `tests/fixtures/labelled/`. `cases.json` records each rule, expectation,
+rationale and the provenance; expectations are never regenerated from scanner output.
+The synthetic-literal token is stored as YAML `\u005A` escapes, so the repository
+holds no token-shaped text while YAML decoding still supplies the harness value.
+`scripts/evaluate_labelled.py` runs the real pipeline in-process with the harness
+settings, prints one result per case plus TP/FP/FN/TN, exits 1 on any mismatch and
+writes a deterministic JSON summary with `--json-out`. `tests/test_labelled_evaluation.py`
+requires TP 8 / FP 0 / FN 0 / TN 6 twice with identical summaries. A deliberate
+expectation flip makes the script exit 1, so the check is not self-fulfilling.
+`docs/testing.md` records that the sample is synthetic, covers 8 rules, asserts one
+rule per case and is not real-world precision, recall or ground truth.
+
+**AUD-03 — redaction recursion.** `redact_payload` traversed payloads recursively; a
+5,000-level payload raised `RecursionError`, and a non-string mapping key raised
+`TypeError` from the literal regex. Collection and rewriting are now iterative,
+preserving identifier cross-references, hashed keys, idempotence and non-JSON value
+identity. Tests cover 5,000-level nesting, non-string keys and opaque objects, and a
+200-level normal payload (`tests/test_output_redaction.py`).
+
+**AUD-04 — diagnostic quoting.** Permission diagnostics interpolated `scope_name` into
+warning text. Every reachable value is a known data-file scope because unknown keys
+take a generic diagnostic, so this was defence in depth; `_scope_label` now returns
+plain scope names bare and quotes/escapes everything else to ASCII, including control,
+bidi and non-ASCII characters. Tests cover plain names, quotes, backslashes, control
+characters, non-ASCII text, the empty string and repeated-diagnostic consistency
+(`tests/test_permission_diagnostics.py`).
+
+Re-executed on this tree: full suite **770 passed, 2 skipped** on Python 3.12.14,
+3.13.17 and 3.14.7; security subset **182 passed, 1 skipped**; slow suite **2 passed**;
+ruff check/format clean (130 files); `mypy src` clean (75 files); schema exit 0;
+coverage **88.76%** and gate passed; Bandit 0 (all severities, 16,838 LOC), pip-audit
+0 on both locks, Semgrep `p/ci`+`p/python` 0 findings (164 rules, 86 files), zizmor
+1.31.1 0, actionlint exit 0, gitleaks 0 leaks across 300 committable files (2.86 MB);
+wheel and sdist built twice byte-identically (wheel SHA-256 `eba5a1cfffad…`, 97 files;
+sdist `b9dddabdc7ac…`, 284 files) and the artifact check passed; fresh wheel install
+with clean `pip check`, CLI version/version --data/schema/scan/rank/export/explain
+exercised; installed verification **42/42** expected exits and **14/14** recovered
+labelled cases through the installed CLI; the evaluation script also passes against the
+installed wheel (TP 8, FP 0, FN 0, TN 6); corpus **15/15** datasets deterministic over
+two repeats (3,620 files, 0 failures).
+
+Gaps unchanged: no Linux/macOS execution for this tree, remote CI predates it, browser
+verification was not re-run because no report serialization or UI code changed, the
+labelled sample is synthetic and is not real-world accuracy, no human audit was
+performed, and no release was published.
