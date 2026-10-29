@@ -21,6 +21,7 @@ from nhi_blast.report.html import write_html
 from nhi_blast.report.json_report import write_json
 from nhi_blast.report.model_json import report_dict
 from nhi_blast.report.sarif import sarif_report, write_sarif
+from tests.entrypoint_support import resolve_cli_entrypoint
 from tests.report_support import make_report
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -41,9 +42,7 @@ def corpus() -> ModuleType:
 
 @pytest.fixture
 def cli() -> Path:
-    entry = Path(sys.executable).parent / ("nhi-blast.exe" if os.name == "nt" else "nhi-blast")
-    assert entry.is_file(), "integration requires this environment's installed CLI entrypoint"
-    return entry.absolute()
+    return resolve_cli_entrypoint()
 
 
 def save(path: Path, data: Any) -> None:

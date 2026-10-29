@@ -97,6 +97,7 @@ can discover false negatives but do not claim completeness of either filter.
 | `tests/test_console.py`, `test_json_report.py`, `test_sarif.py`, `test_html.py` | Artifact shape, schema, CSP, accessible table/heading structure, scrollable table regions, embedded font and Motion manifest hashes, Motion licence and runtime rejection paths, and graph focus mapping |
 | `tests/test_report_security.py` | Injection and secret-leak checks at every output boundary |
 | `tests/test_cli.py` | Commands, options, exit codes and error paths |
+| `tests/test_entrypoint_support.py` | Installed-entrypoint resolution across venv, python.org/toolcache (scripts directory) and PATH layouts, with diagnostics when missing |
 | `tests/test_pipeline.py` | Discovery through reporting, configuration and strictness |
 | `tests/test_fixtures.py` | Reviewed end-to-end counts and diagnostics for fx01-fx15 |
 | `tests/test_golden.py` | Exact reviewed fx07 console and semantic summary |

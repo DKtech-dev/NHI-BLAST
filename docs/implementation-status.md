@@ -959,3 +959,39 @@ Gaps unchanged: no Linux/macOS execution for this tree, remote CI predates it, b
 verification was not re-run because no report serialization or UI code changed, the
 labelled sample is synthetic and is not real-world accuracy, no human audit was
 performed, and no release was published.
+
+## Windows CI entrypoint resolution — 2026-10-29
+
+The `cli` fixture in `tests/test_benchmark_corpus.py` derived the installed console
+script from `Path(sys.executable).parent`. That assumption only holds in virtual
+environments, where `python.exe` itself lives in `Scripts`. GitHub-hosted runners use
+the python.org layout: `python.exe` sits at the toolcache prefix root and pip installs
+console scripts into `<prefix>/Scripts`. Run 40806824836 (`pull_request`, SHA
+`820549d`) therefore ended with 744 passed and 28 fixture errors on every Windows job
+while all Ubuntu jobs passed. `tests/test_cli.py::test_installed_console_script_runs`
+already resolved through `sysconfig.get_path("scripts")` and passed on those same
+runs, which confirms the entrypoint was installed at
+`C:/hostedtoolcache/windows/Python/<version>/x64/Scripts/nhi-blast.exe`; the workflow
+install step needed no change. A wheel installed into a temporary nt-scheme prefix
+reproduced the same location (`Scripts/nhi-blast.exe`, nothing beside the interpreter).
+
+`tests/entrypoint_support.py` now provides one resolver: the interpreter's configured
+scripts directory (sysconfig), then `shutil.which`, then the legacy directory beside
+`python.exe`. It accepts only an existing regular file and raises
+`EntrypointNotFoundError` naming the interpreter and every searched path. The corpus
+fixture and `tests/test_cli.py` both use it. Seven regression tests cover the
+toolcache layout, the POSIX layout, precedence, the PATH fallback, the
+interpreter-adjacent fallback, the missing-entrypoint diagnostic (including a
+directory bearing the entrypoint name) and Windows `.exe` naming
+(`tests/test_entrypoint_support.py`). No Windows skip, weakened assertion or
+source-import substitution was introduced.
+
+Re-executed on this tree: full suite **777 passed, 2 skipped** on Python 3.12.14,
+3.13.17 and 3.14.7; security subset **182 passed, 1 skipped**; slow suite **2 passed**;
+ruff check/format clean (132 files); `mypy src` clean (75 files); schema exit 0;
+coverage **89%** and gate passed; wheel rebuilt byte-identically (`eba5a1cfffad…`,
+97 files; unchanged because no runtime code changed), sdist `887d485e…` (286 files),
+artifact check passed; a fresh consumer install passed `pip check`, `version`,
+`version --data`, `schema` and an fx07 scan producing JSON, SARIF and HTML. The pass
+of these same tests on a GitHub-hosted Windows toolcache interpreter is the remaining
+external check; it is not reproduced locally and is not claimed here.
