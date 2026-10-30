@@ -18,11 +18,13 @@ DOCS = (
     ROOT / "docs" / "architecture.md",
     ROOT / "docs" / "assumptions.md",
     ROOT / "docs" / "benchmark.md",
+    ROOT / "docs" / "beta-testing.md",
     ROOT / "docs" / "data-provenance.md",
     ROOT / "docs" / "known-limitations.md",
     ROOT / "docs" / "production-readiness.md",
     ROOT / "docs" / "release.md",
     ROOT / "docs" / "release-notes-0.1.0.md",
+    ROOT / "docs" / "release-notes-0.2.0.md",
     ROOT / "docs" / "security-audit.md",
     ROOT / "docs" / "external-audit-package.md",
     ROOT / "docs" / "research" / "sources.md",
@@ -94,3 +96,18 @@ def test_assumption_registry_matches_its_documentation() -> None:
         )
     )
     assert set(ids) == documented
+
+
+def test_beta_issue_form_requests_the_fields_testers_need() -> None:
+    form_path = ROOT / ".github" / "ISSUE_TEMPLATE" / "beta-bug-report.yml"
+    form = yaml.safe_load(form_path.read_text(encoding="utf-8"))
+    fields = {entry.get("id") for entry in form["body"] if entry.get("id")}
+
+    required = {"operating-system", "version", "installation", "command", "expected", "actual"}
+    assert required <= fields
+    assert "logs" in fields
+    confirmations = next(entry for entry in form["body"] if entry.get("id") == "confirmations")
+    labels = " ".join(option["label"] for option in confirmations["attributes"]["options"]).lower()
+    assert "credential values" in labels
+    assert "authorisation" in labels
+    assert "not an independent cloud security assessment" in labels

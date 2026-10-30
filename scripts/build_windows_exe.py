@@ -4,7 +4,8 @@
 The executable is deliberately one file and console-only: it embeds the Python
 runtime, the optional HCL parser and rich console support, and every runtime data
 and report asset. Build it from a clean environment; the checked-in lock pins the
-build toolchain.
+build toolchain. The project licence and third-party notices are embedded at the
+bundle root so the distributed binary carries its own notices.
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ DATA_SOURCE = ROOT / "src" / "nhi_blast" / "data"
 ASSETS_SOURCE = ROOT / "src" / "nhi_blast" / "report" / "assets"
 DEFAULT_DIST = ROOT / "dist" / "windows"
 DEFAULT_WORK = ROOT / "build" / "windows"
+LICENCE_FILES = ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md")
 _REQUIRED_BUILD_MODULES = ("PyInstaller", "hcl2", "rich")
 _SKIPPED_SUFFIXES = frozenset({".py", ".pyc", ".pyo"})
 
@@ -46,6 +48,7 @@ def resource_pairs() -> list[tuple[Path, str]]:
     return [
         *_resource_root(DATA_SOURCE, "nhi_blast/data"),
         *_resource_root(ASSETS_SOURCE, "nhi_blast/report/assets"),
+        *((ROOT / name, name) for name in LICENCE_FILES),
     ]
 
 
@@ -103,7 +106,7 @@ def pyinstaller_command(*, dist_dir: Path, work_dir: Path) -> list[str]:
     for source, destination in resource_pairs():
         # PyInstaller copies a file into the named directory; passing the full
         # file destination would create a redundant <name>/<name> nesting.
-        directory = posixpath.dirname(destination)
+        directory = posixpath.dirname(destination) or "."
         command.extend(["--add-data", f"{source}{os.pathsep}{directory}"])
     command.append(str(ENTRY_SCRIPT))
     return command

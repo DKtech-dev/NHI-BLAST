@@ -16,6 +16,35 @@ pytestmark = pytest.mark.security
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "check_artifacts.py"
 EXE_NAME = "nhi-blast-windows-x64.exe"
+LICENCE_FILES = ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md")
+BUNDLED_THIRD_PARTY_DISTRIBUTIONS = (
+    "PyYAML",
+    "Pygments",
+    "altgraph",
+    "annotated-types",
+    "attrs",
+    "click",
+    "colorama",
+    "lark",
+    "markdown-it-py",
+    "mdurl",
+    "networkx",
+    "packaging",
+    "pefile",
+    "pydantic",
+    "pydantic_core",
+    "pyinstaller",
+    "python-hcl2",
+    "pywin32-ctypes",
+    "regex",
+    "rich",
+    "setuptools",
+    "shellingham",
+    "trove-classifiers",
+    "typer",
+    "typing-inspection",
+    "typing_extensions",
+)
 
 
 def _checker() -> ModuleType:
@@ -51,9 +80,16 @@ def _write_checksum(exe: Path, digest: str | None = None) -> Path:
 
 class _CleanArchive:
     def __init__(self, checker: ModuleType) -> None:
+        self.checker = checker
         self.toc = dict.fromkeys(checker.WINDOWS_REQUIRED_RESOURCES, (0, 0, 0, 0, "x"))
 
-    def extract(self, _name: str) -> bytes:
+    def extract(self, name: str) -> bytes:
+        if name == "THIRD_PARTY_NOTICES.md":
+            lines = [
+                *self.checker.BUNDLED_NOTICE_COMPONENTS,
+                *self.checker.NOTICE_REQUIRED_PHRASES,
+            ]
+            return "\n".join(lines).encode()
         return b"clean payload"
 
 
@@ -121,6 +157,67 @@ def test_sdist_build_config_excludes_local_only_docs() -> None:
     assert "docs" in sdist["include"]
     assert "docs/engineering-checkpoint.md" in sdist["exclude"]
     assert "requirements-windows-build.lock" in sdist["include"]
+    assert "THIRD_PARTY_NOTICES.md" in sdist["include"]
+
+
+def test_project_is_mit_licensed() -> None:
+    config = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    project = config["project"]
+
+    assert project["license"] == "MIT"
+    assert set(project["license-files"]) == set(LICENCE_FILES)
+    licence = (ROOT / "LICENSE").read_text(encoding="utf-8")
+    assert licence.startswith("MIT License\n")
+    assert "Copyright (c) 2026 NHI-Blast Maintainers" in licence
+    notice = (ROOT / "NOTICE").read_text(encoding="utf-8")
+    assert "MIT License" in notice
+    assert "proprietary" not in notice.lower()
+
+
+def test_third_party_notices_cover_the_frozen_runtime() -> None:
+    notices = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8").lower()
+
+    for distribution in BUNDLED_THIRD_PARTY_DISTRIBUTIONS:
+        assert distribution.lower() in notices, distribution
+    assert "python software foundation" in notices
+    assert "bootloader exception" in notices
+    assert "apache license" in notices
+    assert "bsd-3-clause" in notices
+    assert "isc license" in notices
+
+
+def test_wheel_metadata_must_declare_mit_and_licence_files() -> None:
+    checker = _checker()
+    good = "\n".join(
+        [
+            "Metadata-Version: 2.4",
+            "License-Expression: MIT",
+            "License-File: LICENSE",
+            "License-File: NOTICE",
+            "License-File: THIRD_PARTY_NOTICES.md",
+        ]
+    )
+    assert checker._licence_metadata_failures(good) == []
+
+    failures = checker._licence_metadata_failures("License-Expression: LicenseRef-Proprietary")
+    assert any("License-Expression" in failure for failure in failures), failures
+
+    failures = checker._licence_metadata_failures(
+        "License-Expression: MIT\nLicense-File: LICENSE\nLicense-File: NOTICE"
+    )
+    assert any("THIRD_PARTY_NOTICES.md" in failure for failure in failures), failures
+
+
+def test_declared_licence_files_must_exist_in_the_artifact() -> None:
+    checker = _checker()
+    prefix = "nhi_blast-0.2.0.dist-info/licenses/"
+    entries = {f"{prefix}{name}": 1 for name in LICENCE_FILES}
+
+    assert checker._licence_entry_failures("wheel", entries) == []
+
+    del entries[f"{prefix}NOTICE"]
+    failures = checker._licence_entry_failures("wheel", entries)
+    assert any("NOTICE" in failure for failure in failures), failures
 
 
 def test_windows_archive_requires_every_runtime_resource() -> None:
@@ -130,6 +227,17 @@ def test_windows_archive_requires_every_runtime_resource() -> None:
     assert checker.check_windows_entries(_windows_entries(checker, separators="\\")) == []
 
     for name in sorted(checker.WINDOWS_REQUIRED_RESOURCES)[:3]:
+        entries = _windows_entries(checker)
+        del entries[name]
+        failures = checker.check_windows_entries(entries)
+        assert any(name in failure and "missing" in failure for failure in failures), failures
+
+
+def test_windows_archive_requires_the_licence_and_notices() -> None:
+    checker = _checker()
+
+    for name in LICENCE_FILES:
+        assert name in checker.WINDOWS_REQUIRED_RESOURCES
         entries = _windows_entries(checker)
         del entries[name]
         failures = checker.check_windows_entries(entries)

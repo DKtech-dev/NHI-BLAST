@@ -182,9 +182,10 @@ see `docs/release.md` for the release procedure.
 
 ## Licence
 
-This repository is proprietary and all rights are reserved; see `LICENSE`. The project
-does not accept unsolicited external contributions. Do not submit code, documentation
-or other content unless the maintainer has agreed in writing beforehand to the terms,
-including a transfer or assignment of rights sufficient for the maintainer to use and
-relicense the contribution. Opening a pull request does not grant the project a
-licence, and the maintainer is not obliged to review or merge it.
+This repository is licensed under the MIT License; see `LICENSE`. By submitting a
+contribution you confirm that it is your original work, or that you have the right to
+submit it, and you agree that it is licensed under the same MIT terms. Do not submit
+code, documentation or assets whose licence is incompatible with MIT. Third-party
+components must keep their copyright and licence notices, and new bundled components
+must be added to `THIRD_PARTY_NOTICES.md`. Open an issue before a large change; the
+maintainer is not obliged to review or merge a contribution.

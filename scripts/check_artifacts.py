@@ -45,7 +45,41 @@ REQUIRED_WHEEL_ASSETS = frozenset(
     }
 )
 WINDOWS_EXE_NAME = "nhi-blast-windows-x64.exe"
-WINDOWS_REQUIRED_RESOURCES = REQUIRED_WHEEL_DATA | REQUIRED_WHEEL_ASSETS
+PROJECT_LICENCE_FILES = ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md")
+WINDOWS_REQUIRED_RESOURCES = (
+    REQUIRED_WHEEL_DATA | REQUIRED_WHEEL_ASSETS | frozenset(PROJECT_LICENCE_FILES)
+)
+# Packages frozen into the executable. The embedded notice file must name every
+# one; the inventory is checked so an empty or stale notice cannot ship.
+BUNDLED_NOTICE_COMPONENTS = (
+    "PyYAML",
+    "Pygments",
+    "altgraph",
+    "annotated-types",
+    "attrs",
+    "click",
+    "colorama",
+    "lark",
+    "markdown-it-py",
+    "mdurl",
+    "networkx",
+    "packaging",
+    "pefile",
+    "pydantic",
+    "pydantic_core",
+    "pyinstaller",
+    "python-hcl2",
+    "pywin32-ctypes",
+    "regex",
+    "rich",
+    "setuptools",
+    "shellingham",
+    "trove-classifiers",
+    "typer",
+    "typing-inspection",
+    "typing_extensions",
+)
+NOTICE_REQUIRED_PHRASES = ("python software foundation", "bootloader exception")
 # PyInstaller stores Python modules as bytecode, so the wheel rules that reject
 # .pyc caches cannot apply to its archive. These are distribution paths that
 # must never appear in the standalone executable.
@@ -87,6 +121,7 @@ REQUIRED_SDIST = frozenset(
         "README.md",
         "LICENSE",
         "NOTICE",
+        "THIRD_PARTY_NOTICES.md",
         "SECURITY.md",
         "CONTRIBUTING.md",
         "CHANGELOG.md",
@@ -106,6 +141,7 @@ ALLOWED_SDIST_ROOTS = frozenset(
         "README.md",
         "LICENSE",
         "NOTICE",
+        "THIRD_PARTY_NOTICES.md",
         "SECURITY.md",
         "CONTRIBUTING.md",
         "CHANGELOG.md",
@@ -166,6 +202,57 @@ def _forbidden(name: str) -> str | None:
 def _local_only(name: str) -> str | None:
     normalised = _normalise(name)
     return normalised if normalised in LOCAL_ONLY_PATHS else None
+
+
+def _licence_metadata_failures(metadata: str) -> list[str]:
+    lines = [line.strip() for line in metadata.splitlines()]
+    failures: list[str] = []
+    if "License-Expression: MIT" not in lines:
+        failures.append("metadata does not declare License-Expression: MIT")
+    declared = {
+        line.partition(":")[2].strip() for line in lines if line.startswith("License-File:")
+    }
+    for name in PROJECT_LICENCE_FILES:
+        if name not in declared:
+            failures.append(f"metadata does not declare License-File: {name}")
+    return failures
+
+
+def _licence_entry_failures(label: str, entries: Iterable[str]) -> list[str]:
+    present = {_normalise(name) for name in entries}
+    failures: list[str] = []
+    for name in PROJECT_LICENCE_FILES:
+        if not any(entry == name or entry.endswith(f"/{name}") for entry in present):
+            failures.append(f"{label}: missing licence file {name}")
+    return failures
+
+
+def _notice_coverage_failures(label: str, payload: bytes) -> list[str]:
+    text = payload.decode("utf-8", errors="replace").lower()
+    failures = [
+        f"{label}: third-party notices omit {component}"
+        for component in BUNDLED_NOTICE_COMPONENTS
+        if component.lower() not in text
+    ]
+    failures.extend(
+        f"{label}: third-party notices omit {phrase!r}"
+        for phrase in NOTICE_REQUIRED_PHRASES
+        if phrase not in text
+    )
+    return failures
+
+
+def _sdist_file(sdist: Path, relative: str) -> bytes | None:
+    with tarfile.open(sdist) as archive:
+        for member in archive.getmembers():
+            if not member.isfile():
+                continue
+            parts = _normalise(member.name).split("/", 1)
+            name = parts[1] if len(parts) == 2 else parts[0]
+            if name == relative:
+                handle = archive.extractfile(member)
+                return handle.read() if handle is not None else None
+    return None
 
 
 def _sha256(path: Path) -> str:
@@ -299,6 +386,15 @@ def check_windows_executable(exe: Path, checksum_path: Path | None = None) -> li
         failures.extend(_check_archive_secrets(reader))
     except Exception as exc:  # payload boundary: decompression can raise many types
         failures.append(f"windows: cannot scan executable payloads: {type(exc).__name__}: {exc}")
+    try:
+        notice = reader.extract("THIRD_PARTY_NOTICES.md")
+    except Exception as exc:  # archive inspection boundary: missing or corrupt payload
+        failures.append(f"windows: cannot read embedded notices: {type(exc).__name__}: {exc}")
+    else:
+        if not notice:
+            failures.append("windows: embedded third-party notices are empty")
+        else:
+            failures.extend(_notice_coverage_failures("windows", notice))
     return failures
 
 
@@ -310,6 +406,14 @@ def _wheel_entries(wheel: Path) -> tuple[dict[str, int], str]:
         )
         metadata = archive.read(metadata_name).decode("utf-8") if metadata_name else ""
     return entries, metadata
+
+
+def _wheel_notices(wheel: Path) -> bytes | None:
+    with zipfile.ZipFile(wheel) as archive:
+        for info in archive.infolist():
+            if _normalise(info.filename).endswith("THIRD_PARTY_NOTICES.md"):
+                return archive.read(info)
+    return None
 
 
 def _unexpected_sdist_roots(entries: dict[str, int]) -> list[str]:
@@ -361,6 +465,13 @@ def check_wheel(wheel: Path) -> list[str]:
     failures = _check_common("wheel", entries)
     missing = sorted((REQUIRED_WHEEL_DATA | REQUIRED_WHEEL_ASSETS) - entries.keys())
     failures.extend(f"wheel: missing {name}" for name in missing)
+    failures.extend(_licence_metadata_failures(metadata))
+    failures.extend(_licence_entry_failures("wheel", entries))
+    notices = _wheel_notices(wheel)
+    if notices is None:
+        failures.append("wheel: missing THIRD_PARTY_NOTICES.md")
+    else:
+        failures.extend(_notice_coverage_failures("wheel", notices))
     if "Requires-Python: >=3.12" not in metadata:
         failures.append("wheel: metadata does not declare Python >=3.12")
     requirements = _requirement_names(metadata, runtime_only=True)
@@ -378,6 +489,12 @@ def check_sdist(sdist: Path) -> list[str]:
     failures = _check_common("sdist", entries)
     missing = sorted(REQUIRED_SDIST - entries.keys())
     failures.extend(f"sdist: missing {name}" for name in missing)
+    failures.extend(_licence_entry_failures("sdist", entries))
+    notices = _sdist_file(sdist, "THIRD_PARTY_NOTICES.md")
+    if notices is None:
+        failures.append("sdist: missing THIRD_PARTY_NOTICES.md")
+    else:
+        failures.extend(_notice_coverage_failures("sdist", notices))
     failures.extend(
         f"sdist: unexpected top-level entry {root!r}" for root in _unexpected_sdist_roots(entries)
     )

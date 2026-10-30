@@ -53,7 +53,7 @@ def test_build_bundles_every_runtime_data_file_and_report_asset() -> None:
 
     destinations = {destination for _, destination in builder.resource_pairs()}
 
-    assert destinations == _expected_resources()
+    assert destinations == _expected_resources() | {"LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"}
     assert any(name.endswith("rules.yaml") for name in destinations)
     assert any(name.endswith("MANIFEST.json") for name in destinations)
     assert any(name.endswith("geist-latin.woff2") for name in destinations)
@@ -92,7 +92,10 @@ def test_build_adds_each_resource_to_its_parent_directory() -> None:
 
     destinations = {argument.rsplit(os.pathsep, 1)[1] for argument in arguments}
 
-    assert destinations == {posixpath.dirname(name) for name in builder.bundled_resource_names()}
+    assert destinations == {
+        posixpath.dirname(name) or "." for name in builder.bundled_resource_names()
+    }
+    assert "." in destinations
     assert not any(
         destination.endswith((".yaml", ".json", ".woff2", ".js", ".txt"))
         for destination in destinations
@@ -146,6 +149,7 @@ def test_windows_workflow_is_manual_only_and_never_publishes() -> None:
     assert "actions/upload-artifact@" in text
     assert "nhi-blast-windows-x64.exe" in text
     assert "nhi-blast-windows-x64.exe.sha256" in text
+    assert "THIRD_PARTY_NOTICES.md" in text
     for forbidden in (
         "gh release",
         "twine",

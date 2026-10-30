@@ -5,13 +5,12 @@ much as its findings, so defects that break them are treated as security bugs.
 
 ## Supported versions
 
-NHI-Blast `0.1.1` is the latest published release; `0.1.0` remains available. Both
-were distributed as GitHub Release assets under the MIT License. The source tree on
-`main` is version `0.2.0` under a proprietary licence and is not yet released.
-Security fixes are made on the current source line; there are no long-term support
-branches and no backports. A version is supported only when its source can be
-verified against this repository and, for a release, against the published SHA-256
-sums.
+NHI-Blast `0.2.0` is the current public beta and is licensed under the MIT License. The
+latest stable published release is `0.1.1`; `0.1.0` remains available. Both were
+distributed as GitHub Release assets under the MIT License. Security fixes are made on
+the current source line; there are no long-term support branches and no backports. A
+version is supported only when its source can be verified against this repository and,
+for a release, against the published SHA-256 sums.
 
 ## Reporting a vulnerability
 

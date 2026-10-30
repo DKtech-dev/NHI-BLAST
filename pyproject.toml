@@ -8,7 +8,8 @@ version = "0.2.0"
 description = "Offline, evidence-labelled analysis of GitHub Actions to AWS OIDC authority and revocation survival"
 readme = "README.md"
 requires-python = ">=3.12"
-license = "LicenseRef-Proprietary"
+license = "MIT"
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
 authors = [{ name = "NHI-Blast Maintainers" }]
 keywords = ["security", "github-actions", "aws", "oidc", "iam", "incident-response"]
 classifiers = [
@@ -60,6 +61,7 @@ include = [
   "README.md",
   "LICENSE",
   "NOTICE",
+  "THIRD_PARTY_NOTICES.md",
   "SECURITY.md",
   "CONTRIBUTING.md",
   "CHANGELOG.md",

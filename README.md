@@ -20,8 +20,10 @@ JSON with an HCL fallback, and IAM policy JSON. Remote reusable workflows use th
 
 ## Install and quickstart
 
-Requires **Python 3.12+** (tested on 3.12, 3.13 and 3.14). Version 0.2.0 is a source-tree version;
-no 0.2.0 artifact is published. The tool needs no cloud credentials and makes no network requests.
+Requires **Python 3.12+** (tested on 3.12, 3.13 and 3.14). Version 0.2.0 is a public beta,
+available from this source tree and, for Windows, as a pre-release executable on GitHub
+Releases. No package-index publication is made. The tool needs no cloud credentials and makes
+no network requests.
 
 ```
 python -m venv .venv
@@ -34,10 +36,15 @@ On Windows use `.venv\Scripts\python.exe`. `[hcl]` adds the optional Terraform H
 ### Windows executable
 
 The standalone Windows x64 build, `nhi-blast-windows-x64.exe`, does not require Python, pip or
-administrator rights. No executable is published yet; it will be attached to
-[GitHub Releases](https://github.com/DKtech-dev/nhi-blast/releases) after the release process.
-Verify a download against its `.sha256` record with
-`Get-FileHash .\nhi-blast-windows-x64.exe -Algorithm SHA256`.
+administrator rights. Download the executable and its `.sha256` record from
+[GitHub Releases](https://github.com/DKtech-dev/nhi-blast/releases); when the `v0.2.0`
+pre-release is available, both files are attached to it. Verify a download before running it:
+
+```powershell
+$record = (Get-Content .\nhi-blast-windows-x64.exe.sha256 -Raw).Trim()
+$actual = (Get-FileHash .\nhi-blast-windows-x64.exe -Algorithm SHA256).Hash.ToLower()
+if ($record -ne "$actual  nhi-blast-windows-x64.exe") { throw "checksum mismatch" }
+```
 
 ```
 nhi-blast-windows-x64.exe --help
@@ -135,6 +142,20 @@ paths = ["docs/examples/**"]
 Bindings hold role identifiers, never credential values. `[ignore].paths` matches a finding's
 evidence path with shell-style globs; `--strict` reports suppressed findings as diagnostics.
 
+## Public beta
+
+Version 0.2.0 is a public beta for testing and evaluation, not a production security
+control. Its analysis supports an incident response; it is not a substitute for an
+independent cloud security assessment. Treat every result as evidence to verify against
+your own environment, and read the known limitations before relying on a finding.
+
+External testers are welcome. Test only synthetic fixtures such as
+`tests/fixtures/fx07-incident` or repositories you are authorised to assess. Do not send
+credential values, secrets, private repository contents or live cloud data. Report
+reproducible problems through the repository's beta bug report issue form with the
+operating system, version, exact command, expected result, actual result and sanitised
+logs. The full process is in [beta testing](docs/beta-testing.md).
+
 ## Security and limitations
 
 - No execution of scanned content and no network access: no Terraform, Git or shell commands, no downloads, no `${{ ... }}` evaluation.
@@ -150,8 +171,7 @@ or is claimed.
 
 ## Licence
 
-Proprietary, all rights reserved. See [LICENSE](LICENSE). No permission is granted to use, copy,
-modify or distribute this source tree or future releases without the copyright holder's prior
-written permission; viewing or forking on GitHub does not grant it. The published `0.1.0` and
-`0.1.1` releases remain under the MIT License. Instrument Serif, Geist and Geist Mono are
-embedded under the SIL Open Font License; see [NOTICE](NOTICE).
+MIT License; see [LICENSE](LICENSE). The published `0.1.0` and `0.1.1` releases remain under
+the MIT License. Third-party components keep their own licences: the embedded Instrument
+Serif, Geist and Geist Mono fonts are SIL Open Font License 1.1; see [NOTICE](NOTICE) and
+[third-party notices](THIRD_PARTY_NOTICES.md).
