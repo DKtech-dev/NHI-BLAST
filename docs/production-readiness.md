@@ -10,12 +10,14 @@ package-index upload, deployment or SaaS was performed. The independent human se
 audit has not been performed and is not claimed; it remains the one open assurance gate
 and is disclosed in `docs/security-audit.md` and `docs/external-audit-package.md`.
 
-The source line is version 0.2.0 under the MIT License and is a public beta. This page's
-release verdict applies to `0.1.1`, not to the 0.2.0 beta, and it is not a
-production-readiness claim for 0.2.0. Versions `0.1.0` and `0.1.1` remain the published
-GitHub Releases under the MIT License they were distributed with. The 0.2.0 beta's
-verification results are recorded below and in the release notes; no independent audit
-has been performed for any version.
+The source line is version 0.2.0 under the MIT License and is a public beta. The 0.2.0
+beta was published on 2026-10-30 as a GitHub pre-release at
+https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.2.0 from commit `41d08a8`. This
+page's release verdict applies to `0.1.1` and the 0.2.0 pre-release distribution only;
+it is not a production-readiness claim for 0.2.0. Versions `0.1.0` and `0.1.1` remain
+the published GitHub Releases under the MIT License they were distributed with. The
+0.2.0 beta's verification results and published artifact are recorded below and in the
+release notes; no independent audit has been performed for any version.
 
 This page is the release-gate record. It states what was actually executed on the
 recorded environments and what remains open. The audit is in
@@ -25,16 +27,16 @@ recorded environments and what remains open. The audit is in
 
 | Item | Value |
 | --- | --- |
-| Date of the recorded gates | 2026-10-27 for the published 0.1.1 gates; 2026-10-30 for the 0.2.0 beta gates |
+| Date of the recorded gates | 2026-10-27 for the published 0.1.1 gates; 2026-10-30 for the 0.2.0 beta gates, the Windows build and the `v0.2.0` pre-release |
 | Local OS | Windows 11 (10.0.26200), x64 |
 | Remote OS and Python | GitHub Actions `ubuntu-latest` and `windows-latest`; CPython 3.12, 3.13 and 3.14 |
 | Local Python | CPython 3.12.14 primary; 3.13.17 and 3.14.7 in isolated environments |
 | Machine | 12th Gen Intel Core i5-12450H, 15.7 GiB RAM, local SSD |
-| Repository | `DKtech-dev/nhi-blast`, public since 2026-10-27, branch `main`; the 0.2.0 beta gates were run on branch `cleanup` |
+| Repository | `DKtech-dev/nhi-blast`, public since 2026-10-27, branch `main`; the 0.2.0 beta gates were run on branch `cleanup`, merged through PR #4 and released from `main` at `41d08a8` |
 | Runtime dependencies | `requirements.lock` exact versions |
 | Development dependencies | `requirements-dev.lock` exact versions |
-| Distribution published | `nhi_blast-0.1.1-py3-none-any.whl` and `nhi_blast-0.1.1.tar.gz`; SHA-256 values are in the release's `SHA256SUMS` asset, not embedded here because this document is packaged in the sdist. The 0.2.0 beta is prepared as a GitHub pre-release with a Windows executable only; no wheel or sdist is published and no package index is used |
-| Beta executable | PyInstaller 6.22.3 one-file console executable for Windows x64, unsigned; built from this tree and verified on 2026-10-30 |
+| Distribution published | `nhi_blast-0.1.1-py3-none-any.whl` and `nhi_blast-0.1.1.tar.gz`; SHA-256 values are in the release's `SHA256SUMS` asset, not embedded here because this document is packaged in the sdist. The 0.2.0 beta is published as the GitHub pre-release `v0.2.0` with five assets: `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, `nhi-blast-windows-x64.exe` and `nhi-blast-windows-x64.exe.sha256`; no wheel or sdist is published for 0.2.0 and no package index is used |
+| Beta executable | PyInstaller 6.22.3 one-file console executable for Windows x64, unsigned; built by `build-windows` run 40993757326 from commit `41d08a8`, published as 20,749,434 bytes with SHA-256 `fe8fd0e129af7ed2353d53189cf4730a03cfcc0019f86f871b03c6a4625c9350`, and re-downloaded and verified after publication |
 | UI tooling | Headless Chrome through CDP; axe-core 4.10.3; Lighthouse 13.5.0 (desktop and simulated mobile profiles); html-validate 11.17.0; design inspector at 1440, 768 and 390 px |
 
 ## Remote CI evidence
@@ -45,6 +47,9 @@ recorded environments and what remains open. The audit is in
 | Advisory audit 0.1.1 (`audit.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40509205137 | Passed: runtime and development lock audits, Bandit, OSV-Scanner and the secret scan |
 | CI 0.2.0 source, public repository (`ci.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40515346396 | Package job passed; all six test jobs passed with `420 passed` each on Ubuntu and Windows, Python 3.12–3.14, coverage 86.73–86.74%, plus `2 passed` for the slow suite in each job |
 | Advisory audit 0.2.0 source (`audit.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40515346468 | Passed: both lock audits, Bandit, OSV-Scanner and the secret scan |
+| CI 0.2.0 final beta tree, PR #4 (`ci.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40993460388 | All required checks passed on head `7f7bea4`: package job and six test jobs on Ubuntu and Windows, Python 3.12–3.14; merged to `main` as `41d08a8` |
+| Advisory audit 0.2.0 final beta tree, PR #4 (`audit.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40993460275 | Passed alongside the PR's CodeQL checks |
+| Windows build 0.2.0 (`build-windows.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40993757326 | Passed on `main` at `41d08a8`; produced the executable and checksum published in the `v0.2.0` pre-release |
 | CodeQL default setup | https://github.com/DKtech-dev/nhi-blast/actions/runs/40515346395 | Analyze (actions) and Analyze (python) passed; 0 results and 0 open alerts |
 | CI 0.1.0 (`ci.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40432137207 | Package job passed; all six test jobs passed with `404 passed` each and coverage 86.53–86.54% on Ubuntu and Windows, Python 3.12–3.14 |
 | Advisory audit 0.1.0 (`audit.yml`) | https://github.com/DKtech-dev/nhi-blast/actions/runs/40432137192 | Passed: both lock files audited, Bandit, OSV-Scanner and gitleaks |
@@ -102,6 +107,7 @@ suite, so the local Windows skip does not appear there.
 | Independent audit | External human security review | None performed and none claimed; package prepared in `docs/external-audit-package.md` | Not claimed |
 | Publication (0.1.0) | GitHub Release with wheel, sdist and SHA-256 sums | `v0.1.0` published 2026-10-27 from commit `0269100`; all three assets were re-downloaded and verified against `SHA256SUMS`; no package-index upload, deployment or SaaS | Published |
 | Publication (0.1.1) | GitHub Release with wheel, sdist and SHA-256 sums | `v0.1.1` published 2026-10-27 from commit `c702d9d` after green CI run 40509205221 and audit run 40509205137; the wheel, sdist and `SHA256SUMS` were re-downloaded and all checksums verified | Published |
+| Publication (0.2.0) | GitHub pre-release with the Windows executable, checksum, licence and notices | `v0.2.0` published 2026-10-30 as a pre-release from commit `41d08a8` after PR #4's required checks and `build-windows` run 40993757326 succeeded; five assets: `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, `nhi-blast-windows-x64.exe`, `nhi-blast-windows-x64.exe.sha256`; published executable 20,749,434 bytes, SHA-256 `fe8fd0e129af7ed2353d53189cf4730a03cfcc0019f86f871b03c6a4625c9350`; no wheel, sdist or package-index upload | Published |
 
 ## 0.2.0 public beta verification (2026-10-30)
 
@@ -122,16 +128,24 @@ conclusion for 0.2.0.
 | Coverage | `python scripts/check_coverage.py` | 803 passed, 10 skipped, 2 deselected; 88.76% overall line coverage (minimum 80%); every enforced package at or above 80% |
 | Wheel | Hatchling build plus `python scripts/check_artifacts.py` | 98 files; `License-Expression: MIT` with `LICENSE`, `NOTICE` and `THIRD_PARTY_NOTICES.md`; notices name every frozen package; checker passed |
 | Sdist | Hatchling build plus `python scripts/check_artifacts.py` | 289 files; the same licence expression and files; checker passed |
-| Windows executable | PyInstaller build, `Get-FileHash`, `check_artifacts.py --windows-exe` | 20,240,054 bytes; SHA-256 `b718517912473d31878cd3f243c14fe9bf070bb825ebe26a3fccabd9c78a32e5`, matched independently with PowerShell `Get-FileHash`; artifact checker passed including embedded notices and the secret scan; the executable is unsigned and no SmartScreen reputation is claimed |
+| Windows executable (local pre-publication build, historical) | PyInstaller build, `Get-FileHash`, `check_artifacts.py --windows-exe` | 20,240,054 bytes; SHA-256 `b718517912473d31878cd3f243c14fe9bf070bb825ebe26a3fccabd9c78a32e5`, matched independently with PowerShell `Get-FileHash`; artifact checker passed including embedded notices and the secret scan; the executable is unsigned and no SmartScreen reputation is claimed. This is the earlier local build, not the published CI artifact |
+| Published Windows executable (CI) | `build-windows` run 40993757326 on `main` at `41d08a8`; downloaded release asset; PowerShell `Get-FileHash`; `check_artifacts.py --windows-exe`; `pytest tests/test_windows_executable.py` | 20,749,434 bytes; SHA-256 `fe8fd0e129af7ed2353d53189cf4730a03cfcc0019f86f871b03c6a4625c9350`; the download matched the published `.sha256` record and GitHub's computed digest; artifact checker passed; 8 executable tests passed against the downloaded binary; the executable is unsigned |
+| GitHub pre-release | GitHub REST API and downloaded assets | `v0.2.0` is a pre-release (draft false) targeting commit `41d08a8`; five assets: `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, `nhi-blast-windows-x64.exe`, `nhi-blast-windows-x64.exe.sha256`; all five were re-downloaded and verified |
 | Executable outside the repository | `pytest tests/test_windows_executable.py` with the built binary | A standalone copy in a temporary directory with spaces, a clean environment and no Python on `PATH` ran `--help`, `version`, `version --data`, `schema`, `scan` in JSON/SARIF/HTML, `rank`, `export`, `explain` and the HCL fallback; exit codes and artifacts matched the installed CLI, and no proxy-mediated network request was observed |
-| Remote CI | Pull request checks on the beta tree | Required before merge. The preceding 0.2.0 source tree passed run 40515346396; the final beta tree's pull-request run and result are recorded on the pull request |
+| Remote CI | PR #4 required checks and the manual Windows workflow | PR #4 (https://github.com/DKtech-dev/nhi-blast/pull/4) passed its required checks on head `7f7bea4` (CI 40993460388, audit 40993460275, CodeQL) and merged to `main` as `41d08a8`; `build-windows` run 40993757326 then passed on `main` at `41d08a8` |
 
-The 0.2.0 beta pre-release is prepared from branch `cleanup` through a pull request to
-`main`. Publication is conditional on the pull request's required checks and on a
-successful manual `build-windows` run on the default branch, followed by independent
-checksum and clean-environment verification of the downloaded artifact. Until the
-release exists on the repository's Releases page it must not be described as published.
-The release notes are `docs/release-notes-0.2.0.md`.
+The 0.2.0 beta was published on 2026-10-30 as a GitHub pre-release at
+https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.2.0, targeting commit
+`41d08a8`. The source was merged through
+https://github.com/DKtech-dev/nhi-blast/pull/4 after its required checks passed, and
+the executable was produced by the manual `build-windows` workflow at
+https://github.com/DKtech-dev/nhi-blast/actions/runs/40993757326 on `main` at
+`41d08a8`. Five assets are attached: `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`,
+`nhi-blast-windows-x64.exe` and `nhi-blast-windows-x64.exe.sha256`. The downloaded
+executable matched its published checksum record, passed the artifact checker and
+passed the executable tests outside the repository. No wheel, sdist, package-index
+upload or deployment is part of the 0.2.0 beta, and the executable is unsigned. The
+release notes are `docs/release-notes-0.2.0.md`.
 
 ## Open gates and limitations
 
@@ -173,13 +187,18 @@ public beta; that does not alter the published 0.1.0 and 0.1.1 releases, which r
 under the MIT License. No production-readiness or independent-audit conclusion is made
 for the 0.2.0 beta.
 
-The 0.2.0 beta pre-release is prepared, not published at the time of this record. Its
-Windows executable was built from this tree, matched the recorded SHA-256 in an
-independent `Get-FileHash` check, passed the artifact checker and passed the
-clean-environment executable tests. The beta release is created only after the pull
-request's required checks pass and a manual `build-windows` run on `main` produces a
-downloaded artifact whose checksum and behaviour are verified again. If any of those
-steps fails, the release is not created.
+Version 0.2.0 was published on 2026-10-30 as the GitHub pre-release `v0.2.0` at
+https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.2.0, targeting commit
+`41d08a8`. The published executable is 20,749,434 bytes with SHA-256
+`fe8fd0e129af7ed2353d53189cf4730a03cfcc0019f86f871b03c6a4625c9350`; it was downloaded
+after publication and matched the published `.sha256` record, passed the artifact
+checker and passed the executable tests outside the repository. The earlier local
+build (20,240,054 bytes, SHA-256
+`b718517912473d31878cd3f243c14fe9bf070bb825ebe26a3fccabd9c78a32e5`) is recorded above
+as a historical local-build result only and is not the published artifact. No wheel,
+sdist, package-index upload or deployment is part of the 0.2.0 beta; the executable is
+unsigned, and no production-readiness or independent-audit conclusion is made for
+0.2.0.
 
 Every statement must keep the distinction between internal verification and independent
 audit. The tool's own analysis is evidence-honest by

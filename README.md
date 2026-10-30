@@ -36,9 +36,12 @@ On Windows use `.venv\Scripts\python.exe`. `[hcl]` adds the optional Terraform H
 ### Windows executable
 
 The standalone Windows x64 build, `nhi-blast-windows-x64.exe`, does not require Python, pip or
-administrator rights. Download the executable and its `.sha256` record from
-[GitHub Releases](https://github.com/DKtech-dev/nhi-blast/releases); when the `v0.2.0`
-pre-release is available, both files are attached to it. Verify a download before running it:
+administrator rights. Download the executable and its `.sha256` record from the
+[`v0.2.0` release](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.2.0):
+[`nhi-blast-windows-x64.exe`](https://github.com/DKtech-dev/nhi-blast/releases/download/v0.2.0/nhi-blast-windows-x64.exe)
+and
+[`nhi-blast-windows-x64.exe.sha256`](https://github.com/DKtech-dev/nhi-blast/releases/download/v0.2.0/nhi-blast-windows-x64.exe.sha256).
+Verify a download before running it:
 
 ```powershell
 $record = (Get-Content .\nhi-blast-windows-x64.exe.sha256 -Raw).Trim()
