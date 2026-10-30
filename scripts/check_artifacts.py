@@ -104,7 +104,7 @@ WINDOWS_FORBIDDEN_PARTS = (
 WINDOWS_CHECKSUM = re.compile(r"^([0-9a-f]{64}) [ *](.+)$")
 # High-signal value formats only. The tool's own detection patterns are regex
 # text and do not match these; a match means a credential value was bundled.
-WINDOWS_SECRET_PATTERNS = (
+WINDOWS_LEAK_PATTERNS = (
     ("private key", re.compile(rb"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----")),
     ("AWS access key", re.compile(rb"(?:AKIA|ASIA)[0-9A-Z]{16}")),
     ("GitHub token", re.compile(rb"gh[pousr]_[A-Za-z0-9]{36,}")),
@@ -316,8 +316,8 @@ def _unsafe_windows_path(name: str) -> bool:
     return not name or ":" in name or path.is_absolute() or ".." in path.parts
 
 
-def _credential_label(payload: bytes) -> str | None:
-    for label, pattern in WINDOWS_SECRET_PATTERNS:
+def _leak_label(payload: bytes) -> str | None:
+    for label, pattern in WINDOWS_LEAK_PATTERNS:
         if pattern.search(payload):
             return label
     return None
@@ -335,10 +335,10 @@ def _archive_payloads(reader: Any) -> Iterator[tuple[str, bytes]]:
             yield name, reader.extract(name)
 
 
-def _check_archive_secrets(reader: Any) -> list[str]:
+def _check_archive_leaks(reader: Any) -> list[str]:
     failures: list[str] = []
     for name, payload in _archive_payloads(reader):
-        label = _credential_label(payload)
+        label = _leak_label(payload)
         if label is not None:
             failures.append(f"windows: {name!r} contains credential material ({label})")
     return failures
@@ -383,7 +383,7 @@ def check_windows_executable(exe: Path, checksum_path: Path | None = None) -> li
         return failures
     failures.extend(check_windows_entries(str(name) for name in reader.toc))
     try:
-        failures.extend(_check_archive_secrets(reader))
+        failures.extend(_check_archive_leaks(reader))
     except Exception as exc:  # payload boundary: decompression can raise many types
         failures.append(f"windows: cannot scan executable payloads: {type(exc).__name__}: {exc}")
     try:

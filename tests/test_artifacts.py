@@ -276,12 +276,12 @@ def test_windows_secret_scan_flags_values_without_echoing_them() -> None:
     checker = _checker()
     token = "ghp_" + "A" * 36
 
-    label = checker._credential_label(f"prefix {token} suffix".encode())
+    label = checker._leak_label(f"prefix {token} suffix".encode())
 
     assert label == "GitHub token"
     assert token not in label
     heuristics = (ROOT / "src/nhi_blast/data/credential_heuristics.yaml").read_bytes()
-    assert checker._credential_label(heuristics) is None
+    assert checker._leak_label(heuristics) is None
 
 
 def test_windows_archive_scan_checks_data_entries_and_pyz_modules() -> None:
@@ -308,7 +308,7 @@ def test_windows_archive_scan_checks_data_entries_and_pyz_modules() -> None:
         def open_embedded_archive(self, _name: str) -> FakePyz:
             return FakePyz()
 
-    failures = checker._check_archive_secrets(FakeArchive())
+    failures = checker._check_archive_leaks(FakeArchive())
 
     assert len(failures) == 1
     assert "PYZ.pyz:mod" in failures[0]
