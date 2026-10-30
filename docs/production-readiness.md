@@ -10,29 +10,31 @@ package-index upload, deployment or SaaS was performed. The independent human se
 audit has not been performed and is not claimed; it remains the one open assurance gate
 and is disclosed in `docs/security-audit.md` and `docs/external-audit-package.md`.
 
-The source tree on `main` is version 0.2.0 under a proprietary, all-rights-reserved
-licence, and the repository is public as of 2026-10-27. No 0.2.0 artifact has been
-published; `0.1.0` and `0.1.1` remain the published GitHub Releases and remain under
-the MIT License they were distributed with.
+The source line is version 0.2.0 under the MIT License and is a public beta. This page's
+release verdict applies to `0.1.1`, not to the 0.2.0 beta, and it is not a
+production-readiness claim for 0.2.0. Versions `0.1.0` and `0.1.1` remain the published
+GitHub Releases under the MIT License they were distributed with. The 0.2.0 beta's
+verification results are recorded below and in the release notes; no independent audit
+has been performed for any version.
 
 This page is the release-gate record. It states what was actually executed on the
-recorded environments and what remains open. The milestone history is in
-`docs/implementation-status.md`; the requirement mapping is in
-`docs/requirements-traceability.md`; the audit is in `docs/security-audit.md`.
+recorded environments and what remains open. The audit is in
+`docs/security-audit.md`.
 
 ## Environment
 
 | Item | Value |
 | --- | --- |
-| Date of the recorded gates | 2026-10-27 |
+| Date of the recorded gates | 2026-10-27 for the published 0.1.1 gates; 2026-10-30 for the 0.2.0 beta gates |
 | Local OS | Windows 11 (10.0.26200), x64 |
 | Remote OS and Python | GitHub Actions `ubuntu-latest` and `windows-latest`; CPython 3.12, 3.13 and 3.14 |
 | Local Python | CPython 3.12.14 primary; 3.13.17 and 3.14.7 in isolated environments |
 | Machine | 12th Gen Intel Core i5-12450H, 15.7 GiB RAM, local SSD |
-| Repository | `DKtech-dev/nhi-blast`, public since 2026-10-27, branch `main` |
+| Repository | `DKtech-dev/nhi-blast`, public since 2026-10-27, branch `main`; the 0.2.0 beta gates were run on branch `cleanup` |
 | Runtime dependencies | `requirements.lock` exact versions |
 | Development dependencies | `requirements-dev.lock` exact versions |
-| Distribution published | `nhi_blast-0.1.1-py3-none-any.whl` and `nhi_blast-0.1.1.tar.gz`; SHA-256 values are in the release's `SHA256SUMS` asset, not embedded here because this document is packaged in the sdist |
+| Distribution published | `nhi_blast-0.1.1-py3-none-any.whl` and `nhi_blast-0.1.1.tar.gz`; SHA-256 values are in the release's `SHA256SUMS` asset, not embedded here because this document is packaged in the sdist. The 0.2.0 beta is prepared as a GitHub pre-release with a Windows executable only; no wheel or sdist is published and no package index is used |
+| Beta executable | PyInstaller 6.22.3 one-file console executable for Windows x64, unsigned; built from this tree and verified on 2026-10-30 |
 | UI tooling | Headless Chrome through CDP; axe-core 4.10.3; Lighthouse 13.5.0 (desktop and simulated mobile profiles); html-validate 11.17.0; design inspector at 1440, 768 and 390 px |
 
 ## Remote CI evidence
@@ -57,7 +59,7 @@ suite, so the local Windows skip does not appear there.
 
 | Gate | Requirement | Actual result | Status |
 | --- | --- | --- | --- |
-| Specification implementation | M0–M7 pipeline and CLI complete | Implemented and exercised end to end; see `docs/implementation-status.md` | Pass |
+| Specification implementation | M0–M7 pipeline and CLI complete | Implemented and exercised end to end; see `docs/SPEC.md` and the test suite | Pass |
 | Full test suite (local) | All tests pass; warnings are errors | 418 passed, 1 skipped in 23.23 s (the skip is the real-symlink case described below) | Pass |
 | Full test suite (remote) | Linux and Windows, Python 3.12–3.14 | 0.1.1 run 40509205221: every test job reported `417 passed, 2 deselected` plus `2 passed` for the slow suite and 0 skipped; coverage 86.73% (86.74% on Ubuntu 3.14); package job passed | Pass |
 | Python 3.13 suite | Same suite on CPython 3.13 | Local 3.13.17: 416 passed, 1 skipped, 2 deselected plus 2 slow passed; remote 0.1.1 job passed | Pass |
@@ -96,10 +98,40 @@ suite, so the local Windows skip does not appear there.
 | Linux execution | The suite runs on Linux | 0.1.1 Ubuntu jobs for Python 3.12, 3.13 and 3.14 passed, including the symlink security test and the performance tests | Pass |
 | Internal security audit | Manual review and third-party automated scanners | Completed 2026-10-27; no high/critical finding open; report in `docs/security-audit.md` | Pass (internal) |
 | Repository security settings | Least-privilege automation, protected main branch and platform security features | Workflow token read-only; SHA pinning required; Dependabot alerts and security updates enabled; `protect-main` ruleset blocks deletion and non-fast-forward pushes; secret scanning and push protection enabled with 0 open alerts; CodeQL default setup configured with 0 open alerts; private vulnerability reporting enabled | Pass |
-| Visibility and licensing | Public repository; proprietary licence for this source tree; published releases keep their original terms | `gh api` on 2026-10-27 reports `visibility: public`; package metadata reports `License-Expression: LicenseRef-Proprietary` and ships `LICENSE` and `NOTICE`; `v0.1.0` and `v0.1.1` assets are unchanged and remain MIT | Pass |
+| Visibility and licensing | Public repository; MIT licence for this source line; published releases keep their original terms | The repository is public; package metadata reports `License-Expression: MIT` and ships `LICENSE`, `NOTICE` and `THIRD_PARTY_NOTICES.md`; the `v0.1.0` and `v0.1.1` assets are unchanged and remain MIT | Pass |
 | Independent audit | External human security review | None performed and none claimed; package prepared in `docs/external-audit-package.md` | Not claimed |
 | Publication (0.1.0) | GitHub Release with wheel, sdist and SHA-256 sums | `v0.1.0` published 2026-10-27 from commit `0269100`; all three assets were re-downloaded and verified against `SHA256SUMS`; no package-index upload, deployment or SaaS | Published |
 | Publication (0.1.1) | GitHub Release with wheel, sdist and SHA-256 sums | `v0.1.1` published 2026-10-27 from commit `c702d9d` after green CI run 40509205221 and audit run 40509205137; the wheel, sdist and `SHA256SUMS` were re-downloaded and all checksums verified | Published |
+
+## 0.2.0 public beta verification (2026-10-30)
+
+These gates were run on branch `cleanup` in the recorded Windows environment. They
+support the beta pre-release only; they are not a production-readiness or audit
+conclusion for 0.2.0.
+
+| Gate | Command | Result |
+| --- | --- | --- |
+| Lint | `python -m ruff check src tests scripts` | All checks passed |
+| Format | `python -m ruff format --check src tests scripts` | 136 files already formatted |
+| Types | `python -m mypy src` | Success, no issues in 75 source files |
+| Report schema | `python scripts/gen_schema.py --check` | Exit 0 |
+| Full suite | `python -m pytest` | 805 passed, 10 skipped in 73.41 s. Eight skips are the Windows-executable tests, which ran separately with `NHI_BLAST_WINDOWS_EXE` against the built binary: 8 passed in 96.69 s. Two skips are real-symlink cases blocked by the local Windows privilege; Linux CI executes the symlink case |
+| Adversarial suite | `python -m pytest -m security` | 209 passed, 1 skipped (the same symlink-privilege case) |
+| Golden output | `python -m pytest -m golden` | 2 passed |
+| Performance | `python -m pytest -m slow` | 2 passed in 12.17 s |
+| Coverage | `python scripts/check_coverage.py` | 803 passed, 10 skipped, 2 deselected; 88.76% overall line coverage (minimum 80%); every enforced package at or above 80% |
+| Wheel | Hatchling build plus `python scripts/check_artifacts.py` | 98 files; `License-Expression: MIT` with `LICENSE`, `NOTICE` and `THIRD_PARTY_NOTICES.md`; notices name every frozen package; checker passed |
+| Sdist | Hatchling build plus `python scripts/check_artifacts.py` | 289 files; the same licence expression and files; checker passed |
+| Windows executable | PyInstaller build, `Get-FileHash`, `check_artifacts.py --windows-exe` | 20,240,054 bytes; SHA-256 `b718517912473d31878cd3f243c14fe9bf070bb825ebe26a3fccabd9c78a32e5`, matched independently with PowerShell `Get-FileHash`; artifact checker passed including embedded notices and the secret scan; the executable is unsigned and no SmartScreen reputation is claimed |
+| Executable outside the repository | `pytest tests/test_windows_executable.py` with the built binary | A standalone copy in a temporary directory with spaces, a clean environment and no Python on `PATH` ran `--help`, `version`, `version --data`, `schema`, `scan` in JSON/SARIF/HTML, `rank`, `export`, `explain` and the HCL fallback; exit codes and artifacts matched the installed CLI, and no proxy-mediated network request was observed |
+| Remote CI | Pull request checks on the beta tree | Required before merge. The preceding 0.2.0 source tree passed run 40515346396; the final beta tree's pull-request run and result are recorded on the pull request |
+
+The 0.2.0 beta pre-release is prepared from branch `cleanup` through a pull request to
+`main`. Publication is conditional on the pull request's required checks and on a
+successful manual `build-windows` run on the default branch, followed by independent
+checksum and clean-environment verification of the downloaded artifact. Until the
+release exists on the repository's Releases page it must not be described as published.
+The release notes are `docs/release-notes-0.2.0.md`.
 
 ## Open gates and limitations
 
@@ -111,14 +143,20 @@ suite, so the local Windows skip does not appear there.
    non-provider secret patterns remain disabled at the account level, so they are not
    claimed. Gitleaks, TruffleHog, OSV, pip-audit, Bandit and Semgrep continue to
    provide compensating coverage locally and in the advisory workflow.
-3. **Forking cannot be disabled.** GitHub does not allow a public repository to prevent
-   forking. The proprietary licence restricts use and copying, but it is a legal term,
-   not a technical control; forks and copies can still be created through GitHub's
-   functionality and remain subject to the licence.
+3. **Forking.** GitHub does not allow a public repository to prevent forking. Under the
+   MIT License forks are permitted; redistributions must retain the copyright and
+   permission notice.
 4. **Cross-machine reproducibility.** Three builds on one toolchain are identical.
    Independent rebuilds on other machines are not claimed.
 5. **Platform coverage.** Runtime testing covers Windows 11 and Ubuntu GitHub runners.
-   Other platforms are untested.
+   Other platforms are untested. The Windows executable is built only for Windows x64.
+6. **Unsigned binary.** The Windows executable carries no code-signing certificate.
+   Windows SmartScreen or antivirus products may warn about an unknown publisher. No
+   reputation, signing identity or absence of warnings is claimed, and the release notes
+   and `docs/beta-testing.md` disclose this.
+7. **Beta assurance.** The 0.2.0 beta has local and remote automated verification but no
+   independent audit and no production-readiness conclusion. Testers must use synthetic
+   fixtures or repositories they are authorised to test.
 
 The browser/axe pass, three-build comparison, corpus and soak are single-environment
 observations. They are not external benchmarks and not an independent audit.
@@ -130,9 +168,19 @@ published on 2026-10-27 from commit `0269100`; version `0.1.1` was published the
 day from commit `c702d9d` with the annotated tag `v0.1.1`. The wheel, sdist and
 `SHA256SUMS` were downloaded again after publication and verified. Any later source or
 artifact change requires a fresh gate run before it can be described as released. The
-repository was made public and the source tree relicensed as proprietary 0.2.0 on
-2026-10-27; those changes do not alter the published 0.1.0 and 0.1.1 releases, which
-remain under the MIT License. No 0.2.0 artifact has been published.
+repository was made public on 2026-10-27. The current 0.2.0 source line is MIT and is a
+public beta; that does not alter the published 0.1.0 and 0.1.1 releases, which remain
+under the MIT License. No production-readiness or independent-audit conclusion is made
+for the 0.2.0 beta.
+
+The 0.2.0 beta pre-release is prepared, not published at the time of this record. Its
+Windows executable was built from this tree, matched the recorded SHA-256 in an
+independent `Get-FileHash` check, passed the artifact checker and passed the
+clean-environment executable tests. The beta release is created only after the pull
+request's required checks pass and a manual `build-windows` run on `main` produces a
+downloaded artifact whose checksum and behaviour are verified again. If any of those
+steps fails, the release is not created.
+
 Every statement must keep the distinction between internal verification and independent
 audit. The tool's own analysis is evidence-honest by
 design: it reports potential authority, conditional survival and rotation order. This

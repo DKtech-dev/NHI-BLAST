@@ -8,11 +8,12 @@ independent audit is claimed. The package prepared for such a review is
 
 This report covers the source tree that became release `v0.1.1` in the repository
 `DKtech-dev/nhi-blast`. The repository was private while the audit was performed and was
-made public on 2026-10-27, after the 0.1.1 release; the source tree on `main` is now
-0.2.0 under a proprietary licence. The report carries forward the audit of `v0.1.0`
-where the control or evidence is unchanged. It records what was executed, what was
-found, and what remains unverified. It is written to the same evidence standard the tool
-applies to its own reports: absence of a finding is not proof of absence.
+made public on 2026-10-27, after the 0.1.1 release. The current source line is 0.2.0
+under the MIT License and is a public beta; this report does not audit the 0.2.0
+changes. The report carries forward the audit of `v0.1.0` where the control or evidence
+is unchanged. It records what was executed, what was found, and what remains unverified.
+It is written to the same evidence standard the tool applies to its own reports:
+absence of a finding is not proof of absence.
 
 ## 1. Scope
 
@@ -234,8 +235,8 @@ advisory workflow.
    account, TLS and published SHA-256 sums, not on a signed attestation or Sigstore
    bundle.
 5. **Public repository exposure.** The repository is public, so the source can be
-   viewed, downloaded and forked through GitHub. The proprietary licence restricts use
-   and copying, but it is a legal term and not a technical control. Secret-scanning
+   viewed, downloaded and forked through GitHub. Under the MIT License forks are
+   permitted and must retain the copyright and permission notice. Secret-scanning
    validity checks and non-provider patterns remain disabled at the account level.
 6. **Third-party action trust.** CI actions are pinned to full commit SHAs and SHA
    pinning is enforced, but their upstream code was not independently reviewed.

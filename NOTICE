@@ -1,13 +1,15 @@
 NHI-Blast
 Copyright (c) 2026 NHI-Blast Maintainers
 
-NHI-Blast is proprietary software. All rights reserved. No permission is granted
-to use, copy, modify or distribute it without the copyright holder's prior
-written permission; see LICENSE for the full notice.
+NHI-Blast is licensed under the MIT License; see LICENSE for the full text.
+Versions 0.1.0 and 0.1.1 were also published under the MIT License and remain
+available under those terms.
 
-Versions 0.1.0 and 0.1.1 were previously published under the MIT License and
-remain available under those terms. The proprietary terms apply to this source
-tree and to versions released from it.
+Third-party components bundled with or required by NHI-Blast keep their own
+licences. THIRD_PARTY_NOTICES.md records the complete inventory, including the
+Python runtime and every package frozen into the standalone Windows executable,
+with the full licence texts. The sections below cover the components embedded in
+the source tree, wheel, sdist and offline report.
 
 Embedded font assets
 --------------------

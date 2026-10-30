@@ -1,0 +1,99 @@
+name: Beta bug report
+description: Report a reproducible problem in the NHI-Blast 0.2.0 public beta
+title: "[beta] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        NHI-Blast 0.2.0 is a public beta. Its analysis is not a substitute for an
+        independent cloud security assessment, and no independent audit has been
+        performed.
+
+        Do not include credential values, secrets, private repository contents, customer
+        data or live cloud state. Redact account IDs, role ARNs and repository names if
+        they are sensitive. Report suspected vulnerabilities in NHI-Blast privately as
+        described in SECURITY.md, not in a public issue.
+
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating system
+      description: Include the version and architecture.
+      placeholder: Windows 11 24H2 x64, Ubuntu 24.04 x64, macOS 15 x64
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: NHI-Blast version
+      description: Paste the output of `nhi-blast version` or `nhi-blast-windows-x64.exe version`.
+      placeholder: "nhi-blast 0.2.0, schema ..., data ..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation
+      options:
+        - Windows standalone executable
+        - Source tree with pip
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Exact command
+      description: Include selectors, formats, options and the input path.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      description: What should have happened, including the expected exit code.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: What happened instead, including the exit code and the affected output format.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitised logs and diagnostics
+      description: Paste only redacted diagnostics. Never include credential values or private repository contents.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducer
+    attributes:
+      label: Reproducer
+      description: A synthetic fixture or minimal, sanitised file set that reproduces the problem.
+      placeholder: Describe or attach a minimal synthetic reproducer.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I removed credential values, secrets and private repository contents from this report.
+          required: true
+        - label: I own the scanned input or have explicit authorisation to assess it.
+          required: true
+        - label: I understand this is a beta tool and its analysis is not an independent cloud security assessment.
+          required: true

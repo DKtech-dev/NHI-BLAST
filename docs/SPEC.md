@@ -6,7 +6,7 @@ collapsed. Wording, identifiers, numbers and equations are preserved.
 
 The PDF's linearised extraction of complex tables puts cell text on separate
 lines; where a table's meaning depends on column alignment, consult the original
-PDF committed under docs/spec-source/.
+PDF supplied with the specification; it is not distributed in this repository.
 
 SOURCE PDF SHA-256: e048497fc0720203cd6565a6031b9b4ffba3d8b1216f2c0383108e6295826df8
 
@@ -16,9 +16,9 @@ COMPLETENESS NOTE (do not delete): the supplied PDF ends at section 14.4. The PD
 itself references section 15 (testing, conformance, benchmark), section 16
 (milestones), section 17 (agent rules), section 18 (VERIFY list) and section 19
 (backlog/release). Those sections are NOT present in the supplied 50-page file.
-The repository therefore records a derived milestone and release plan in
-docs/implementation-status.md and docs/requirements-traceability.md, explicitly
-marked as derived rather than quoted from the specification.
+The repository therefore recorded a derived milestone and release plan in an
+internal engineering archive outside the repository, explicitly marked as derived
+rather than quoted from the specification.
 -->
 
 # NHI-Blast: Complete Architecture and Build Specification
@@ -754,7 +754,7 @@ ParseResult  holds facts  and diagnostics . A parser never raises on bad input. 
 returns a diagnostic and partial facts.
 5.3 Repository layout
 nhi-blast/
-|-- pyproject.toml  README.md  LICENSE(proprietary)  NOTICE  SECURITY.md
+|-- pyproject.toml  README.md  LICENSE(MIT)  NOTICE  THIRD_PARTY_NOTICES.md  SECURITY.md
 CONTRIBUTING.md  AGENTS.md
 |-- docs/  SPEC.md  assumptions.md  rules/NHB-*.md  benchmark.md
 |-- scripts/  vendor_assets.py  gen_schema.py  record_oidc_claims.md

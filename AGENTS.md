@@ -73,15 +73,15 @@ Outputs: console, deterministic JSON, SARIF 2.1.0, single-file offline HTML.
 
 ## 4. Workflow
 
-1. Work milestone by milestone (see `docs/implementation-status.md`); do not start the
-   next milestone until the current milestone's acceptance tests pass.
+1. Work milestone by milestone; do not start the next milestone until the current
+   milestone's acceptance tests pass.
 2. Write the failing test first where practical; implement the smallest coherent change;
    run the full relevant test suite, ruff, mypy, and the security tests.
 3. Diagnose root causes; do not delete tests or silently relabel failures.
-4. Update `docs/requirements-traceability.md` and `docs/implementation-status.md` with
-   the actual result of each check.
+4. Record the actual result of each check in the release gate record
+   (`docs/production-readiness.md`) when preparing a release.
 5. If a gate genuinely cannot pass in this environment, record the blocker, its impact
-   and the exact next action in `docs/implementation-status.md`. Never report a release
+   and the exact next action in the release gate record. Never report a release
    candidate falsely.
 
 ## 5. Security boundaries of the tool itself

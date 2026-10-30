@@ -1,4 +1,4 @@
-"""Local composite-action expansion (spec 7.7, BUILD-PLAN 4.4).
+"""Local composite-action expansion (spec 7.7).
 
 Expansion is a pure transformation of already parsed facts: no file is read here.
 Depth is capped by ``Limits.max_composite_depth`` and cycles are detected by the

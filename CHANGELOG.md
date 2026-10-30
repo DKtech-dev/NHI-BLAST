@@ -4,20 +4,33 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project intends to
 use semantic versioning from its first published release.
 
-## 0.2.0 — unreleased
+## 0.2.0 — public beta
 
-Source-licensing change plus an offline-report and graph redesign. JSON
-(`nhi-blast-report/1.0`), SARIF and the analysis semantics are unchanged. Versions 0.1.0
-and 0.1.1 were published under the MIT License and remain under those terms. This source
-tree and future releases are proprietary.
+Offline-report and graph redesign with a standalone Windows build, prepared as a public
+beta pre-release. JSON (`nhi-blast-report/1.0`), SARIF and the analysis semantics are
+unchanged. Version 0.2.0 is licensed under the MIT License, as were 0.1.0 and 0.1.1;
+those published releases keep their original terms.
+
+### Added
+
+- Added a standalone Windows x64 executable build, `nhi-blast-windows-x64.exe`: a
+  one-file PyInstaller console application that bundles the Python runtime, package
+  data, report assets, `rich` and the optional HCL parser. The build is driven by
+  `scripts/build_windows_exe.py`, pinned by `requirements-windows-build.lock`, checked
+  by `scripts/check_artifacts.py` and produced on demand by the manual
+  `build-windows` workflow. The executable is unsigned; `LICENSE`, `NOTICE` and
+  `THIRD_PARTY_NOTICES.md` are embedded in it.
+- Added `THIRD_PARTY_NOTICES.md`, recording the CPython runtime and every package
+  frozen into the executable with the full upstream licence texts.
+- Added a public-beta testing guide and a GitHub beta bug report issue form covering the
+  operating system, version, command, expected and actual results, and sanitised logs.
 
 ### Changed
 
-- Replaced the MIT licence with an all-rights-reserved proprietary licence. No use,
-  copying, modification or distribution is permitted without prior written permission
-  from the copyright holder; viewing or forking the repository on GitHub does not grant
-  those rights.
-- Updated package metadata to `LicenseRef-Proprietary` and removed the MIT classifier.
+- Restored the MIT License for the 0.2.0 source tree and all future releases. The
+  previously published 0.1.0 and 0.1.1 releases are unchanged and remain MIT.
+- Updated package metadata to `License-Expression: MIT` and to ship `LICENSE`, `NOTICE`
+  and `THIRD_PARTY_NOTICES.md` in the wheel and sdist.
 - Bumped the source version to 0.2.0 so unreleased builds cannot be confused with the
   MIT-licensed 0.1.1 artifacts.
 - Removed the vendored Cytoscape, dagre and cytoscape-dagre scripts. The authority graph
