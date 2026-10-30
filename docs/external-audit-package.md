@@ -35,8 +35,8 @@ inside the sdist, so it cannot contain the sdist's own digest without invalidati
 | Threat model and controls | `docs/security-audit.md` |
 | Known limitations | `docs/known-limitations.md` |
 | Assumptions and provenance | `docs/assumptions.md`, `docs/data-provenance.md` |
-| Requirement mapping | `docs/requirements-traceability.md` |
-| Test programme and results | `docs/testing.md` |
+| Requirement mapping | `docs/SPEC.md` with the rule, source and test references it names |
+| Test programme | `CONTRIBUTING.md`; release results in `docs/production-readiness.md` |
 | Release gates and evidence | `docs/production-readiness.md` |
 | Dependency pins | `requirements.lock`, `requirements-dev.lock`, `requirements-audit.lock` |
 | SBOMs | Regenerate with the commands in section 4; CycloneDX JSON, 43 dependency components |

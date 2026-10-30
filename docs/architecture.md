@@ -137,5 +137,6 @@ All renderers consume the same validated `Report` model:
 2. Keep parsers path-plus-text pure and total on hostile shapes.
 3. Add evidence at the point a fact is created, not in a reporter.
 4. Add a behavioural test at the narrowest layer, then a fixture/integration test.
-5. Update `docs/requirements-traceability.md` and the rule/assumption docs.
+5. Update the rule/assumption docs and cite the specification section the change
+   implements.
 6. Do not widen scope beyond specification 2.3.

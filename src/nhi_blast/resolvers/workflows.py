@@ -1,4 +1,4 @@
-"""Reusable-workflow call indexing and effective permissions (spec 7.4, BUILD-PLAN 4.4).
+"""Reusable-workflow call indexing and effective permissions (spec 7.4).
 
 Calls inside the repository are indexed by callee path. Remote calls carry no local
 callee facts, so they are recorded separately and are never expanded into made-up

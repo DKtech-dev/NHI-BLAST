@@ -1,4 +1,4 @@
-"""Graph construction rules R1-R14 (spec 11, BUILD-PLAN 4.5).
+"""Graph construction rules R1-R14 (spec 11).
 
 Every node and edge carries evidence; an edge's confidence is the weakest class
 among its evidence. The builder consumes parsed workflow facts, expanded composite

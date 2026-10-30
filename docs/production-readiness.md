@@ -16,9 +16,8 @@ published; `0.1.0` and `0.1.1` remain the published GitHub Releases and remain u
 the MIT License they were distributed with.
 
 This page is the release-gate record. It states what was actually executed on the
-recorded environments and what remains open. The milestone history is in
-`docs/implementation-status.md`; the requirement mapping is in
-`docs/requirements-traceability.md`; the audit is in `docs/security-audit.md`.
+recorded environments and what remains open. The audit is in
+`docs/security-audit.md`.
 
 ## Environment
 
@@ -57,7 +56,7 @@ suite, so the local Windows skip does not appear there.
 
 | Gate | Requirement | Actual result | Status |
 | --- | --- | --- | --- |
-| Specification implementation | M0–M7 pipeline and CLI complete | Implemented and exercised end to end; see `docs/implementation-status.md` | Pass |
+| Specification implementation | M0–M7 pipeline and CLI complete | Implemented and exercised end to end; see `docs/SPEC.md` and the test suite | Pass |
 | Full test suite (local) | All tests pass; warnings are errors | 418 passed, 1 skipped in 23.23 s (the skip is the real-symlink case described below) | Pass |
 | Full test suite (remote) | Linux and Windows, Python 3.12–3.14 | 0.1.1 run 40509205221: every test job reported `417 passed, 2 deselected` plus `2 passed` for the slow suite and 0 skipped; coverage 86.73% (86.74% on Ubuntu 3.14); package job passed | Pass |
 | Python 3.13 suite | Same suite on CPython 3.13 | Local 3.13.17: 416 passed, 1 skipped, 2 deselected plus 2 slow passed; remote 0.1.1 job passed | Pass |

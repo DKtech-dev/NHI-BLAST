@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import tomllib
 from pathlib import Path
 from types import ModuleType
 
@@ -62,3 +63,27 @@ def test_sdist_allowlist_rejects_unexpected_scratch_roots() -> None:
     }
 
     assert checker._unexpected_sdist_roots(entries) == [".buildcheck"]
+
+
+def test_local_only_files_are_rejected_in_any_artifact() -> None:
+    checker = _checker()
+    for label, name in (
+        ("sdist", "docs/engineering-checkpoint.md"),
+        ("sdist", "./docs/engineering-checkpoint.md"),
+        ("wheel", "docs/engineering-checkpoint.md"),
+    ):
+        failures = checker._check_common(label, {name: 12, "pyproject.toml": 1})
+        assert any("local-only file" in failure for failure in failures), (label, name, failures)
+
+
+def test_clean_artifact_has_no_local_only_findings() -> None:
+    checker = _checker()
+    assert checker._check_common("wheel", {"nhi_blast/__init__.py": 10}) == []
+    assert checker._check_common("sdist", {"docs/SPEC.md": 10, "pyproject.toml": 10}) == []
+
+
+def test_sdist_build_config_excludes_local_only_docs() -> None:
+    config = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    sdist = config["tool"]["hatch"]["build"]["targets"]["sdist"]
+    assert "docs" in sdist["include"]
+    assert "docs/engineering-checkpoint.md" in sdist["exclude"]

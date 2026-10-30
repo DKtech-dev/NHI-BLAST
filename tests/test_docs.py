@@ -19,16 +19,15 @@ DOCS = (
     ROOT / "docs" / "assumptions.md",
     ROOT / "docs" / "benchmark.md",
     ROOT / "docs" / "data-provenance.md",
-    ROOT / "docs" / "implementation-status.md",
     ROOT / "docs" / "known-limitations.md",
     ROOT / "docs" / "production-readiness.md",
     ROOT / "docs" / "release.md",
     ROOT / "docs" / "release-notes-0.1.0.md",
-    ROOT / "docs" / "requirements-traceability.md",
     ROOT / "docs" / "security-audit.md",
     ROOT / "docs" / "external-audit-package.md",
-    ROOT / "docs" / "testing.md",
     ROOT / "docs" / "research" / "sources.md",
+    ROOT / "docs" / "spec-source" / "README.md",
+    ROOT / "assets" / "readme" / "README.md",
     *sorted((ROOT / "docs" / "rules").glob("*.md")),
 )
 

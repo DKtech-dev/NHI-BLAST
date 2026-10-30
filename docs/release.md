@@ -38,8 +38,8 @@ python -m coverage report
 python scripts/gen_schema.py --check
 ```
 
-All commands must succeed. A skipped test must be explained in
-`docs/implementation-status.md`; a skipped test is not a pass.
+All commands must succeed. A skipped test must be explained in the release record; a
+skipped test is not a pass.
 
 ## 2. Build the distributions
 
@@ -133,8 +133,8 @@ rebuild. Do not ship a build that bypassed a failing test.
 
 ## 6. After release
 
-- Update `docs/implementation-status.md` and `docs/production-readiness.md` with the
-  published version, date, tag commit and release URL. Keep digests in the release's
+- Update `docs/production-readiness.md` and the release notes with the published
+  version, date, tag commit and release URL. Keep digests in the release's
   `SHA256SUMS` asset, not inside documents packaged in the sdist.
 - Open follow-up items for known limitations that were accepted for this release.
 - Keep the previous release artifacts available for incident response.

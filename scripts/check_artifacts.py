@@ -89,7 +89,19 @@ FORBIDDEN_PARTS = (
     "nhi-blast-out/",
     ".taste-skill/",
     ".agents/",
+    ".claude/",
     ".buildcheck/",
+)
+# Local-only working files that must never be distributed. The sdist excludes
+# them explicitly, but the guard does not rely on build configuration alone.
+LOCAL_ONLY_PATHS = frozenset(
+    {
+        "docs/engineering-checkpoint.md",
+        "HANDOVER.md",
+        "_spec_extract.txt",
+        "_blueprint_extract.txt",
+        "skills-lock.json",
+    }
 )
 
 
@@ -106,6 +118,11 @@ def _forbidden(name: str) -> str | None:
         if marker in normalised:
             return marker
     return None
+
+
+def _local_only(name: str) -> str | None:
+    normalised = _normalise(name)
+    return normalised if normalised in LOCAL_ONLY_PATHS else None
 
 
 def _wheel_entries(wheel: Path) -> tuple[dict[str, int], str]:
@@ -141,6 +158,9 @@ def _check_common(label: str, entries: dict[str, int]) -> list[str]:
         marker = _forbidden(name)
         if marker is not None:
             failures.append(f"{label}: forbidden content {name!r} matched {marker!r}")
+        local = _local_only(name)
+        if local is not None:
+            failures.append(f"{label}: local-only file {name!r} must not be distributed")
     if not entries:
         failures.append(f"{label}: artifact is empty")
     return failures

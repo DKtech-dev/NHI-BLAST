@@ -20,9 +20,9 @@ reporting or security-advisory mechanism for this repository. Do not open a publ
 issue, and do not include real credential values, production tokens or customer data
 in a report.
 
-A useful report contains: the affected version or commit, the command or API used,
-the input that triggers the problem, the observed behaviour, and why it violates a
-property below. Attach a minimised reproducer where possible.
+A useful report contains the affected version or commit, the command or API used, the
+input that triggers the problem, the observed behaviour, why it violates a property
+below, and a minimised reproducer where possible.
 
 This is a small volunteer project. There is no bug bounty, no formal SLA and no claim
 of an independent security audit. Reports are acknowledged and triaged when a
@@ -34,26 +34,25 @@ discretion.
 The following are hard requirements from `AGENTS.md` and `docs/SPEC.md`. A bypass is
 a security defect:
 
-1. **No execution of scanned content.** The tool must never run Terraform, OpenTofu,
-   Git, shell commands or actions, never fetch providers or modules, and never
-   evaluate `${{ ... }}` expressions.
+1. **No execution of scanned content.** Never run Terraform, OpenTofu, Git, shell
+   commands or actions, never fetch providers or modules, and never evaluate
+   `${{ ... }}` expressions.
 2. **No network access at analysis time.** Scanning, reporting and the generated HTML
-   report must work completely offline and must make no outbound requests.
+   report must work completely offline and make no outbound requests.
 3. **Path containment.** Every read must stay inside the scan root. Symlinks,
    junctions and crafted relative paths must not escape it or expose files outside it.
 4. **No secret values in output.** Console, JSON, SARIF, HTML, diagnostics, logs and
    test snapshots must never contain a credential value. Literal-credential findings
    may report only the credential kind and its length.
-5. **Inert hostile strings.** Untrusted strings from scanned files must not execute
-   script, inject markup, or escape the embedded JSON data block in the HTML report.
-   The report must keep its restrictive content security policy and must not require
-   network access.
+5. **Inert hostile strings.** Untrusted strings must not execute script, inject
+   markup, or escape the embedded JSON data block in the HTML report. The report keeps
+   its restrictive content security policy and requires no network access.
 6. **Bounded processing of hostile input.** YAML aliases, deep nesting, oversized
    files, malformed JSON/HCL and pathological graphs must produce diagnostics or a
    clean failure, not unbounded memory, recursion or CPU use.
 7. **Honest evidence.** UNKNOWN-class edges must never contribute to the R, E or Z
-   survival sets. A defect that silently promotes unknown authority to declared
-   authority is a correctness and security defect.
+   survival sets. Silently promoting unknown authority to declared authority is a
+   correctness and security defect.
 
 ## Not vulnerabilities
 
@@ -70,22 +69,22 @@ a security defect:
 
 If you believe a report contains a credential value, treat the report as sensitive:
 do not attach it to a public issue. Record the output format, the field path and the
-credential kind, redact the value, and send the redacted reproduction privately. The
-project cannot rotate credentials for you; rotate anything that may have been exposed
-before sharing diagnostic material.
+credential kind, redact the value, and send the redacted reproduction privately.
+Rotate anything that may have been exposed before sharing diagnostic material; the
+project cannot rotate credentials for you.
 
 ## Verifying the security properties
 
-The repository's test suite contains security-marked tests for path escape,
-symlinked inputs, hostile YAML, oversized inputs, malformed documents, HTML
-injection, CSP integrity and secret leakage across every output format. Run:
+The security-marked tests cover path escape, symlinked inputs, hostile YAML,
+oversized inputs, malformed documents, HTML injection, CSP integrity and secret
+leakage across every output format:
 
 ```
 python -m pytest -m security
 python -m pytest tests/test_security.py tests/test_report_security.py
 ```
 
-The HTML report embeds data as an escaped JSON block and builds the DOM without
-HTML-string concatenation. It inlines the vendored Motion runtime and its application
-code, pins both by SHA-256 in the CSP and in
-`src/nhi_blast/report/assets/MANIFEST.json`, and loads no code from a CDN.
+The HTML report embeds data as an escaped JSON block, builds the DOM without
+HTML-string concatenation, inlines the vendored Motion runtime and application code
+pinned by SHA-256 in the CSP and `src/nhi_blast/report/assets/MANIFEST.json`, and
+loads no code from a CDN.

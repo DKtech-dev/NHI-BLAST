@@ -37,6 +37,50 @@ All warnings are errors in the test configuration. A change is not complete unti
 full suite, ruff, formatting and `mypy --strict` pass. Do not weaken, skip or delete a
 test to obtain a green run; fix the cause and add a regression test.
 
+## Test programme
+
+The suite is built from focused unit tests, property-based tests for the glob,
+condition and identifier logic, integration tests that drive the real CLI and assert
+exit codes and artifacts, adversarial security tests for every output boundary, and
+reviewed golden files. The markers above select the security, golden and performance
+subsets; run them separately as well as within the full suite.
+
+- **Fixtures.** `tests/fixtures/fx01`–`fx15` are deterministic repositories; the
+  inventory of verified counts, R/E/Z sizes, findings and diagnostics is
+  `tests/fixtures/README.md`. The scale fixture is generated reproducibly by
+  `scripts/gen_fixtures.py`. No fixture contains a real credential; placeholder
+  canaries are synthetic and exist only for leak tests.
+- **Goldens.** `tests/golden/fx07-console.txt` and `fx07-summary.json` are exact
+  reviewed output checked against the specification. A failing golden is a behaviour
+  change first and a file update second; never regenerate and accept it blindly.
+- **Labelled evaluation.** `scripts/evaluate_labelled.py` replays 14 labelled synthetic
+  cases and exits non-zero on any mismatch. It is regression coverage for those
+  labels, not real-world detection accuracy, and its counts must not be cited as such.
+- **Determinism and offline behaviour.** Repeated scans must produce byte-identical
+  console, JSON, SARIF and HTML, including for reversed selector order and
+  rank/export; a socket guard proves the runtime makes no network call. No wall-clock
+  time appears in artifacts unless `--timestamp` is given.
+- **Coverage.** `scripts/check_coverage.py` enforces at least 80% overall line coverage
+  and at least 80% for every module under `nhi_blast/aws/`, `nhi_blast/analysis/` and
+  `nhi_blast/report/`. Coverage runs exclude the `slow` marker so tracing does not
+  distort the performance measurement; run performance tests without instrumentation.
+- **Performance.** `tests/test_performance.py` asserts the specification budgets against
+  the generated 200-workflow, 2,000-resource fixture and reports the measured duration
+  on failure. Recorded results and the machine description are in
+  [benchmark](docs/benchmark.md); they are one-machine observations, not a portability
+  claim.
+- **Platforms.** CI runs Ubuntu and Windows on Python 3.12, 3.13 and 3.14. Tests that
+  create filesystem symlinks skip with the operating-system error when the host cannot
+  create them; on Windows this occurs when symlink creation is unavailable, such as
+  without Developer Mode or elevation. The Windows junction-based escape tests do not
+  need symlink privileges and run in the Windows matrix; the `mklink`-based case skips
+  if junction creation fails.
+- **Packaging.** Distribution builds and clean installs are release checks, not part of
+  the test suite: build a wheel and sdist, run `scripts/check_artifacts.py`, install the
+  wheel into a fresh environment with `-c requirements.lock`, and compare repeated build
+  digests. See [release procedure](docs/release.md) and the
+  [production readiness record](docs/production-readiness.md).
+
 ## Architecture and boundaries
 
 The pipeline is: discovery → pure parsers → typed facts → resolvers → graph builder →
@@ -73,18 +117,6 @@ detail.
 If you believe a security property is wrong, write an adversarial test first and open
 a private report as described in `SECURITY.md` rather than a public issue.
 
-## Tests and fixtures
-
-- Unit tests prove one rule or invariant.
-- Property-based tests cover globs, conditions and identifier stability.
-- Integration tests drive the real CLI and assert exit codes and artifacts.
-- Golden files must be reviewed against the specification before being committed.
-  Never generate a golden and trust it blindly.
-- Fixtures are hostile inputs. Do not add executable code paths to them, and do not
-  let fixture content affect lint or type checking.
-- Performance gates use the deterministic generator in `scripts/gen_fixtures.py`; see
-  `docs/benchmark.md` for the current environment and budgets.
-
 ## Platform data updates
 
 When GitHub or AWS documentation changes:
@@ -102,10 +134,10 @@ When GitHub or AWS documentation changes:
   evidence-honest: say "potentially reachable", "accepted by the trust policy as
   written" and "survives revocation if the path was exercised". Do not claim proof,
   exploitability, guarantee or takeover.
-- `docs/requirements-traceability.md` maps specification requirements to code and
-  tests. Update it when a requirement's status changes.
-- `docs/implementation-status.md` records the actual result of each gate. Never mark a
-  gate passed without a command and its output.
+- Keep `docs/SPEC.md` normative text and committed evidence records accurate; do not
+  restate a gate result without the command and its output.
+- Run `python -m pytest tests/test_docs.py` after changing links or documentation: it
+  checks every local link, rule page and documented CLI command.
 
 ## Commits and releases
 

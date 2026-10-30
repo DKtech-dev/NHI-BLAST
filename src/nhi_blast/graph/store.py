@@ -1,4 +1,4 @@
-"""Deterministic graph store with integrity validation (BUILD-PLAN 4.5).
+"""Deterministic graph store with integrity validation (spec 11).
 
 Duplicate identifiers merge evidence. Structural conflicts (a node kind or an
 edge's kind/src/dst/lifetime) are integrity errors rather than silent overwrites.
