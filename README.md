@@ -4,14 +4,10 @@
 policy in. Reach, revocation survival and rotation order out — with no execution, no network and no
 credential values.
 
-## The problem
-
 When a CI entrypoint is revoked — a mutable third-party action, a leaked secret, a repository
-writer — some credentials end with the job, some expire on their own, and some survive. Working that
-out by hand from workflow YAML, Terraform state and IAM policies is slow and error-prone, and live
-cloud calls are often unavailable during an incident.
-
-NHI-Blast reconstructs the authority those files describe, offline, and answers three questions:
+writer — some credentials end with the job, some expire on their own, and some survive. Working
+that out by hand is slow, and live cloud calls are often unavailable during an incident. NHI-Blast
+reconstructs the authority those files describe, offline, and answers three questions:
 
 - **Reach** — which AWS roles, credential stores and credentials are potentially reachable?
 - **Revocation survival** — which credentials end with the job (**R**), expire on their own (**E**) or survive (**Z**)?
@@ -20,9 +16,7 @@ NHI-Blast reconstructs the authority those files describe, offline, and answers 
 It reads GitHub Actions workflows, local composites and reusable workflows, Terraform plan/state
 JSON with an HCL fallback, and IAM policy JSON. Remote reusable workflows use the caller grant; expressions are never evaluated.
 
-<p align="center">
-  <img src="assets/readme/report-dark.png" alt="Offline HTML report for the synthetic fx07-incident fixture, showing the summary and R/E/Z survival panel" width="100%">
-</p>
+<p align="center"><img src="assets/readme/report-dark.png" alt="Offline HTML report for the synthetic fx07-incident fixture, showing the summary and R/E/Z survival panel" width="100%"></p>
 
 ## Install and quickstart
 
@@ -34,9 +28,27 @@ python -m venv .venv
 .venv/bin/python -m pip install ".[hcl]"
 ```
 
-On Windows use `.venv\Scripts\python.exe`. The `hcl` extra enables the optional Terraform HCL
-fallback. Add `-c requirements.lock` for exact versions. Installing needs an index or local
-wheelhouse; the tool runs offline. Confirm with `nhi-blast version --data`.
+On Windows use `.venv\Scripts\python.exe`. `[hcl]` adds the optional Terraform HCL fallback and
+`-c requirements.lock` pins exact versions; installation needs an index, but runs are offline.
+
+### Windows executable
+
+The standalone Windows x64 build, `nhi-blast-windows-x64.exe`, does not require Python, pip or
+administrator rights. No executable is published yet; it will be attached to
+[GitHub Releases](https://github.com/DKtech-dev/nhi-blast/releases) after the release process.
+Verify a download against its `.sha256` record with
+`Get-FileHash .\nhi-blast-windows-x64.exe -Algorithm SHA256`.
+
+```
+nhi-blast-windows-x64.exe --help
+nhi-blast-windows-x64.exe version
+nhi-blast-windows-x64.exe scan . --format html --out nhi-blast-out
+```
+
+`--help` lists the commands and `version` reports the tool and schema versions; a scan writes
+`nhi-blast-out\report.html`. The one-file executable bundles Python, the optional HCL parser and
+the report assets, runs offline and needs no source checkout. It is unsigned, so Windows may show
+a reputation-based SmartScreen warning; no code-signing certificate is used.
 
 From the repository root, scan the reference fixture and run its incident scenario:
 
@@ -59,22 +71,19 @@ Survival
   E (expires on its own): 2
   Z (survives): 5
     Z prod/db-master (cred:aws:secret:prod/db-master:stored) [declared tfstate.json:77]; depth 0; until rotated; criticality 100
-
 Rotation plan
   action:tj-actions/changed-files@v45 - Rotation
   step 1 generation 0:
     prod/db-master: Rotate the database master password, update the credential store, then terminate existing database sessions so the old password cannot be reused. [declared tfstate.json:77]
-
 Findings
   [CRITICAL] NHB-OIDC-002 NHB-OIDC-002-f3384765: Organisation-wide or global wildcard in sub [declared tfstate.json:43]
   [CRITICAL] NHB-SURV-001 NHB-SURV-001-233ec620: Credentials survive revocation of the entrypoint [declared .github/workflows/release.yml:7]
 ```
 
-Each credential line names the credential, its graph id, evidence class and source location. The
-rotation plan orders survivors after containment. Severity is a label for ordering, not a verdict:
-a finding states what the files support, not that a compromise occurred. JSON and HTML carry the
-full graph, evidence and assumptions. SARIF carries findings, locations and code-flow evidence
-where available, plus assumptions, but not the full graph; use `nhi-blast export` for JSON or DOT.
+Each credential line names the credential, its graph id, evidence class and source location; the
+rotation plan orders survivors after containment. Severity orders findings; it is not a verdict.
+JSON and HTML carry the full graph, evidence and assumptions. SARIF carries findings and evidence
+but not the full graph; use `nhi-blast export` for JSON or DOT.
 
 ## Commands
 
@@ -116,10 +125,8 @@ repo_slug = "acme/shop"
 default_branch = "main"
 aws_account = "111122223333"
 aws_region = "us-east-1"
-
 [bindings.roles]
 AWS_ROLE_ARN = "arn:aws:iam::111122223333:role/deploy-prod"
-
 [ignore]
 rules = ["NHB-GHA-003"]
 paths = ["docs/examples/**"]
@@ -145,6 +152,6 @@ or is claimed.
 
 Proprietary, all rights reserved. See [LICENSE](LICENSE). No permission is granted to use, copy,
 modify or distribute this source tree or future releases without the copyright holder's prior
-written permission; viewing or forking on GitHub does not grant it. The published `0.1.0` and `0.1.1`
-releases remain under the MIT License. Instrument Serif, Geist and Geist Mono are embedded under the
-SIL Open Font License; see [NOTICE](NOTICE).
+written permission; viewing or forking on GitHub does not grant it. The published `0.1.0` and
+`0.1.1` releases remain under the MIT License. Instrument Serif, Geist and Geist Mono are
+embedded under the SIL Open Font License; see [NOTICE](NOTICE).

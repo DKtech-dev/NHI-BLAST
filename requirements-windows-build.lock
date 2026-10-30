@@ -1,0 +1,17 @@
+# Exact Windows executable build toolchain verified on 2026-10-30.
+#
+# This lock is build-only: it is not installed by the Python package and is not
+# part of the runtime dependency set. Install with:
+#
+#   python -m pip install -c requirements-windows-build.lock pyinstaller==6.22.3
+#
+# PyInstaller 6.22.3 and pyinstaller-hooks-contrib 2026.8 were both at least 14
+# days old when this file was recorded. Re-verify the executable smoke tests and
+# update deliberately; never regenerate the file to make a build pass.
+altgraph==0.17.5
+packaging==26.3
+pefile==2024.8.26
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.8
+pywin32-ctypes==0.2.3
+setuptools==84.0.0

@@ -81,6 +81,40 @@ subsets; run them separately as well as within the full suite.
   digests. See [release procedure](docs/release.md) and the
   [production readiness record](docs/production-readiness.md).
 
+## Windows standalone executable
+
+The single-file `nhi-blast-windows-x64.exe` is built with PyInstaller from a clean
+virtual environment. `requirements-windows-build.lock` pins the build-only toolchain
+separately so the runtime dependency locks stay unchanged. The build bundles the
+Python runtime, `src/nhi_blast/data/*.yaml`, the report assets, `rich` and the optional
+HCL parser; no source checkout or installed Python is required at run time.
+
+In a Git Bash shell on Windows x64:
+
+```
+python -m venv .buildcheck/windows-venv
+.buildcheck/windows-venv/Scripts/python.exe -m pip install -c requirements-dev.lock hatchling editables
+.buildcheck/windows-venv/Scripts/python.exe -m pip install -c requirements-dev.lock --no-build-isolation -e ".[dev,rich,hcl]"
+.buildcheck/windows-venv/Scripts/python.exe -m pip install -c requirements-dev.lock -c requirements-windows-build.lock pyinstaller==6.22.3
+.buildcheck/windows-venv/Scripts/python.exe scripts/build_windows_exe.py
+.buildcheck/windows-venv/Scripts/python.exe scripts/check_artifacts.py dist/windows --windows-exe dist/windows/nhi-blast-windows-x64.exe
+```
+
+The build writes `dist/windows/nhi-blast-windows-x64.exe` and its `.sha256` record.
+Verify the executable itself with
+`NHI_BLAST_WINDOWS_EXE=$PWD/dist/windows/nhi-blast-windows-x64.exe .buildcheck/windows-venv/Scripts/python.exe -m pytest -q tests/test_windows_executable.py`
+and rerun it from a directory outside the checkout with a restricted `PATH` to confirm
+it does not depend on the repository venv or an installed Python. The parity tests
+compare the frozen executable with `NHI_BLAST_REFERENCE_CLI` (default: the installed
+`nhi-blast`) for findings, R/E/Z, formats, exit codes and diagnostics; they skip off
+Windows or when the executable variable is unset.
+
+`.github/workflows/build-windows.yml` runs the same build and checks on a
+`windows-latest` runner by manual `workflow_dispatch`. It uploads the executable and
+checksum as a build artifact only; it does not sign, tag, release or publish anything.
+The executable is unsigned, so downloading it from a release may trigger a
+reputation-based SmartScreen warning.
+
 ## Architecture and boundaries
 
 The pipeline is: discovery → pure parsers → typed facts → resolvers → graph builder →

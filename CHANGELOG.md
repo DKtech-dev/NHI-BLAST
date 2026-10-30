@@ -11,6 +11,15 @@ Source-licensing change plus an offline-report and graph redesign. JSON
 and 0.1.1 were published under the MIT License and remain under those terms. This source
 tree and future releases are proprietary.
 
+### Added
+
+- Added a standalone Windows x64 executable build, `nhi-blast-windows-x64.exe`: a
+  one-file PyInstaller console application that bundles the Python runtime, package
+  data, report assets, `rich` and the optional HCL parser. The build is driven by
+  `scripts/build_windows_exe.py`, pinned by `requirements-windows-build.lock`, checked
+  by `scripts/check_artifacts.py` and produced on demand by the manual
+  `build-windows` workflow. The executable is unsigned and has not been published.
+
 ### Changed
 
 - Replaced the MIT licence with an all-rights-reserved proprietary licence. No use,

@@ -65,6 +65,7 @@ include = [
   "CHANGELOG.md",
   "requirements.lock",
   "requirements-dev.lock",
+  "requirements-windows-build.lock",
 ]
 exclude = [
   ".buildcheck",

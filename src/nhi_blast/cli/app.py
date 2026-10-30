@@ -30,7 +30,7 @@ def main() -> None:
     for stream in (sys.stdout, sys.stderr):
         if isinstance(stream, TextIOWrapper):
             stream.reconfigure(errors="backslashreplace")
-    app()
+    app(prog_name="nhi-blast")
 
 
 if __name__ == "__main__":
