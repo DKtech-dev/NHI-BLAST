@@ -1,7 +1,7 @@
 # Repository artwork
 
-Source and rendered copies of the repository artwork, the README product screenshot and the GitHub
-social preview. All of them use the Vermilion Noir identity of the offline report: near-black
+Source and rendered copies of the repository artwork, the README product screenshots and the
+GitHub social preview. All of them use the Vermilion Noir identity of the offline report: near-black
 surfaces, warm ivory type and a vermilion accent. The product screenshots contain only the synthetic
 `fx07-incident` fixture.
 
@@ -29,9 +29,9 @@ Build the report from the fixture without a timestamp, then open it offline in C
 
 Capture with Playwright at 1600 px wide, `deviceScaleFactor: 1`, `prefers-reduced-motion: reduce`
 and a settled `document.fonts.ready`. The reduced-motion setting shows the resting state: all panels
-revealed and no entrance animation. The capture is 1600×1500 from the top of the page. Keep the
-generated report and capture scripts in the gitignored `nhi-blast-out/` tree; do not commit report
-exports.
+revealed and no entrance animation. The top capture is 1600×1500 from the top of the page; the graph
+capture is a 1600×1200 viewport clip around `#graph`. Keep the generated report and capture scripts
+in the gitignored `nhi-blast-out/` tree; do not commit report exports.
 
 ## Regenerate the cards
 
