@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+from nhi_blast import SCHEMA_VERSION
 from nhi_blast.cli.app import app
 from nhi_blast.report.model_json import report_schema
 from tests.entrypoint_support import resolve_cli_entrypoint
@@ -60,7 +61,7 @@ def test_version_and_data_report() -> None:
     plain = _invoke("version")
     assert plain.exit_code == 0
     assert "nhi-blast " in plain.stdout
-    assert "report schema nhi-blast-report/1.0" in plain.stdout
+    assert f"report schema {SCHEMA_VERSION}" in plain.stdout
     assert "Data files:" not in plain.stdout
 
     data = _invoke("version", "--data")
@@ -292,5 +293,5 @@ def test_installed_console_script_runs() -> None:
         check=False,
     )
     assert completed.returncode == 0
-    assert "report schema nhi-blast-report/1.0" in completed.stdout
+    assert f"report schema {SCHEMA_VERSION}" in completed.stdout
     assert completed.stderr == ""

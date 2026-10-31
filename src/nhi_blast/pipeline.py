@@ -35,6 +35,7 @@ from nhi_blast.core.models import (
     Inputs,
     RankReport,
     Report,
+    ReportContext,
     ScenarioReport,
     Severity,
     ToolInfo,
@@ -599,6 +600,18 @@ def _scope_lines(parsed: ParsedRepository, depth: int) -> tuple[str, ...]:
     )
 
 
+def _report_context(parsed: ParsedRepository, depth: int, options: ScanOptions) -> ReportContext:
+    limits = parsed.limits.as_dict()
+    limits["max_closure_depth"] = depth
+    return ReportContext(
+        config_digest=parsed.config.digest(),
+        selectors=tuple(sorted(set(options.selectors))),
+        ignore_rules=tuple(sorted(parsed.config.ignore_rules)),
+        ignore_paths=tuple(sorted(parsed.config.ignore_paths)),
+        limits=limits,
+    )
+
+
 def _utc_now() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -710,6 +723,7 @@ def run_scan(options: ScanOptions, *, color: bool = False) -> ScanOutcome:
         findings=findings,
         graph=graph,
         scenarios=scenario_reports,
+        context=_report_context(parsed, depth, options),
         generated_at=generated_at,
     )
     exit_code = _scan_exit_code(report, strict=options.strict, fail_on=options.fail_on)

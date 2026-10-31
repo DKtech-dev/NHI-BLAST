@@ -7,6 +7,8 @@ are rejected so a typo cannot silently change behaviour.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
@@ -52,6 +54,23 @@ class Config:
     @classmethod
     def empty(cls) -> Config:
         return cls()
+
+    def digest(self) -> str:
+        """SHA-256 over every setting that can change a result; the file path is excluded."""
+        payload = {
+            "repo_slug": self.repo_slug,
+            "default_branch": self.default_branch,
+            "aws_account": self.aws_account,
+            "aws_region": self.aws_region,
+            "role_bindings": dict(self.role_bindings),
+            "credential_bindings": dict(self.credential_bindings),
+            "sub_template": None if self.sub_template is None else list(self.sub_template),
+            "ignore_rules": sorted(self.ignore_rules),
+            "ignore_paths": sorted(self.ignore_paths),
+            "limits": dict(self.limits_overrides),
+        }
+        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
     @classmethod
     def from_file(cls, path: Path) -> Config:

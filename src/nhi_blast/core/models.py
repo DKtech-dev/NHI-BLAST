@@ -14,7 +14,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from nhi_blast import SCHEMA_VERSION
+from nhi_blast import RANK_SCHEMA_VERSION, SCHEMA_VERSION
 from nhi_blast.core.diagnostics import Diagnostic
 from nhi_blast.core.evidence import Evidence, EvidenceClass
 
@@ -501,8 +501,27 @@ class DataFileInfo(BaseModel):
     entry_count: int = 0
 
 
+class ReportContext(BaseModel):
+    """Effective analysis settings, so a saved report can be compared or re-analysed.
+
+    The digest covers every setting that can change a result; the readable fields let a
+    comparison say which setting moved. It records identifiers and numbers only.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    config_digest: str
+    selectors: tuple[str, ...] = ()
+    ignore_rules: tuple[str, ...] = ()
+    ignore_paths: tuple[str, ...] = ()
+    limits: dict[str, int | float] = Field(default_factory=dict)
+
+
 class Report(BaseModel):
-    """nhi-blast-report/1.0 JSON document (spec 13.2)."""
+    """nhi-blast-report/1.1 JSON document (spec 13.2).
+
+    1.1 adds the optional `context` field to 1.0; a 1.0 document still validates.
+    """
 
     model_config = ConfigDict(frozen=True, extra="forbid", populate_by_name=True)
 
@@ -516,6 +535,7 @@ class Report(BaseModel):
     findings: tuple[Finding, ...] = ()
     graph: GraphData = Field(default_factory=GraphData)
     scenarios: tuple[ScenarioReport, ...] = ()
+    context: ReportContext | None = None
     generated_at: str | None = None
 
     def sorted_findings(self) -> tuple[Finding, ...]:
@@ -542,7 +562,7 @@ class RankReport(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", populate_by_name=True)
 
     schema_id: str = Field(
-        default=SCHEMA_VERSION + "/rank", serialization_alias="schema", alias="schema"
+        default=RANK_SCHEMA_VERSION, serialization_alias="schema", alias="schema"
     )
     tool: ToolInfo
     inputs: Inputs

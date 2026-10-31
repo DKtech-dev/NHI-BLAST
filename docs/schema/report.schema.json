@@ -592,6 +592,59 @@
       "title": "Partition",
       "type": "object"
     },
+    "ReportContext": {
+      "additionalProperties": false,
+      "description": "Effective analysis settings, so a saved report can be compared or re-analysed.\n\nThe digest covers every setting that can change a result; the readable fields let a\ncomparison say which setting moved. It records identifiers and numbers only.",
+      "properties": {
+        "config_digest": {
+          "title": "Config Digest",
+          "type": "string"
+        },
+        "ignore_paths": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Ignore Paths",
+          "type": "array"
+        },
+        "ignore_rules": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Ignore Rules",
+          "type": "array"
+        },
+        "limits": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "title": "Limits",
+          "type": "object"
+        },
+        "selectors": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Selectors",
+          "type": "array"
+        }
+      },
+      "required": [
+        "config_digest"
+      ],
+      "title": "ReportContext",
+      "type": "object"
+    },
     "RotationPlan": {
       "additionalProperties": false,
       "properties": {
@@ -849,10 +902,10 @@
       "type": "object"
     }
   },
-  "$id": "urn:nhi-blast:report:1.0",
+  "$id": "urn:nhi-blast:report:1.1",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Schema for nhi-blast-report/1.0.",
+  "description": "Schema for nhi-blast-report/1.1.",
   "properties": {
     "assumptions": {
       "default": [],
@@ -861,6 +914,17 @@
       },
       "title": "Assumptions",
       "type": "array"
+    },
+    "context": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReportContext"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "data_files": {
       "default": [],
@@ -913,7 +977,7 @@
       "type": "array"
     },
     "schema": {
-      "default": "nhi-blast-report/1.0",
+      "default": "nhi-blast-report/1.1",
       "title": "Schema",
       "type": "string"
     },

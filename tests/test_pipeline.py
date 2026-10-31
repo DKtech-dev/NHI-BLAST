@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from nhi_blast import SCHEMA_VERSION
+from nhi_blast import RANK_SCHEMA_VERSION, SCHEMA_VERSION
 from nhi_blast.core.models import DataFileInfo, Severity
 from nhi_blast.pipeline import (
     ExportOptions,
@@ -24,8 +24,9 @@ from nhi_blast.pipeline import (
     run_rank,
     run_scan,
 )
-from nhi_blast.report.explain import ExplainError, load_report, render_explanation
+from nhi_blast.report.explain import ExplainError, render_explanation
 from nhi_blast.report.graph_export import GRAPH_SCHEMA
+from nhi_blast.report.loader import ReportLoadError, load_report
 
 FIXTURES = Path(__file__).parent / "fixtures"
 FX03 = FIXTURES / "fx03-wildcard-trust"
@@ -498,7 +499,7 @@ def test_rank_fx07_rows_and_json(tmp_path: Path) -> None:
     assert "tj-actions/changed-files@v45" in outcome.console_text
     assert outcome.written == (tmp_path / "rank" / "rank.json",)
     payload = json.loads((tmp_path / "rank" / "rank.json").read_text(encoding="utf-8"))
-    assert payload["schema"] == SCHEMA_VERSION + "/rank"
+    assert payload["schema"] == RANK_SCHEMA_VERSION
     assert len(payload["rows"]) == 1
     row = payload["rows"][0]
     assert row["action"] == "tj-actions/changed-files@v45"
@@ -611,17 +612,17 @@ def test_explain_resolves_finding_node_and_edge(tmp_path: Path) -> None:
 
 
 def test_load_report_rejects_bad_documents(tmp_path: Path) -> None:
-    with pytest.raises(ExplainError):
+    with pytest.raises(ReportLoadError):
         load_report(tmp_path / "missing.json")
 
     directory = tmp_path / "directory"
     directory.mkdir()
-    with pytest.raises(ExplainError):
+    with pytest.raises(ReportLoadError):
         load_report(directory)
 
     invalid = tmp_path / "invalid.json"
     invalid.write_text("{", encoding="utf-8")
-    with pytest.raises(ExplainError):
+    with pytest.raises(ReportLoadError):
         load_report(invalid)
 
     mismatch = tmp_path / "mismatch.json"
@@ -639,7 +640,7 @@ def test_load_report_rejects_bad_documents(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    with pytest.raises(ExplainError, match="unsupported report schema"):
+    with pytest.raises(ReportLoadError, match="unsupported report schema"):
         load_report(mismatch)
 
 

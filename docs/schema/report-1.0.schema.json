@@ -1,0 +1,938 @@
+{
+  "$defs": {
+    "AssumptionUse": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        },
+        "used_by": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Used By",
+          "type": "array"
+        },
+        "verify": {
+          "default": false,
+          "title": "Verify",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "statement"
+      ],
+      "title": "AssumptionUse",
+      "type": "object"
+    },
+    "CredentialKind": {
+      "enum": [
+        "GITHUB_TOKEN",
+        "OIDC_REQUEST_TOKEN",
+        "OIDC_JWT",
+        "STS_SESSION",
+        "GITHUB_SECRET",
+        "AWS_ACCESS_KEY",
+        "DATABASE_PASSWORD",
+        "PRIVATE_KEY",
+        "API_KEY",
+        "API_TOKEN",
+        "WEBHOOK_URL",
+        "GENERIC_SECRET"
+      ],
+      "title": "CredentialKind",
+      "type": "string"
+    },
+    "CredentialRef": {
+      "additionalProperties": false,
+      "properties": {
+        "criticality": {
+          "title": "Criticality",
+          "type": "integer"
+        },
+        "evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/CredentialKind"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "lifetime": {
+          "$ref": "#/$defs/Lifetime"
+        },
+        "survival_window": {
+          "title": "Survival Window",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "kind",
+        "lifetime",
+        "survival_window",
+        "criticality"
+      ],
+      "title": "CredentialRef",
+      "type": "object"
+    },
+    "DataFileInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "entry_count": {
+          "default": 0,
+          "title": "Entry Count",
+          "type": "integer"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "verified_on": {
+          "title": "Verified On",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "verified_on",
+        "source_url"
+      ],
+      "title": "DataFileInfo",
+      "type": "object"
+    },
+    "Diagnostic": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File"
+        },
+        "level": {
+          "$ref": "#/$defs/DiagnosticLevel"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line"
+        },
+        "message": {
+          "default": "",
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "level",
+        "code"
+      ],
+      "title": "Diagnostic",
+      "type": "object"
+    },
+    "DiagnosticLevel": {
+      "enum": [
+        "error",
+        "warning",
+        "info"
+      ],
+      "title": "DiagnosticLevel",
+      "type": "string"
+    },
+    "ECredential": {
+      "additionalProperties": false,
+      "properties": {
+        "credential": {
+          "title": "Credential",
+          "type": "string"
+        },
+        "ttl_seconds": {
+          "title": "Ttl Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "credential",
+        "ttl_seconds"
+      ],
+      "title": "ECredential",
+      "type": "object"
+    },
+    "Edge": {
+      "additionalProperties": false,
+      "description": "A directed edge; confidence is the weakest class among its evidence.",
+      "properties": {
+        "attrs": {
+          "additionalProperties": true,
+          "title": "Attrs",
+          "type": "object"
+        },
+        "confidence": {
+          "$ref": "#/$defs/EvidenceClass",
+          "default": "unknown"
+        },
+        "dst": {
+          "title": "Dst",
+          "type": "string"
+        },
+        "evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/EdgeKind"
+        },
+        "lifetime": {
+          "$ref": "#/$defs/Lifetime",
+          "default": "na"
+        },
+        "src": {
+          "title": "Src",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "src",
+        "dst"
+      ],
+      "title": "Edge",
+      "type": "object"
+    },
+    "EdgeKind": {
+      "enum": [
+        "CONTAINS",
+        "RUNS_IN",
+        "HOLDS",
+        "CAN_MINT",
+        "CAN_ASSUME",
+        "CAN_READ_VALUE",
+        "STORES",
+        "AUTHENTICATES_AS",
+        "CAN_MODIFY"
+      ],
+      "title": "EdgeKind",
+      "type": "string"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "description": "One provenance record attached to a node or edge.\n\nrule names the evaluation rule or registry entry that produced the claim, for\nexample GHA.permissions, R9 or A-STS-TTL.",
+      "properties": {
+        "cls": {
+          "$ref": "#/$defs/EvidenceClass"
+        },
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "end_line": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Line"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line"
+        },
+        "rule": {
+          "title": "Rule",
+          "type": "string"
+        }
+      },
+      "required": [
+        "cls",
+        "rule"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "EvidenceClass": {
+      "enum": [
+        "declared",
+        "derived",
+        "assumed",
+        "unknown"
+      ],
+      "title": "EvidenceClass",
+      "type": "string"
+    },
+    "Finding": {
+      "additionalProperties": false,
+      "description": "A rule hit with provenance; severity is a label for ordering, not a verdict.",
+      "properties": {
+        "assumptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "confidence": {
+          "$ref": "#/$defs/EvidenceClass"
+        },
+        "evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "path": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Path",
+          "type": "array"
+        },
+        "path_edges": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Path Edges",
+          "type": "array"
+        },
+        "rule": {
+          "title": "Rule",
+          "type": "string"
+        },
+        "scenario": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scenario"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "rule",
+        "severity",
+        "confidence",
+        "title",
+        "message"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "GraphData": {
+      "additionalProperties": false,
+      "description": "Serialised graph included in the JSON report.",
+      "properties": {
+        "edges": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Edge"
+          },
+          "title": "Edges",
+          "type": "array"
+        },
+        "nodes": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Node"
+          },
+          "title": "Nodes",
+          "type": "array"
+        }
+      },
+      "title": "GraphData",
+      "type": "object"
+    },
+    "InputFile": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256",
+        "kind"
+      ],
+      "title": "InputFile",
+      "type": "object"
+    },
+    "Inputs": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "title": "Digest",
+          "type": "string"
+        },
+        "files": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/InputFile"
+          },
+          "title": "Files",
+          "type": "array"
+        },
+        "repo_slug": {
+          "title": "Repo Slug",
+          "type": "string"
+        },
+        "repo_slug_source": {
+          "title": "Repo Slug Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "digest",
+        "repo_slug",
+        "repo_slug_source"
+      ],
+      "title": "Inputs",
+      "type": "object"
+    },
+    "Lifetime": {
+      "enum": [
+        "job_bound",
+        "session_ttl",
+        "persistent",
+        "persistent_rotating",
+        "na"
+      ],
+      "title": "Lifetime",
+      "type": "string"
+    },
+    "Node": {
+      "additionalProperties": false,
+      "description": "A vertex of the authority multigraph (spec 4.2).",
+      "properties": {
+        "attrs": {
+          "additionalProperties": true,
+          "title": "Attrs",
+          "type": "object"
+        },
+        "evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/NodeKind"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "label"
+      ],
+      "title": "Node",
+      "type": "object"
+    },
+    "NodeKind": {
+      "enum": [
+        "REPOSITORY",
+        "WORKFLOW",
+        "JOB",
+        "ACTION_REF",
+        "CREDENTIAL",
+        "OIDC_IDENTITY",
+        "AWS_OIDC_PROVIDER",
+        "AWS_ROLE",
+        "SINK",
+        "EXTERNAL_TARGET"
+      ],
+      "title": "NodeKind",
+      "type": "string"
+    },
+    "Partition": {
+      "additionalProperties": false,
+      "description": "R/E/Z membership for one scenario (spec 4.4, 13.2).",
+      "properties": {
+        "E": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ECredential"
+          },
+          "title": "E",
+          "type": "array"
+        },
+        "R": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "R",
+          "type": "array"
+        },
+        "Z": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ZCredential"
+          },
+          "title": "Z",
+          "type": "array"
+        }
+      },
+      "title": "Partition",
+      "type": "object"
+    },
+    "RotationPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "containment": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RotationStep"
+          },
+          "title": "Containment",
+          "type": "array"
+        },
+        "notes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "rotation": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RotationStep"
+          },
+          "title": "Rotation",
+          "type": "array"
+        },
+        "verify": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RotationStep"
+          },
+          "title": "Verify",
+          "type": "array"
+        }
+      },
+      "title": "RotationPlan",
+      "type": "object"
+    },
+    "RotationStep": {
+      "additionalProperties": false,
+      "description": "One rotation or containment action; a batch step covers one SCC.",
+      "properties": {
+        "actions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Actions",
+          "type": "array"
+        },
+        "batch": {
+          "default": false,
+          "title": "Batch",
+          "type": "boolean"
+        },
+        "confidence": {
+          "$ref": "#/$defs/EvidenceClass",
+          "default": "assumed"
+        },
+        "credentials": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CredentialRef"
+          },
+          "title": "Credentials",
+          "type": "array"
+        },
+        "depends_on": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "generation": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Generation"
+        },
+        "order": {
+          "title": "Order",
+          "type": "integer"
+        },
+        "phase": {
+          "$ref": "#/$defs/StepPhase"
+        }
+      },
+      "required": [
+        "phase",
+        "order"
+      ],
+      "title": "RotationStep",
+      "type": "object"
+    },
+    "ScenarioReport": {
+      "additionalProperties": false,
+      "properties": {
+        "findings": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Findings",
+          "type": "array"
+        },
+        "notes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "partition": {
+          "$ref": "#/$defs/Partition"
+        },
+        "potential": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Potential",
+          "type": "array"
+        },
+        "potential_nodes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Potential Nodes",
+          "type": "array"
+        },
+        "rotation_plan": {
+          "$ref": "#/$defs/RotationPlan"
+        },
+        "selector": {
+          "title": "Selector",
+          "type": "string"
+        },
+        "start_nodes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Start Nodes",
+          "type": "array"
+        },
+        "truncated": {
+          "default": false,
+          "title": "Truncated",
+          "type": "boolean"
+        },
+        "unresolved_inputs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Unresolved Inputs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "selector"
+      ],
+      "title": "ScenarioReport",
+      "type": "object"
+    },
+    "Severity": {
+      "enum": [
+        "CRITICAL",
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+        "INFO"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "StepPhase": {
+      "enum": [
+        "containment",
+        "rotation",
+        "verify"
+      ],
+      "title": "StepPhase",
+      "type": "string"
+    },
+    "ToolInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "nhi-blast",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version"
+      ],
+      "title": "ToolInfo",
+      "type": "object"
+    },
+    "ZCredential": {
+      "additionalProperties": false,
+      "properties": {
+        "credential": {
+          "title": "Credential",
+          "type": "string"
+        },
+        "criticality": {
+          "title": "Criticality",
+          "type": "integer"
+        },
+        "depth": {
+          "title": "Depth",
+          "type": "integer"
+        },
+        "lifetime": {
+          "$ref": "#/$defs/Lifetime"
+        },
+        "survival_window": {
+          "title": "Survival Window",
+          "type": "string"
+        }
+      },
+      "required": [
+        "credential",
+        "depth",
+        "lifetime",
+        "survival_window",
+        "criticality"
+      ],
+      "title": "ZCredential",
+      "type": "object"
+    }
+  },
+  "$id": "urn:nhi-blast:report:1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Schema for nhi-blast-report/1.0.",
+  "properties": {
+    "assumptions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/AssumptionUse"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "data_files": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/DataFileInfo"
+      },
+      "title": "Data Files",
+      "type": "array"
+    },
+    "diagnostics": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Diagnostic"
+      },
+      "title": "Diagnostics",
+      "type": "array"
+    },
+    "findings": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "generated_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Generated At"
+    },
+    "graph": {
+      "$ref": "#/$defs/GraphData"
+    },
+    "inputs": {
+      "$ref": "#/$defs/Inputs"
+    },
+    "scenarios": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ScenarioReport"
+      },
+      "title": "Scenarios",
+      "type": "array"
+    },
+    "schema": {
+      "default": "nhi-blast-report/1.0",
+      "title": "Schema",
+      "type": "string"
+    },
+    "scope_and_limits": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Scope And Limits",
+      "type": "array"
+    },
+    "tool": {
+      "$ref": "#/$defs/ToolInfo"
+    }
+  },
+  "required": [
+    "tool",
+    "inputs"
+  ],
+  "title": "NHI-Blast report",
+  "type": "object"
+}

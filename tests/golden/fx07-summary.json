@@ -75,7 +75,7 @@
       "SLACK_WEBHOOK_URL"
     ]
   ],
-  "schema": "nhi-blast-report/1.0",
+  "schema": "nhi-blast-report/1.1",
   "scope_and_limits": [
     "Scope: 2 workflows, 2 jobs, 9 Terraform resources.",
     "Not analysed: SCPs, environment protection, branch rules, live AWS state, job outputs and artifacts.",
