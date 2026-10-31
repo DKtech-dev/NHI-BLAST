@@ -1,3 +1,16 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/banner-dark.png">
+    <img src="assets/readme/banner-light.png" alt="NHI-Blast — which credentials survive the revocation?" width="100%">
+  </picture>
+</p>
+
+<p align="center">
+  <a href="https://github.com/DKtech-dev/nhi-blast/actions/workflows/ci.yml"><img src="https://github.com/DKtech-dev/nhi-blast/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status"></a>
+  <img src="https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-a8201a?style=flat-square&amp;labelColor=111010" alt="Python 3.12, 3.13 and 3.14">
+  <img src="https://img.shields.io/badge/licence-MIT-a8201a?style=flat-square&amp;labelColor=111010" alt="MIT licence">
+</p>
+
 # NHI-Blast
 
 **Offline blast-radius analysis for non-human identity in CI.** GitHub Actions, Terraform and IAM
@@ -17,6 +30,8 @@ It reads GitHub Actions workflows, local composites and reusable workflows, Terr
 JSON with an HCL fallback, and IAM policy JSON. Remote reusable workflows use the caller grant; expressions are never evaluated.
 
 <p align="center"><img src="assets/readme/report-dark.png" alt="Offline HTML report for the synthetic fx07-incident fixture, showing the summary and R/E/Z survival panel" width="100%"></p>
+
+<p align="center"><img src="assets/readme/report-graph-dark.png" alt="Authority graph from the same fx07-incident report, grouped by stage with evidence-coded edges and a highlighted entrypoint" width="100%"></p>
 
 ## Install and quickstart
 
