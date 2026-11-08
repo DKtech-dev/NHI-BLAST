@@ -1,5 +1,7 @@
 # 8. GUI and usability improvement plan
 
+> **Revised 2026-11-02.** Where this part conflicts with [12-revision-2.md](12-revision-2.md) (final design review: corrections, deviations, verified sources) or [11-ui-direction.md](11-ui-direction.md), those documents win. See the implementation log for what was built.
+
 ### Modality decision
 
 - **Keep the CLI** as the automation interface.
@@ -63,3 +65,22 @@ Tasks:
 Each script records its steps, success, and any defects fixed. These are described as scripted task walkthroughs.
 
 **Real-user sessions:** `docs/usability/test-script.md` and `feedback-form.md` are prepared for 3–5 target users. Status stays "not yet conducted" until people take part. No results are written in advance.
+
+## Implemented: themed report (steps G0 and G4)
+
+- The report has a light and a dark theme (`data-theme` on `<html>`, user choice in `data-theme-choice`) and a System / Light / Dark switcher in the viewer bar. Tokens follow `11-ui-direction.md`; a `forced-colors: active` fallback and the print palette are defined. Shared CSS/JS live in `THEME_TOKENS_CSS`, `THEME_SWITCH_CSS` and `THEME_JS` in `src/nhi_blast/report/ui.py` for reuse on companion pages.
+- An inline script in `<head>` applies the theme before first paint and is covered by the CSP script hashes. Storage goes through `safeStorage()` (`sessionStorage`, key `nhb-theme`, in-memory fallback).
+- Checks: `tests/test_theme.py` (token parity, WCAG contrast recomputed from the generated CSS, CSP hash, no brand string, size budget) and `tests/ui/` (Playwright on chromium, firefox and webkit over `file://`, including storage failure, offline, reduced motion, keyboard and axe-core). axe-core reports no automated violations in both themes; that is not a statement of WCAG conformance. See `tests/ui/README.md`.
+- Deviations: dark `--border-strong` moved from `#49403c` to `#70665f` to reach 3:1 for control borders; graph node accessible names now begin with the drawn text (WCAG 2.5.3); the details-marker minus sign was a stray control character and is now a CSS escape. Review screenshots are in `docs/usability/screens/`.
+
+## Implemented: analysis completeness panel (step A3, HTML)
+
+- `Report.completeness` renders as an "Analysis completeness" section right after Summary (nav link hidden when the report has no completeness block). Counts by status come first, then groups in the order partially analysed, not provided, not supported, analysed, not applicable; the last two are collapsed `<details>`. Each item shows the family label, a text status badge, sources (path and first 12 hex of sha256), diagnostic codes and assumption ids (linked to `#diagnostic-<code>` / `#assumption-<id>` rows when present) and the explanation. No percentage and no "complete" wording; a note states that not provided / not supported means the report says nothing about it.
+- With zero findings and any partially analysed, not provided or not supported item, the findings section reads "No findings in the analysed scope - see Analysis completeness" instead of a bare empty state.
+- Family labels are embedded from `core.completeness.FAMILY_LABELS`; everything from the report is written with `textContent` / `setAttribute`. Checks: `tests/test_html_completeness.py` and `tests/ui/completeness.spec.js`. Screenshots: `docs/usability/screens/completeness-*.png`, `findings-empty-*.png`.
+
+## Implemented: owner design system and recomposition (steps G5 and G6)
+
+- The report uses the owner design system (`--dp-*` tokens, Host Grotesk and Instrument Sans, blue accent, two dark passages) and the composition described in `11-ui-direction.md` sections 7 and 8: hero with a data built diagram, scan facts, ruled facts strip, how to read, tagline reveal, survival panel with a timeline, rotation as numbered process steps, graph, findings, disclosures, scope and a closing footer.
+- The effects layer (halftone field, scroll journey, reveals, count ups, pointer effects) lives in `report/effects.py` and is initialised from `startEffects()`; the page reads in full with Motion off or without the layer.
+- Checks: `tests/test_theme.py`, `tests/test_html*.py` and the Playwright specs `theme`, `completeness`, `g6` and `effects` in `tests/ui/`. The fx07 report budget rose from 600 KB to 650 KB for the effects layer and the new sections.

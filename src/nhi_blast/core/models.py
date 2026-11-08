@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -246,6 +246,7 @@ class RoleFact(BaseModel):
     name: str
     arn: str | None = None
     max_session_duration: int = 3600
+    max_session_source: str = "aws_default"
     trust_statements: tuple[Statement, ...] = ()
     inline_statements: tuple[Statement, ...] = ()
     managed_policy_arns: tuple[str, ...] = ()
@@ -501,20 +502,124 @@ class DataFileInfo(BaseModel):
     entry_count: int = 0
 
 
-class ReportContext(BaseModel):
-    """Effective analysis settings, so a saved report can be compared or re-analysed.
+class CompletenessStatus(StrEnum):
+    ANALYSED = "analysed"
+    PARTIALLY_ANALYSED = "partially_analysed"
+    NOT_PROVIDED = "not_provided"
+    NOT_SUPPORTED = "not_supported"
+    NOT_APPLICABLE = "not_applicable"
 
-    The digest covers every setting that can change a result; the readable fields let a
-    comparison say which setting moved. It records identifiers and numbers only.
+
+class InputFamily(StrEnum):
+    GHA_WORKFLOWS = "gha_workflows"
+    GHA_LOCAL_COMPOSITES = "gha_local_composites"
+    GHA_REMOTE_CALLEES = "gha_remote_callees"
+    GH_ENVIRONMENT_PROTECTION = "gh_environment_protection"
+    GH_BRANCH_PROTECTION = "gh_branch_protection"
+    OIDC_SUBJECT_BINDING = "oidc_subject_binding"
+    TF_PLAN_STATE = "tf_plan_state"
+    TF_HCL = "tf_hcl"
+    TF_LOCAL_MODULES = "tf_local_modules"
+    IAM_IDENTITY_POLICIES = "iam_identity_policies"
+    IAM_MANAGED_POLICY_BODIES = "iam_managed_policy_bodies"
+    IAM_PERMISSION_BOUNDARIES = "iam_permission_boundaries"
+    IAM_SESSION_POLICIES = "iam_session_policies"
+    AWS_SESSION_DURATION = "aws_session_duration"
+    AWS_ORG_POLICIES = "aws_org_policies"
+    AWS_RESOURCE_POLICIES = "aws_resource_policies"
+    KMS_KEY_POLICIES = "kms_key_policies"
+    AWS_ROLE_CHAINING = "aws_role_chaining"
+    LIVE_CLOUD_STATE = "live_cloud_state"
+    ANALYSIS_BUDGET = "analysis_budget"
+
+
+class CompletenessSource(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    path: str
+    sha256: str
+
+
+class CompletenessItem(BaseModel):
+    """What one family of inputs contributed. Not a score and not a verdict."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    id: str
+    family: InputFamily
+    status: CompletenessStatus
+    sources: tuple[CompletenessSource, ...] = ()
+    diagnostics: tuple[str, ...] = ()
+    assumptions: tuple[str, ...] = ()
+    explanation: str = ""
+
+
+class Completeness(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    items: tuple[CompletenessItem, ...] = ()
+    digest: str = ""
+
+
+class AnalyzerIdentity(BaseModel):
+    """What produced a report. Two reports are only comparable when this is equal."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    tool_version: str
+    engine_semantics: str
+    rules_digest: str
+    data_digests: dict[str, str] = Field(default_factory=dict)
+
+
+class OidcSettings(BaseModel):
+    """GitHub OIDC subject settings in effect for the scan (identifiers and integers only)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    host: Literal["github.com", "ghes"] = "github.com"
+    subject_format: Literal["classic", "immutable", "unknown"] = "unknown"
+    owner_id: int | None = None
+    repo_id: int | None = None
+
+
+class ScenarioContext(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    selector: str
+    selector_kind: str
+    start_nodes: tuple[str, ...] = ()
+    time_budget_exhausted: bool = False
+
+
+class ReportContext(BaseModel):
+    """Non-sensitive analysis parameters needed to reproduce the saved scenarios exactly.
+
+    Every field is required when the context is present: a replay that cannot be
+    reproduced must abort rather than guess. Only identifiers, integers, relative paths
+    and digests are recorded; no value from a scanned file and no host path.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    config_digest: str
-    selectors: tuple[str, ...] = ()
+    analyzer: AnalyzerIdentity
+    default_branch: str
+    aws_account: str | None = None
+    aws_region: str | None = None
+    role_bindings: dict[str, str] = Field(default_factory=dict)
+    credential_bindings: dict[str, str] = Field(default_factory=dict)
+    sub_template: tuple[str, ...] | None = None
     ignore_rules: tuple[str, ...] = ()
     ignore_paths: tuple[str, ...] = ()
-    limits: dict[str, int | float] = Field(default_factory=dict)
+    oidc: OidcSettings = Field(default_factory=OidcSettings)
+    limits: dict[str, int | float]
+    max_depth: int
+    strict: bool
+    selectors: tuple[str, ...] = ()
+    scenarios: tuple[ScenarioContext, ...] = ()
+    config_digest: str
+    graph_digest: str
+    context_digest: str
 
 
 class Report(BaseModel):
@@ -536,6 +641,7 @@ class Report(BaseModel):
     graph: GraphData = Field(default_factory=GraphData)
     scenarios: tuple[ScenarioReport, ...] = ()
     context: ReportContext | None = None
+    completeness: Completeness | None = None
     generated_at: str | None = None
 
     def sorted_findings(self) -> tuple[Finding, ...]:

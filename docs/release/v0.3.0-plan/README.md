@@ -12,6 +12,8 @@ Approved engineering plan for the consolidated v0.3.0 Beta, split into one file 
 - [08-gui.md](08-gui.md)
 - [09-risks.md](09-risks.md)
 - [10-acceptance.md](10-acceptance.md)
+- [11-ui-direction.md](11-ui-direction.md) (themed UI, Inspo research)
+- [12-revision-2.md](12-revision-2.md) (final design review: corrections, deviations, sources)
 
 Progress is tracked in [../v0.3.0-beta-progress.md](../v0.3.0-beta-progress.md) and
 [../v0.3.0-beta-implementation-log.md](../v0.3.0-beta-implementation-log.md).

@@ -7,6 +7,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from nhi_blast import READABLE_SCHEMAS
+from nhi_blast.core.artifact_io import ArtifactReadError, InputIdentity, read_bounded_utf8
 from nhi_blast.core.models import Report
 from nhi_blast.report._text import safe_text
 
@@ -18,22 +19,16 @@ class ReportLoadError(ValueError):
 
 
 def load_report(path: Path) -> Report:
-    candidate = path.expanduser()
+    report, _identity = load_report_with_identity(path)
+    return report
+
+
+def load_report_with_identity(path: Path) -> tuple[Report, InputIdentity]:
+    """Load a report and retain the actual opened input identity for output protection."""
     try:
-        size = candidate.stat().st_size
-    except OSError as exc:
-        msg = f"cannot read report {path}: {exc.strerror or exc}"
-        raise ReportLoadError(msg) from None
-    if not candidate.is_file():
-        msg = f"report path is not a file: {path}"
-        raise ReportLoadError(msg)
-    if size > _MAX_REPORT_BYTES:
-        msg = f"report is larger than the {_MAX_REPORT_BYTES}-byte limit: {path}"
-        raise ReportLoadError(msg)
-    try:
-        text = candidate.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        msg = f"cannot read report {path}: {exc}"
+        text, identity = read_bounded_utf8(path, _MAX_REPORT_BYTES)
+    except ArtifactReadError as exc:
+        msg = f"cannot read report: {exc}"
         raise ReportLoadError(msg) from None
     try:
         report = Report.model_validate_json(text)
@@ -46,7 +41,7 @@ def load_report(path: Path) -> Report:
     if report.schema_id not in READABLE_SCHEMAS:
         msg = f"unsupported report schema: {safe_text(report.schema_id, 80)}"
         raise ReportLoadError(msg)
-    return report
+    return report, identity
 
 
-__all__ = ["ReportLoadError", "load_report"]
+__all__ = ["ReportLoadError", "load_report", "load_report_with_identity"]

@@ -1,37 +1,37 @@
 # Repository artwork
 
 Source and rendered copies of the repository artwork, the README product screenshots and the
-GitHub social preview. All of them use the Vermilion Noir identity of the offline report: near-black
-surfaces, warm ivory type and a vermilion accent. The product screenshots contain only the synthetic
-`fx07-incident` fixture.
+GitHub social preview. The product screenshots show the current offline-report identity — Host
+Grotesk and Instrument Sans type with an electric-blue accent — in the light theme, and contain
+only the synthetic `fx07-incident` fixture.
 
 | File | Size | Source | Used for |
 | --- | --- | --- | --- |
 | `banner-dark.png` | 1600×600 | `banner.html` | README header in dark mode |
 | `banner-light.png` | 1600×600 | `banner.html` | README header in light mode |
-| `report-dark.png` | 1600×1500 | Live report, top viewport | README product screenshot |
-| `report-graph-dark.png` | 1600×1200 | Live report, graph section | README graph detail |
+| `report-light.png` | 1440×900 | Live report, top viewport | README product screenshot (light theme) |
+| `completeness-light.png` | 1440×900 | Live report, completeness section | README completeness detail (light theme) |
 | `social-dark.png` | 1280×640 | `social.html` plus a live report crop | GitHub social preview (uploaded manually) |
 
 The README banner uses `<picture>` to select the dark or light artwork. The product screenshots
-contain only the synthetic `fx07-incident` fixture. The social preview uses `social-dark.png`,
-rendered from `social.html` and a live report crop, not from either banner.
+use the light theme and contain only the synthetic `fx07-incident` fixture. The social preview uses
+`social-dark.png`, rendered from `social.html` and a live report crop, not from either banner.
 
 ## Regenerate the product screenshots
 
-Build the report from the fixture without a timestamp, then open it offline in Chrome or Edge:
+Build the report from the fixture without a timestamp, then capture it offline in Chromium with
+Playwright at 1440 px wide, `colorScheme: light`, `reducedMotion: reduce` and a settled boot gate
+(`html:not(.booting)`). The top capture is the 1440×900 viewport from the top of the page; the
+completeness capture scrolls `#completeness` to just below the sticky navigation and takes the same
+viewport. The full light/dark responsive set lives in `docs/usability/screens/` and is regenerated
+by `tests/ui/screenshots.js`. Keep the generated report and capture scripts in the gitignored
+`nhi-blast-out/` tree; do not commit report exports.
 
 ```sh
 .venv/bin/nhi-blast scan tests/fixtures/fx07-incident \
   --simulate-compromise action:tj-actions/changed-files@v45 \
   --format html --out nhi-blast-out/readme-shots
 ```
-
-Capture with Playwright at 1600 px wide, `deviceScaleFactor: 1`, `prefers-reduced-motion: reduce`
-and a settled `document.fonts.ready`. The reduced-motion setting shows the resting state: all panels
-revealed and no entrance animation. The top capture is 1600×1500 from the top of the page; the graph
-capture is a 1600×1200 viewport clip around `#graph`. Keep the generated report and capture scripts
-in the gitignored `nhi-blast-out/` tree; do not commit report exports.
 
 ## Regenerate the cards
 
@@ -49,9 +49,9 @@ node render.mjs --html social.html --out social-dark.png \
   --width 1280 --height 640 --scheme dark --crop <report-crop.png>
 ```
 
-The social crop is the summary and survival-panel region of `report-dark.png`, captured at 2× and
-passed with `--crop`. If the report layout changes, recapture the crop and check that the card still
-reads at 1280×640.
+The social crop is the summary and survival-panel region of the live report in the dark theme,
+captured at 2× and passed with `--crop`. If the report layout changes, recapture the crop and check
+that the card still reads at 1280×640.
 
 ## GitHub social preview
 
@@ -65,6 +65,6 @@ See GitHub's guidance:
 
 ## Licence
 
-The artwork is original to this repository. The embedded fonts (Instrument Serif, Geist and Geist
-Mono) are distributed under the SIL Open Font License; see [NOTICE](../../NOTICE). No stock
+The artwork is original to this repository. The embedded fonts (Host Grotesk, Instrument Sans and
+Geist Mono) are distributed under the SIL Open Font License; see [NOTICE](../../NOTICE). No stock
 photography or third-party imagery is used.

@@ -111,6 +111,48 @@ def _parse_with(
     return values, refs, literals, tuple(diagnostics)
 
 
+_DURATION_MIN = 900
+_DURATION_MAX = 43_200
+
+
+def _parse_duration(
+    raw: str | None,
+    *,
+    step_line: int,
+    rel_path: str,
+    diagnostics: list[Diagnostic],
+) -> tuple[str, int | None]:
+    """Classify role-duration-seconds as default, literal, expression or invalid."""
+    if raw is None or not raw.strip():
+        return "default", None
+    text = raw.strip()
+    if "${{" in text:
+        return "expression", None
+    if text.isascii() and text.isdigit() and _DURATION_MIN <= int(text) <= _DURATION_MAX:
+        return "literal", int(text)
+    diagnostics.append(
+        warning(
+            "D-CAC-DURATION-INVALID",
+            f"role-duration-seconds must be an integer from {_DURATION_MIN} to {_DURATION_MAX}; "
+            "the session duration is treated as unknown",
+            file=rel_path,
+            line=step_line,
+        )
+    )
+    return "invalid", None
+
+
+def _parse_chaining(raw: str | None) -> str:
+    if raw is None or not raw.strip():
+        return "false"
+    text = raw.strip().lower()
+    if text == "true":
+        return "true"
+    if text == "false":
+        return "false"
+    return "expression"
+
+
 def _parse_aws_auth(
     uses: UsesRef | None,
     with_values: dict[str, str],
@@ -155,6 +197,38 @@ def _parse_aws_auth(
             }
         )
     )
+    duration_kind, duration_seconds = _parse_duration(
+        with_values.get("role-duration-seconds"),
+        step_line=step_line,
+        rel_path=rel_path,
+        diagnostics=diagnostics,
+    )
+    chaining_raw = with_values.get("role-chaining")
+    role_chaining = _parse_chaining(chaining_raw)
+    if role_chaining != "false":
+        diagnostics.append(
+            info(
+                "D-GHA-ROLE-CHAINING",
+                "role-chaining assumes a role with existing credentials; role chaining is "
+                "not modelled, and chained sessions are limited to one hour",
+                file=rel_path,
+                line=step_line,
+            )
+        )
+    inline_raw = with_values.get("inline-session-policy")
+    inline_policy = "none"
+    if inline_raw is not None and inline_raw.strip():
+        inline_policy = "expression" if "${{" in inline_raw else "literal"
+    managed_raw = with_values.get("managed-session-policies") or ""
+    managed = tuple(
+        sorted(
+            {
+                item.strip()
+                for item in managed_raw.replace(",", "\n").splitlines()
+                if item.strip() and "${{" not in item
+            }
+        )
+    )
     return AwsAuthUse(
         role_ref_kind=ref_kind,
         role_arn=role_arn,
@@ -163,6 +237,13 @@ def _parse_aws_auth(
         static_keys=static_keys,
         static_secret_refs=static_secret_refs,
         line=step_line,
+        action_ref=uses.ref,
+        duration_kind=duration_kind,
+        duration_seconds=duration_seconds,
+        role_chaining=role_chaining,
+        inline_session_policy=inline_policy,
+        managed_session_policies=managed,
+        managed_session_policy_expression="${{" in managed_raw,
     )
 
 

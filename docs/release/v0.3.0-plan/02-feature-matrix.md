@@ -1,5 +1,7 @@
 # 2. Existing feature completion matrix
 
+> **Revised 2026-11-02.** Where this part conflicts with [12-revision-2.md](12-revision-2.md) (final design review: corrections, deviations, verified sources) or [11-ui-direction.md](11-ui-direction.md), those documents win. See the implementation log for what was built.
+
 Status key:
 - **DONE**: implemented and tested.
 - **PARTIAL**: exists, but with a gap.
@@ -40,5 +42,5 @@ Status key:
 | No-subprocess runtime test | — | ABSENT | Static claim only |
 | Browser/a11y automation | — | ABSENT | Only one-off manual runs |
 | CI: ubuntu+windows × 3.12–3.14, audit, Windows exe | `.github/workflows/ci.yml`, `audit.yml`, `build-windows.yml` | DONE | No macOS; no release workflow |
-| PyPI, SBOM in CI, attestations, signing | — | ABSENT | Stage E (name `nhi-blast` currently returns 404 on PyPI) |
+| PyPI, SBOM in CI, attestations, signing | — | ABSENT | Stage E (name availability on PyPI is unverified) |
 | GitHub Action | — | ABSENT | Stage F |

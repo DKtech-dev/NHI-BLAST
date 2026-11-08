@@ -154,10 +154,12 @@ def test_clean_artifact_has_no_local_only_findings() -> None:
 def test_sdist_build_config_excludes_local_only_docs() -> None:
     config = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     sdist = config["tool"]["hatch"]["build"]["targets"]["sdist"]
-    assert "docs" in sdist["include"]
+    # Root anchoring must not include unrelated nested README/docs/plugin files.
+    assert all(pattern.startswith("/") for pattern in sdist["include"])
+    assert "/docs" in sdist["include"]
     assert "docs/engineering-checkpoint.md" in sdist["exclude"]
-    assert "requirements-windows-build.lock" in sdist["include"]
-    assert "THIRD_PARTY_NOTICES.md" in sdist["include"]
+    assert "/requirements-windows-build.lock" in sdist["include"]
+    assert "/THIRD_PARTY_NOTICES.md" in sdist["include"]
 
 
 def test_project_is_mit_licensed() -> None:
@@ -210,7 +212,7 @@ def test_wheel_metadata_must_declare_mit_and_licence_files() -> None:
 
 def test_declared_licence_files_must_exist_in_the_artifact() -> None:
     checker = _checker()
-    prefix = "nhi_blast-0.2.0.dist-info/licenses/"
+    prefix = "nhi_blast-0.3.0.dist-info/licenses/"
     entries = {f"{prefix}{name}": 1 for name in LICENCE_FILES}
 
     assert checker._licence_entry_failures("wheel", entries) == []

@@ -153,6 +153,12 @@ def _parse_section(report: Report) -> list[str]:
         )
     for scope in report.scope_and_limits:
         lines.append(f"  {safe_text(scope, 300)}")
+    if report.completeness is not None:
+        lines.extend(
+            f"    [{item.status.value}] {safe_text(item.explanation, 200)}"
+            for item in report.completeness.items
+            if item.status.value in {"partially_analysed", "not_provided", "not_supported"}
+        )
     for data_file in report.data_files:
         lines.append(
             f"  Data: {safe_text(data_file.name, 120)} "

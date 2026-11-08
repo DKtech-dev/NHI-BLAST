@@ -15,11 +15,13 @@ import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from nhi_blast.core.data import sensitive_field_policy
 from nhi_blast.core.diagnostics import Diagnostic, error, warning
 from nhi_blast.core.limits import Limits
 from nhi_blast.core.models import ParseResult, TfSource
 from nhi_blast.parsers._json import JsonDepthError, decode_json
 from nhi_blast.parsers._unicode import validate_unicode
+from nhi_blast.parsers.sensitive_fields import project_policy_value, project_resource_values
 from nhi_blast.parsers.terraform.facts import (
     TfModelFact,
     TfPolicyDocumentFact,
@@ -33,8 +35,9 @@ _VAR_EXPR = re.compile(r"^var\.([A-Za-z_][A-Za-z0-9_]*)$")
 _RESOURCE_REF = re.compile(r"^(aws_[a-z0-9_]+\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_]+)?)$")
 _JSONENCODE = re.compile(r"^jsonencode\((.*)\)$", re.DOTALL)
 _POLICY_DOCUMENT_REF = re.compile(r"^data\.aws_iam_policy_document\.[A-Za-z0-9_-]+(?:\.json)?$")
-_SECRET_FIELDS = frozenset(
-    {"value", "secret_string", "secret_binary", "password", "master_password"}
+_HCL_REFERENCE = re.compile(
+    r"(?:data[.]aws_iam_policy_document[.][A-Za-z0-9_-]+(?:[.]json)?|"
+    r"aws_[a-z0-9_]+[.][A-Za-z0-9_-]+(?:[.][A-Za-z0-9_]+)?|var[.][A-Za-z_][A-Za-z0-9_]*)"
 )
 
 
@@ -120,17 +123,20 @@ def _resource_values(
     raw: Mapping[str, Any],
     variables: Mapping[str, Any],
     *,
+    resource_type: str,
     comparison: bool,
 ) -> tuple[dict[str, Any], tuple[str, ...], tuple[str, ...]]:
     values: dict[str, Any] = {}
     unknown: list[str] = []
     sensitive: list[str] = []
+    policy = sensitive_field_policy()
+    fields = policy.resources.get(resource_type, {})
     for key, value in raw.items():
         field = str(key)
-        if field in _SECRET_FIELDS:
+        if field in policy.credential_fields:
             sensitive.append(field)
             continue
-        if comparison:
+        if field not in fields or comparison:
             unknown.append(field)
             continue
         resolved, known = _resolve_value(value, variables)
@@ -223,7 +229,7 @@ def _json_variables(document: Mapping[str, Any]) -> dict[str, Any]:
     return {
         str(name): body["default"]
         for name, body in raw.items()
-        if isinstance(body, Mapping) and "default" in body
+        if isinstance(body, Mapping) and "default" in body and body.get("sensitive", False) is False
     }
 
 
@@ -319,9 +325,34 @@ def _variables(document: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(entry, Mapping):
             continue
         for name, body in entry.items():
-            if isinstance(body, Mapping) and "default" in body:
+            if (
+                isinstance(body, Mapping)
+                and "default" in body
+                and body.get("sensitive", False) is False
+            ):
                 variables[str(name)] = body["default"]
     return variables
+
+
+def _resource_references(attributes: Mapping[str, Any]) -> dict[str, tuple[str, ...]]:
+    references: dict[str, tuple[str, ...]] = {}
+    for field, raw in attributes.items():
+        found: set[str] = set()
+        pending = [raw]
+        while pending:
+            value = pending.pop()
+            if isinstance(value, Mapping):
+                pending.extend(value.values())
+            elif isinstance(value, list):
+                pending.extend(value)
+            elif isinstance(value, str):
+                for match in _INTERPOLATION.finditer(value):
+                    found.update(_HCL_REFERENCE.findall(match.group(1)))
+                if _HCL_REFERENCE.fullmatch(value):
+                    found.add(value)
+        if found:
+            references[str(field)] = tuple(sorted(found))
+    return references
 
 
 def _iter_blocks(
@@ -432,6 +463,11 @@ def _parse_tf_hcl(rel_path: str, text: str, *, limits: Limits) -> ParseResult[Tf
             continue
         address = f"data.{type_name}.{name}"
         json_text = _policy_document_json(attributes, variables)
+        if json_text is not None:
+            projected_policy, known_policy = project_policy_value(json_text)
+            json_text = (
+                projected_policy if known_policy and isinstance(projected_policy, str) else None
+            )
         policy_documents[address] = TfPolicyDocumentFact(
             address=address,
             json_text=json_text,
@@ -461,10 +497,12 @@ def _parse_tf_hcl(rel_path: str, text: str, *, limits: Limits) -> ParseResult[Tf
                     line=lines.get(address),
                 )
             )
-        values, unknown, sensitive = _resource_values(attributes, variables, comparison=comparison)
+        values, unknown, sensitive = _resource_values(
+            attributes, variables, resource_type=type_name, comparison=comparison
+        )
         if not comparison:
             for field in ("assume_role_policy", "policy", "json"):
-                if field not in attributes:
+                if field not in values:
                     continue
                 resolved, known = _resolve_value(attributes[field], variables)
                 if not known:
@@ -482,6 +520,10 @@ def _parse_tf_hcl(rel_path: str, text: str, *, limits: Limits) -> ParseResult[Tf
                     values.pop(field, None)
                     continue
                 values[field] = policy_text
+        projection = project_resource_values(type_name, values)
+        values = projection.values
+        unknown = tuple(sorted({*unknown, *projection.unknown_fields}))
+        sensitive = tuple(sorted({*sensitive, *projection.sensitive_fields}))
         resources[address] = TfResource(
             address=address,
             mode="managed",
@@ -490,6 +532,7 @@ def _parse_tf_hcl(rel_path: str, text: str, *, limits: Limits) -> ParseResult[Tf
             values=values,
             unknown_fields=unknown,
             sensitive_fields=sensitive,
+            references=_resource_references(attributes),
             source=TfSource.HCL,
             file=rel_path,
             line=lines.get(address),
@@ -509,7 +552,8 @@ def _parse_tf_hcl(rel_path: str, text: str, *, limits: Limits) -> ParseResult[Tf
             file=rel_path,
             resources=resources,
             policy_documents=policy_documents,
-            variables=variables,
+            # Defaults are transient resolver inputs, not returned source facts.
+            variables={},
         ),
         diagnostics=tuple(diagnostics),
     )

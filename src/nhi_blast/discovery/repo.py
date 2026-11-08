@@ -10,6 +10,13 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from nhi_blast.core.artifact_io import (
+    ArtifactReadError,
+    InputIdentity,
+    identify_input,
+    identify_open_input,
+    read_bounded_stream,
+)
 from nhi_blast.core.models import SubFormat
 
 _ORIGIN_URL = re.compile(r"^\s*url\s*=\s*(?P<url>\S+)\s*$")
@@ -49,21 +56,33 @@ def parse_git_config_origin(text: str) -> str | None:
 
 
 def read_git_origin_slug(root: Path) -> str | None:
+    slug, _inputs = _read_git_origin_with_inputs(root)
+    return slug
+
+
+def _read_git_origin_with_inputs(root: Path) -> tuple[str | None, tuple[InputIdentity, ...]]:
     config = root / ".git" / "config"
+    inputs: tuple[InputIdentity, ...] = ()
     try:
         resolved = config.resolve(strict=True)
         root_resolved = root.resolve()
-    except OSError:
-        return None
+    except (OSError, RuntimeError):
+        return None, inputs
     if not resolved.is_relative_to(root_resolved) or not resolved.is_file():
-        return None
+        return None, inputs
+    # Preserve the optional candidate even if its bytes cannot be opened.
+    inputs = (identify_input(config),)
     try:
         with resolved.open("rb") as handle:
-            data = handle.read(_MAX_GIT_CONFIG_BYTES + 1)
-    except OSError:
-        return None
-    if len(data) > _MAX_GIT_CONFIG_BYTES:
-        return None
+            inputs = tuple(dict.fromkeys((*inputs, identify_open_input(config, handle))))
+            data = read_bounded_stream(
+                handle,
+                _MAX_GIT_CONFIG_BYTES,
+                chunk_bytes=_MAX_GIT_CONFIG_BYTES + 1,
+                stop_at_file_end=True,
+            )
+    except (OSError, ArtifactReadError):
+        return None, inputs
     text = data.decode("utf-8", errors="replace")
     section = ""
     for line in text.splitlines():
@@ -74,8 +93,8 @@ def read_git_origin_slug(root: Path) -> str | None:
         if section == 'remote "origin"':
             match = _ORIGIN_URL.match(line)
             if match is not None:
-                return parse_git_config_origin(match.group("url"))
-    return None
+                return parse_git_config_origin(match.group("url")), inputs
+    return None, inputs
 
 
 def resolve_identity(
@@ -86,12 +105,31 @@ def resolve_identity(
     config_repo_slug: str | None,
     config_default_branch: str,
 ) -> RepoIdentity:
+    identity, _inputs = resolve_identity_with_inputs(
+        root=root,
+        cli_repo_slug=cli_repo_slug,
+        cli_default_branch=cli_default_branch,
+        config_repo_slug=config_repo_slug,
+        config_default_branch=config_default_branch,
+    )
+    return identity
+
+
+def resolve_identity_with_inputs(
+    *,
+    root: Path,
+    cli_repo_slug: str | None,
+    cli_default_branch: str | None,
+    config_repo_slug: str | None,
+    config_default_branch: str,
+) -> tuple[RepoIdentity, tuple[InputIdentity, ...]]:
+    inputs: tuple[InputIdentity, ...] = ()
     if cli_repo_slug:
         slug, source = cli_repo_slug, "--repo-slug"
     elif config_repo_slug:
         slug, source = config_repo_slug, "nhi-blast.toml"
     else:
-        git_slug = read_git_origin_slug(root)
+        git_slug, inputs = _read_git_origin_with_inputs(root)
         if git_slug is not None:
             slug, source = git_slug, ".git/config"
         else:
@@ -102,4 +140,4 @@ def resolve_identity(
         source=source,
         default_branch=default_branch,
         sub_format=SubFormat.UNKNOWN,
-    )
+    ), inputs

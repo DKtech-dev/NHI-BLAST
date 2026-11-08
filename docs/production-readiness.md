@@ -206,3 +206,78 @@ design: it reports potential authority, conditional survival and rotation order.
 readiness document makes the same distinction about the project itself. Local and CI
 tests demonstrate behaviour on the recorded environments; they do not prove the absence
 of defects or constitute an independent security audit.
+
+
+## 0.3.0b1: local gate record (unreleased)
+
+The verdict above does not apply to 0.3.0b1. This version is an unreleased local candidate; this
+section records what was executed, on what, and what was not.
+
+Environment: Windows 11 x64, CPython 3.12.14 (`.venv`), working tree on branch
+`feature/v0.3.0-beta-consolidated` **with uncommitted changes**, 2026-11-02. No CI has run for this
+branch.
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Lint | `ruff check src tests scripts` | clean |
+| Format | `ruff format --check src tests scripts` | 181 files formatted |
+| Types | `mypy --strict src scripts` | no issues in 105 files |
+| Tests | `python -m pytest -q -p no:cacheprovider` | **1502 passed, 11 skipped** in 190 s, including the slow suite and the browser suite |
+| Browser | Playwright over `file://`, Chromium, Firefox and WebKit | 31 tests per engine (theme, storage failures, offline, reduced motion, keyboard, completeness panel, hostile fixture), all passed; axe-core reports no automated violations (not a WCAG conformance claim) |
+| Schema | `scripts/gen_schema.py --check` | current |
+| Coverage | `scripts/check_coverage.py` | passed: 90.61% overall; every module in `aws`, `analysis`, `report`, `diff`, `whatif` and the new `core` modules at or above 80% |
+| Build | `hatchling build -t wheel -t sdist` with `SOURCE_DATE_EPOCH` | wheel 473,836 bytes; sdist 1,003,130 bytes |
+| Artifacts | `scripts/check_artifacts.py` | passed (wheel 121 files, sdist 381 files) |
+| Clean install | new venv, wheel `[hcl]`, `-c requirements.lock`, `pip check` | no broken requirements; `nhi-blast 0.3.0b1`, schema 1.1 |
+| Installed commands | scan fx07 to JSON, SARIF and HTML; `diff` self-diff; `whatif` on fx16 | all ran; HTML 513,792 bytes |
+| SBOM | `cyclonedx-py environment` (cyclonedx-bom 7.6.0) | CycloneDX 1.6, 20 components |
+
+SHA-256: wheel `29f9dd40136db2775f76ee19d7c31f74a61e562fd63fa48cc156bb625c0ceec9`, sdist
+`8a0ebad996ed7f2b6ba30f119015c7f23616165caea7685b562acb1d7013b1f6`. These were built from the
+uncommitted working tree and are recorded for reference; they are not release artifacts.
+
+**Not run:** Linux and macOS; Python 3.13 and 3.14; any CI workflow, including `release.yml`
+(checked statically by `tests/test_ci_pins.py` only); `bandit`, `pip-audit`, `semgrep`, `zizmor`
+and `actionlint` on the new code and workflow; the Windows executable build; usability sessions;
+the public-corpus benchmark; an internal security review of the new code.
+
+**Open before this can be a release candidate:** commit the work (owner authorisation), run CI on
+Linux, Windows and macOS, run the audit tools above, finish or explicitly defer the unbuilt items
+listed in the release notes, and complete the internal review.
+
+## 2026-11-03 follow-up: targeted UI and correctness verification
+
+The previous table is historical. A targeted follow-up now includes current Bandit, runtime
+dependency and browser-tooling vulnerability checks, reviewed session-bound and UI-motion
+regressions, a fresh clean-installed wheel, and repeated scans of 14 external repository
+snapshots plus one self-control. The verified public corpus is unlabelled, so it does not
+establish precision, recall or real-world accuracy.
+
+See the [follow-up verification record](<release/verification-2026-11-03.md>) for exact results,
+initial failures, reruns, sample limits, and the current screenshot/preview locations. This is
+not an independent security audit or production/publication approval. The intermittent
+Chromium preference-reload test failure remains recorded even when isolated reruns pass.
+
+## 2026-11-07: resumed IO-safety verification (unreleased)
+
+The historical release verdict above does not apply to this uncommitted working tree.
+The resumed IO increment now protects opened/selected input identities across repository
+and saved-report writers, stages all selected outputs before promotion, and distinguishes
+commitment from incomplete rollback/cleanup. A real Windows denied-directory retry loop was
+repaired without increasing the standalone test timeout or weakening its ACL assertions.
+
+Fresh full Python gate: **1988 passed, 43 skipped**, including the two slow tests and all
+eight standalone executable cases. Forty-two skips require unavailable file-symlink
+privilege; one is the browser wrapper intentionally run separately. Lint, formatting,
+strict source/script typing, schema, artifact content and clean-installed package parity
+checks passed. Fresh non-slow coverage also passed: 1978 tests, 51 skips, two slow tests
+deselected, 90.78% overall and every enforced module at or above 80%. The complete
+browser rerun is running serially without competing validation jobs and must be
+collected before a completed stage-gate claim.
+
+See the [resumed denial-fix evidence](<release/io-denial-fix-2026-11-07.md>) and
+[historical IO continuation](<release/io-continuation-2026-11-05.md>) for root cause,
+exact results, failed/interim checks and limits. Native Linux/macOS, broader authorization,
+credential custody/replay, dependency-specific comparison, source receipts, completion
+manifests and release-owner gates remain open. No independent final audit, local release
+candidate, publication or overall authorization-correctness verdict is claimed.

@@ -1,0 +1,107 @@
+{
+  "format_version": "1.0",
+  "terraform_version": "1.9.8",
+  "values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_iam_openid_connect_provider.github",
+          "mode": "managed",
+          "type": "aws_iam_openid_connect_provider",
+          "name": "github",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "url": "https://token.actions.githubusercontent.com",
+            "client_id_list": [
+              "sts.amazonaws.com"
+            ],
+            "arn": "arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com"
+          }
+        },
+        {
+          "address": "aws_iam_role.ci_deploy",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "ci_deploy",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "ci-deploy",
+            "arn": "arn:aws:iam::111122223333:role/ci-deploy",
+            "max_session_duration": 3600,
+            "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"},\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"},\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/shop:ref:refs/heads/main\"}}}]}",
+            "inline_policy": [
+              {
+                "name": "read-ci-stores",
+                "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:GetSecretValue\"],\"Resource\":[\"arn:aws:secretsmanager:us-east-1:111122223333:secret:ci/deploy-key-??????\"]},{\"Effect\":\"Allow\",\"Action\":[\"ssm:GetParameter\"],\"Resource\":[\"arn:aws:ssm:us-east-1:111122223333:parameter/ci/registry-token\"]}]}"
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_iam_role.ops_admin",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "ops_admin",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "ops-admin",
+            "arn": "arn:aws:iam::111122223333:role/ops-admin",
+            "max_session_duration": 3600,
+            "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"},\"Action\":\"sts:AssumeRoleWithWebIdentity\",\"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"},\"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:acme/ops-tools:ref:refs/heads/main\"}}}]}",
+            "inline_policy": [
+              {
+                "name": "read-ops-db",
+                "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:GetSecretValue\"],\"Resource\":[\"arn:aws:secretsmanager:us-east-1:111122223333:secret:ops/db-password-??????\"]}]}"
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.deploy_key",
+          "mode": "managed",
+          "type": "aws_secretsmanager_secret",
+          "name": "deploy_key",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "ci/deploy-key",
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:ci/deploy-key-??????",
+            "kms_key_id": "alias/aws/secretsmanager",
+            "rotation_enabled": false
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.db_password",
+          "mode": "managed",
+          "type": "aws_secretsmanager_secret",
+          "name": "db_password",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "ops/db-password",
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:ops/db-password-??????",
+            "kms_key_id": "alias/aws/secretsmanager",
+            "rotation_enabled": false
+          }
+        },
+        {
+          "address": "aws_ssm_parameter.registry_token",
+          "mode": "managed",
+          "type": "aws_ssm_parameter",
+          "name": "registry_token",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "/ci/registry-token",
+            "type": "SecureString",
+            "arn": "arn:aws:ssm:us-east-1:111122223333:parameter/ci/registry-token",
+            "key_id": "alias/aws/ssm"
+          }
+        }
+      ]
+    }
+  }
+}

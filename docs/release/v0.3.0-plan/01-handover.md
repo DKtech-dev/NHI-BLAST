@@ -1,5 +1,7 @@
 # NHI-Blast v0.3.0 Beta — Context and handover report
 
+> **Revised 2026-11-02.** Where this part conflicts with [12-revision-2.md](12-revision-2.md) (final design review: corrections, deviations, verified sources) or [11-ui-direction.md](11-ui-direction.md), those documents win. See the implementation log for what was built.
+
 ## Context
 
 The maintainer wants one consolidated `v0.3.0 Beta` that makes NHI-Blast more trustworthy (evidence completeness), comparable (report diff/baselines), decision-useful (offline containment what-if), installable (PyPI + provenance) and CI-integrated (thin GitHub Action), with a defensible benchmark. This plan is based on an audit of the actual repository (2026-10-31) and primary-source research.

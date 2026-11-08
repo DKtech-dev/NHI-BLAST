@@ -25,6 +25,11 @@ DOCS = (
     ROOT / "docs" / "release.md",
     ROOT / "docs" / "release-notes-0.1.0.md",
     ROOT / "docs" / "release-notes-0.2.0.md",
+    ROOT / "docs" / "release-notes-0.3.0.md",
+    ROOT / "docs" / "diff.md",
+    ROOT / "docs" / "whatif.md",
+    ROOT / "docs" / "install.md",
+    ROOT / "docs" / "verify-release.md",
     ROOT / "docs" / "security-audit.md",
     ROOT / "docs" / "external-audit-package.md",
     ROOT / "docs" / "research" / "sources.md",
@@ -38,13 +43,32 @@ def _local_targets(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     targets = []
     for raw in LINK.findall(text):
-        target = raw.strip().split(" ", 1)[0]
+        # CommonMark permits angle-delimited destinations, including paths with spaces.
+        destination = raw.strip()
+        if destination.startswith("<") and ">" in destination:
+            target = destination[1 : destination.index(">")]
+        else:
+            target = destination.split(" ", 1)[0]
         if target.startswith(("http://", "https://", "mailto:", "#")):
             continue
         target = target.split("#", 1)[0].split("?", 1)[0]
         if target:
             targets.append(target)
     return targets
+
+
+def test_commonmark_angle_destinations_are_checked_as_local_paths(tmp_path: Path) -> None:
+    document = tmp_path / "links.md"
+    document.write_text(
+        "[A](<release/results.json>) [B](<folder/file with spaces.md>#part) "
+        "[C](plain.md#part) [Web](<https://example.com>)",
+        encoding="utf-8",
+    )
+    assert _local_targets(document) == [
+        "release/results.json",
+        "folder/file with spaces.md",
+        "plain.md",
+    ]
 
 
 def test_local_documentation_links_resolve() -> None:

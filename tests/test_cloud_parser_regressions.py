@@ -14,7 +14,7 @@ from nhi_blast.parsers._json import MAX_JSON_DEPTH, JsonDepthError, decode_json
 from nhi_blast.parsers.iam.policy_doc import parse_iam_document, parse_policy_text
 from nhi_blast.parsers.terraform.facts import TfModelFact
 from nhi_blast.parsers.terraform.tfhcl import parse_tf_hcl
-from nhi_blast.parsers.terraform.tfjson import parse_tf_json
+from nhi_blast.parsers.terraform.tfjson import _strip_sensitive, parse_tf_json
 from nhi_blast.resolvers.roles import resolve_cloud_facts
 
 pytestmark = pytest.mark.security
@@ -92,7 +92,10 @@ def test_sensitive_masks_follow_structure(
 
     _no_canary(model)
     resource = model.resources[_ADDRESS]
-    assert resource.values == expected
+    # Structural mask behavior remains exact; returned facts additionally obey NoRetain.
+    assert _strip_sensitive(values, mask) == expected
+    projected = {"inline_policy": [{}, {"name": "keep"}]} if "inline_policy" in values else {}
+    assert resource.values == projected
     assert resource.sensitive_fields == paths
 
 
@@ -111,7 +114,10 @@ def test_after_sensitive_is_combined_with_resource_mask(whole_resource: bool) ->
     model = _parse_state(payload)
 
     _no_canary(model)
-    assert model.resources[_ADDRESS].values == (
+    # Unsupported raw lists are excluded from returned facts by NoRetain.
+    assert model.resources[_ADDRESS].values == {}
+    stripped = _strip_sensitive({"list": [_CANARY, _CANARY, "keep"]}, {"list": [False, True]})
+    assert _strip_sensitive(stripped, True if whole_resource else {"list": [True, False]}) == (
         {} if whole_resource else {"list": [None, None, "keep"]}
     )
 
@@ -269,7 +275,8 @@ def test_valid_unicode_including_surrogate_pairs_is_preserved(parser: str) -> No
 def test_nested_policy_decoder_recursion_is_a_controlled_hcl_failure(form: str) -> None:
     inner = '{"unused":' + "[" * 5_000 + "0" + "]" * 5_000 + "}"
     value = f"jsonencode({inner})" if form == "jsonencode" else inner
-    text = json.dumps({"resource": {"aws_iam_role": {"example": {"policy": value}}}})
+    # Exercise a consumed policy field; unsupported attributes are intentionally not decoded.
+    text = json.dumps({"resource": {"aws_iam_role": {"example": {"assume_role_policy": value}}}})
 
     facts, diagnostics = _parse_cloud("tfhcl", text)
 

@@ -186,6 +186,13 @@ def sarif_report(report: Report) -> dict[str, Any]:
         },
         "results": results,
     }
+    if report.completeness is not None:
+        run["properties"] = {
+            "nhiBlast/completeness": {
+                "digest": report.completeness.digest,
+                "statuses": {item.id: item.status.value for item in report.completeness.items},
+            }
+        }
     dropped = len(ordered) - len(kept)
     if dropped:
         run["invocations"] = [
@@ -211,8 +218,12 @@ def sarif_report(report: Report) -> dict[str, Any]:
     }
 
 
-def write_sarif(report: Report, path: Path) -> None:
+def sarif_json(report: Report) -> str:
+    """Render deterministic SARIF text without performing filesystem IO."""
     data = sarif_report(report)
-    text = json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n"
+    return json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n"
+
+
+def write_sarif(report: Report, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8", newline="\n")
+    path.write_text(sarif_json(report), encoding="utf-8", newline="\n")

@@ -1,5 +1,7 @@
 # 7. Complete testing strategy
 
+> **Revised 2026-11-02.** Where this part conflicts with [12-revision-2.md](12-revision-2.md) (final design review: corrections, deviations, verified sources) or [11-ui-direction.md](11-ui-direction.md), those documents win. See the implementation log for what was built.
+
 **Existing gates stay unchanged:**
 - `ruff check`, `ruff format --check`, `mypy src` (strict)
 - `pytest`, `-m security`, `-m golden`, `-m slow`

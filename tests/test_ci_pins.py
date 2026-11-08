@@ -18,6 +18,19 @@ AUDIT_WORKFLOW = WORKFLOW_DIR / "audit.yml"
 DEPENDABOT = REPO_ROOT / ".github" / "dependabot.yml"
 ACTION_PIN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}$")
 VERSION_PIN = re.compile(r"^[A-Za-z0-9_.-]+==[A-Za-z0-9_.+-]+$")
+RELEASE_WORKFLOW = WORKFLOW_DIR / "release.yml"
+# The only jobs anywhere that may hold more than read access, with their exact grants.
+RELEASE_JOB_PERMISSIONS: dict[str, dict[str, str]] = {
+    "attest": {
+        "contents": "read",
+        "id-token": "write",
+        "attestations": "write",
+        "artifact-metadata": "write",
+    },
+    "publish-testpypi": {"contents": "read", "id-token": "write"},
+    "publish-pypi": {"contents": "read", "id-token": "write"},
+    "draft-release": {"contents": "write"},
+}
 
 
 def _load_workflow(path: Path) -> tuple[str, dict[str, Any]]:
@@ -80,9 +93,13 @@ def test_all_workflows_are_read_only_and_never_use_pull_request_target() -> None
         assert document["permissions"] == {"contents": "read"}, path.name
         jobs = document["jobs"]
         assert isinstance(jobs, dict)
-        for job in jobs.values():
+        allowed = RELEASE_JOB_PERMISSIONS if path.name == "release.yml" else {}
+        for name, job in jobs.items():
             assert isinstance(job, dict)
-            assert "permissions" not in job, path.name
+            if name in allowed:
+                assert job["permissions"] == allowed[name], f"{path.name}: {name}"
+            else:
+                assert "permissions" not in job, f"{path.name}: {name}"
 
         triggers = document["on"]
         assert isinstance(triggers, dict), path.name
@@ -193,3 +210,67 @@ def test_dev_lock_uses_an_advisory_free_pytest() -> None:
     version = pins["pytest"]
     major, minor, patch = (int(part) for part in version.split(".")[:3])
     assert (major, minor, patch) >= (9, 0, 3), "pytest 8.4.2 is affected by PYSEC-2026-1845"
+
+
+# ------------------------------------------------------------------ release workflow
+
+
+def test_release_workflow_has_exactly_the_reviewed_privileged_jobs() -> None:
+    _, document = _load_workflow(RELEASE_WORKFLOW)
+    jobs = document["jobs"]
+    assert set(jobs) == {"build", *RELEASE_JOB_PERMISSIONS}
+    assert document["permissions"] == {"contents": "read"}
+    assert "permissions" not in jobs["build"]
+
+
+def test_release_publishing_goes_through_protected_environments_without_secrets() -> None:
+    text, document = _load_workflow(RELEASE_WORKFLOW)
+    jobs = document["jobs"]
+    assert jobs["publish-testpypi"]["environment"]["name"] == "testpypi"
+    assert jobs["publish-pypi"]["environment"]["name"] == "pypi"
+    assert jobs["publish-pypi"]["needs"] == "publish-testpypi"
+    for name in ("publish-testpypi", "publish-pypi"):
+        publish = [
+            step for step in jobs[name]["steps"] if "gh-action-pypi-publish" in step.get("uses", "")
+        ]
+        assert len(publish) == 1
+        assert not {"password", "user"} & set(publish[0].get("with", {})), name
+    assert "secrets." not in text
+    assert "PYPI_API_TOKEN" not in text
+    assert "id-token: write" in text
+    for name, job in jobs.items():
+        if name not in {"attest", "publish-testpypi", "publish-pypi"}:
+            assert "id-token" not in job.get("permissions", {}), name
+
+
+def test_release_never_publishes_a_github_release_and_only_drafts() -> None:
+    text, _ = _load_workflow(RELEASE_WORKFLOW)
+    assert "gh release create" in text
+    assert "--draft" in text
+    assert "gh release edit" not in text
+    assert "--latest" not in text
+
+
+def test_release_triggers_exclude_pull_requests() -> None:
+    _, document = _load_workflow(RELEASE_WORKFLOW)
+    triggers = document["on"]
+    assert set(triggers) == {"push", "workflow_dispatch"}
+    assert triggers["push"] == {"tags": ["v*"]}
+
+
+def test_release_script_bodies_never_interpolate_expressions() -> None:
+    _, document = _load_workflow(RELEASE_WORKFLOW)
+    for name, job in document["jobs"].items():
+        for step in job["steps"]:
+            body = step.get("run")
+            if body is not None:
+                assert "${{" not in body, f"{name}: expression in a run body"
+
+
+def test_release_build_is_reproducible_and_checked() -> None:
+    text, _ = _load_workflow(RELEASE_WORKFLOW)
+    assert "SOURCE_DATE_EPOCH" in text
+    assert "scripts/check_artifacts.py dist" in text
+    assert "sha256sum" in text
+    assert "cyclonedx-bom==" in text
+    assert "--require-hashes" not in text or "requirements" in text

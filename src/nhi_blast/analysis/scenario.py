@@ -49,6 +49,7 @@ class ScenarioAnalysis:
     diagnostics: tuple[Diagnostic, ...] = ()
     synthetic_nodes: tuple[Node, ...] = ()
     synthetic_edges: tuple[Edge, ...] = ()
+    time_budget_exhausted: bool = False
 
     def to_report(self) -> ScenarioReport:
         return ScenarioReport(
@@ -328,6 +329,7 @@ def analyze_scenario(
         synthetic_edges=tuple(
             edge for edge in local_graph.edges if edge.id not in original_edge_ids
         ),
+        time_budget_exhausted=timed_out,
     )
 
 

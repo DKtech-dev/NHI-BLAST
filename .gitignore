@@ -27,3 +27,12 @@ _extract*.py
 _clean_spec.py
 
 tests/fixtures/_validate_tmp.py
+tests/ui/node_modules/
+tests/ui/test-results*/
+tests/ui/playwright-report/
+
+# Local scratch never meant for the repository: unexpanded-env-var browser cache
+# directories and scraped documentation extracts.
+%SystemDrive%/
+_doc*.txt
+docs/engineering-checkpoint.md

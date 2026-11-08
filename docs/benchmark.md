@@ -9,7 +9,7 @@ The specification sets two performance budgets (section 12.8):
 `tests/test_performance.py` asserts both budgets with the `slow` marker. The test is
 excluded from coverage runs because tracing changes the measured time.
 
-## Current-tree re-run
+## Historical timing re-run (2026-10-28)
 
 Recorded on 2026-10-28 on the current source tree with the `slow` marker:
 
@@ -27,7 +27,7 @@ the graph-and-scenario budget, 6.285 s for `rank`, and a graph of 4,202 nodes an
 4,199 edges with R=400, E=200, Z=1,000 and 400 rank rows. The structural counts come
 from the deterministic scale fixture; the timings vary with the machine and load.
 
-## Real-world corpus
+## Historical public corpus (2026-10-26)
 
 A separate harness recorded on 2026-10-26 scanned ten public repositories (1,959
 files: 163 workflow files, 101 Terraform files) twice each with
@@ -49,6 +49,16 @@ These are sample observations, not a benchmark of all repositories. A separate
 16-case adversarial soak (hostile YAML, path traversal, malformed Terraform, deep and
 wide plans, HCL, 80 findings and invalid CLI input) completed with no failures and no
 undocumented exit code.
+
+## Current public-corpus verification (2026-11-03)
+
+A freshly built and isolated-installed 0.3.0b1 wheel scanned the existing hash-pinned snapshots twice. There were **14 external repositories plus one historical self-control**, 3,620 manifest-verified files, and **no scan failures**. JSON, SARIF and HTML were schema/correspondence-checked and byte-identical between repeats; inputs were unchanged after the run.
+
+External-only first-repeat observations: 56 findings, 591 nodes, 779 edges and 269 diagnostics. Loaded files included 81 workflows, 84 local action files, 344 HCL files, 34 Terraform JSON files and two explicit IAM documents. Loaded files are not necessarily fully parsed or supported. The self-control is excluded from these totals.
+
+These are robustness and determinism observations, **not measured detection accuracy**. Independently adjudicated public-corpus labels: zero, so precision, recall, F1 and accuracy confidence intervals are not reported. The selected tool/module repositories are not a representative random sample; findings within a repository are correlated. Any future labelled study must report actual positive/negative units, single-labeller limitations, and repository-cluster confidence intervals. Synthetic regression tests remain a separate tier.
+
+The maximum observed external scan was 5.73 seconds amid concurrent checks. Two repeats are insufficient to estimate a latency distribution or claim general performance. See the [current verification record](<release/verification-2026-11-03.md>) and the [portable result summary](<release/corpus-summary-2026-11-03.json>) for exact revisions, license metadata, run times and limits. No downloaded source was executed or redistributed.
 
 ## How to reproduce
 

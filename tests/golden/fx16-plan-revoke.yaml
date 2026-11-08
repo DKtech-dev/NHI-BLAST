@@ -1,0 +1,9 @@
+schema: nhi-blast-interventions/1.0
+interventions:
+  # Revocation only: nothing removes trust, so new sessions can still be issued.
+  # The issue time and the assessment time are not supplied, so both axes stay open.
+  - type: revoke_role_sessions
+    role: aws:role:arn:aws:iam::111122223333:role/ci-deploy
+    revoked_at: "2026-03-01T10:00:00Z"
+  - type: rotate_credential
+    credential: cred:aws:ssm:/ci/registry-token:stored

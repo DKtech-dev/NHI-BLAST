@@ -66,11 +66,30 @@ entries:
   - id: A-STS-TTL
     kind: assumption
     statement: >-
-      An AssumeRoleWithWebIdentity session lasts at most the role
-      max_session_duration (default 3600 s).
+      When the requested session duration is not declared or cannot be read, a session
+      is assumed to last at most the role max_session_duration (1 h when unset, 12 h
+      when the role maximum is unknown).
     verify: false
     impact: E-class credentials expire after at most ttl_seconds and are not
       revoked from the GitHub side.
+  - id: A-CAC-DEFAULT
+    kind: assumption
+    statement: >-
+      role-duration-seconds is not set and the configure-aws-credentials default for
+      this action ref is unverified; defaults are verified only for refs in
+      configure_aws_credentials.yaml.
+    verify: true
+    impact: The session lifetime is conservatively bounded by the known role maximum or
+      the STS 43200 s limit when unknown. The 3600 s chaining cap applies only when
+      chaining is established, not because another ref has that default.
+  - id: A-SESSION-POLICY
+    kind: assumption
+    statement: >-
+      A session policy passed to the role assumption can only narrow access. It is not
+      evaluated, so reachable access may be broader than the session actually allows.
+      A resource policy that names the session ARN is not limited by a session policy.
+    verify: false
+    impact: edges from sessions that pass a session policy are not narrowed.
   - id: A-NO-SCP
     kind: assumption
     statement: >-
@@ -95,9 +114,9 @@ entries:
     kind: assumption
     statement: >-
       Whether a repository mints classic or immutable subjects is unknown from files,
-      so both are evaluated.
+      so both are evaluated; declare [github] subject_format to settle it.
     verify: false
-    impact: every job emits candidates in both formats; repo_slug may be symbolic.
+    impact: every job emits candidates in both formats unless [github] declares the format; repo_slug may be symbolic.
   - id: A-REPO-WRITE
     kind: assumption
     statement: >-

@@ -78,7 +78,8 @@
   "schema": "nhi-blast-report/1.1",
   "scope_and_limits": [
     "Scope: 2 workflows, 2 jobs, 9 Terraform resources.",
-    "Not analysed: SCPs, environment protection, branch rules, live AWS state, job outputs and artifacts.",
+    "Not analysed: SCPs and RCPs, resource policies, role chaining, GitHub branch protection, remote actions and reusable workflows, permissions boundaries, live cloud state, Terraform HCL, job outputs and artifacts.",
+    "Completeness: 6 analysed, 2 partially analysed, 3 not provided, 5 not supported, 4 not applicable.",
     "Limits: closure depth 3, graph node budget 500000, scenario time budget 60 s."
   ],
   "selector": "action:tj-actions/changed-files@v45"

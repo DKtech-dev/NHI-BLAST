@@ -1,5 +1,7 @@
 # 6. Benchmark and dataset methodology: NHI-Blast Open Evaluation Corpus v1
 
+> **Revised 2026-11-02.** Where this part conflicts with [12-revision-2.md](12-revision-2.md) (final design review: corrections, deviations, verified sources) or [11-ui-direction.md](11-ui-direction.md), those documents win. See the implementation log for what was built.
+
 Name and status: a project-created benchmark. It is not an official or industry-standard benchmark, because none exists (section 3.4).
 
 ### Tier T0: semantic oracle conformance (fast, in the default suite)

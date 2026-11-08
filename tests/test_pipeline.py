@@ -264,11 +264,15 @@ def test_scan_fx07_reference_partition_findings_and_scope(tmp_path: Path) -> Non
 
     assert report.scope_and_limits == (
         "Scope: 2 workflows, 2 jobs, 9 Terraform resources.",
-        "Not analysed: SCPs, environment protection, branch rules, live AWS state, "
-        "job outputs and artifacts.",
+        "Not analysed: SCPs and RCPs, resource policies, role chaining, GitHub branch "
+        "protection, remote actions and reusable workflows, permissions boundaries, live "
+        "cloud state, Terraform HCL, job outputs and artifacts.",
+        "Completeness: 6 analysed, 2 partially analysed, 3 not provided, 5 not supported, "
+        "4 not applicable.",
         "Limits: closure depth 3, graph node budget 500000, scenario time budget 60 s.",
     )
     assert {item.id for item in report.assumptions} == {
+        "A-CAC-DEFAULT",
         "A-NO-SCP",
         "A-OIDC-ENV",
         "A-REPO-AGE",

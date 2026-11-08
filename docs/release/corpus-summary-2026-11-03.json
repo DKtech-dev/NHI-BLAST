@@ -1,0 +1,642 @@
+{
+  "engine_semantics": "4",
+  "status": "PASS",
+  "deterministic": true,
+  "counts": {
+    "external": 14,
+    "regular_files": 3620,
+    "self_controls": 1
+  },
+  "input_integrity": "PASS",
+  "manifest": "aa806de287ab35796e37e1538bb48b5cbe980d0e82878a2509d9aa6d3e000ec0",
+  "source_tree": "d68c784c2b0c082a2cba54535db6d68f3f91d8129db7a22990e833740f4b2dd2",
+  "external_totals": {
+    "findings": 56,
+    "nodes": 591,
+    "edges": 779,
+    "diagnostics": 269,
+    "maxSeconds": 3.038440000033006
+  },
+  "rows": [
+    {
+      "repository": "https://github.com/DKtech-dev/nhi-blast",
+      "revision": "7ea7c19289e21cafd1abd8d672ca6169ed31f840",
+      "license": "LicenseRef-Proprietary",
+      "external": false,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 0,
+      "diagnostics": {
+        "D-EXPR-VALUE": 1,
+        "D-TF-ROTATION-UNBOUND": 4,
+        "D-TF-UNKNOWN": 2
+      },
+      "graph": {
+        "edge_kinds": {
+          "CAN_ASSUME": 3,
+          "CAN_READ_VALUE": 30,
+          "CONTAINS": 5,
+          "HOLDS": 3,
+          "RUNS_IN": 6,
+          "STORES": 33
+        },
+        "edges": 80,
+        "node_kinds": {
+          "ACTION_REF": 2,
+          "AWS_OIDC_PROVIDER": 1,
+          "AWS_ROLE": 19,
+          "CREDENTIAL": 37,
+          "JOB": 3,
+          "REPOSITORY": 1,
+          "SINK": 33,
+          "WORKFLOW": 2
+        },
+        "nodes": 98
+      },
+      "input_categories": {
+        "composite_action": 10,
+        "tf_json": 12,
+        "workflow": 2
+      },
+      "seconds": [
+        1.3836451000533998,
+        1.4216219999361783
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/actions/starter-workflows",
+      "revision": "e3c451d60f119b71caebf13c98ac45da6e15b4b7",
+      "license": "MIT",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 0,
+      "diagnostics": {},
+      "graph": {
+        "edge_kinds": {
+          "CONTAINS": 18,
+          "HOLDS": 10,
+          "RUNS_IN": 13
+        },
+        "edges": 41,
+        "node_kinds": {
+          "ACTION_REF": 9,
+          "CREDENTIAL": 9,
+          "JOB": 9,
+          "REPOSITORY": 1,
+          "WORKFLOW": 9
+        },
+        "nodes": 37
+      },
+      "input_categories": {
+        "workflow": 9
+      },
+      "seconds": [
+        1.0157118999632075,
+        1.0381268999772146
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/aws-actions/amazon-ecr-login",
+      "revision": "6dd72ef9ca2821c1b460ac5d0d53b4b1cc7312a2",
+      "license": "MIT",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 0,
+      "diagnostics": {},
+      "graph": {
+        "edge_kinds": {
+          "CONTAINS": 7,
+          "HOLDS": 4,
+          "RUNS_IN": 7
+        },
+        "edges": 18,
+        "node_kinds": {
+          "ACTION_REF": 5,
+          "CREDENTIAL": 4,
+          "JOB": 4,
+          "REPOSITORY": 1,
+          "WORKFLOW": 3
+        },
+        "nodes": 17
+      },
+      "input_categories": {
+        "composite_action": 1,
+        "workflow": 3
+      },
+      "seconds": [
+        0.8653200999833643,
+        0.9050938999280334
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/aws-actions/amazon-ecs-deploy-task-definition",
+      "revision": "a00d4d57ac0de1a99b39fe469f3d898d38717c2b",
+      "license": "MIT",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 5,
+      "diagnostics": {},
+      "graph": {
+        "edge_kinds": {
+          "CONTAINS": 9,
+          "HOLDS": 7,
+          "RUNS_IN": 13
+        },
+        "edges": 29,
+        "node_kinds": {
+          "ACTION_REF": 7,
+          "CREDENTIAL": 6,
+          "JOB": 5,
+          "REPOSITORY": 1,
+          "WORKFLOW": 4
+        },
+        "nodes": 23
+      },
+      "input_categories": {
+        "composite_action": 1,
+        "workflow": 4
+      },
+      "seconds": [
+        1.0039430999895558,
+        0.9395450999727473
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/aws-actions/aws-secretsmanager-get-secrets",
+      "revision": "2297f9a879480a9e3af9b293ed15c70caf8e1c88",
+      "license": "MIT-0",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 7,
+      "diagnostics": {
+        "D-GHA-AWS-ROLE-EXPR": 1,
+        "D-GHA-COMPOSITE-OPAQUE": 6,
+        "D-GHA-REMOTE-OPAQUE": 1
+      },
+      "graph": {
+        "edge_kinds": {
+          "CAN_MINT": 7,
+          "CONTAINS": 12,
+          "HOLDS": 16,
+          "RUNS_IN": 30
+        },
+        "edges": 65,
+        "node_kinds": {
+          "ACTION_REF": 7,
+          "CREDENTIAL": 16,
+          "JOB": 9,
+          "OIDC_IDENTITY": 7,
+          "REPOSITORY": 1,
+          "WORKFLOW": 3
+        },
+        "nodes": 43
+      },
+      "input_categories": {
+        "composite_action": 2,
+        "workflow": 3
+      },
+      "seconds": [
+        0.9961231999332085,
+        0.9803320999490097
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/aws-actions/configure-aws-credentials",
+      "revision": "8e892652a41b1e9ca2f311aa8742dfd36271f739",
+      "license": "MIT",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 16,
+      "diagnostics": {
+        "D-EXPR-VALUE": 7,
+        "D-GHA-AWS-ROLE-EXPR": 5,
+        "D-GHA-COMPOSITE-OPAQUE": 12
+      },
+      "graph": {
+        "edge_kinds": {
+          "CAN_MINT": 13,
+          "CONTAINS": 33,
+          "HOLDS": 58,
+          "RUNS_IN": 46
+        },
+        "edges": 150,
+        "node_kinds": {
+          "ACTION_REF": 16,
+          "CREDENTIAL": 53,
+          "JOB": 20,
+          "OIDC_IDENTITY": 13,
+          "REPOSITORY": 1,
+          "WORKFLOW": 13
+        },
+        "nodes": 116
+      },
+      "input_categories": {
+        "composite_action": 1,
+        "workflow": 13
+      },
+      "seconds": [
+        1.2382224999601021,
+        1.2747431000461802
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/aws-samples/example-permissions-boundary",
+      "revision": "91c31c6ba1c72d52c43bc9a965be234c8058051f",
+      "license": "MIT-0",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 2,
+      "diagnostics": {
+        "D-IAM-UNBOUND": 2
+      },
+      "graph": {
+        "edge_kinds": {
+          "CONTAINS": 2,
+          "HOLDS": 2,
+          "RUNS_IN": 1
+        },
+        "edges": 5,
+        "node_kinds": {
+          "ACTION_REF": 1,
+          "CREDENTIAL": 2,
+          "JOB": 1,
+          "REPOSITORY": 1,
+          "WORKFLOW": 1
+        },
+        "nodes": 6
+      },
+      "input_categories": {
+        "iam_json": 2,
+        "workflow": 1
+      },
+      "seconds": [
+        0.791802000021562,
+        0.8031456000171602
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/hashicorp/terraform-json",
+      "revision": "8f4894d138d0fe71436cba6dbc8f16577e9a9e7d",
+      "license": "MPL-2.0",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 0,
+      "diagnostics": {
+        "D-EXPR-VALUE": 1,
+        "D-TF-EMPTY": 1,
+        "D-TF-FORMAT": 22,
+        "D-TF-PARSE": 1
+      },
+      "graph": {
+        "edge_kinds": {
+          "CONTAINS": 3,
+          "HOLDS": 2,
+          "RUNS_IN": 4
+        },
+        "edges": 9,
+        "node_kinds": {
+          "ACTION_REF": 3,
+          "CREDENTIAL": 2,
+          "JOB": 2,
+          "REPOSITORY": 1,
+          "WORKFLOW": 1
+        },
+        "nodes": 9
+      },
+      "input_categories": {
+        "tf_json": 34,
+        "workflow": 1
+      },
+      "seconds": [
+        2.1094155999599025,
+        2.056454199948348
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/rhysd/actionlint",
+      "revision": "011a6d15e749bb3f2d771eed9c7aa0e7e3e10ee7",
+      "license": "MIT",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 13,
+      "diagnostics": {
+        "D-EXPR-VALUE": 2,
+        "D-YAML-PARSE": 1
+      },
+      "graph": {
+        "edge_kinds": {
+          "CAN_MINT": 1,
+          "CONTAINS": 18,
+          "HOLDS": 17,
+          "RUNS_IN": 37
+        },
+        "edges": 73,
+        "node_kinds": {
+          "ACTION_REF": 15,
+          "CREDENTIAL": 16,
+          "JOB": 12,
+          "OIDC_IDENTITY": 1,
+          "REPOSITORY": 1,
+          "WORKFLOW": 6
+        },
+        "nodes": 51
+      },
+      "input_categories": {
+        "composite_action": 62,
+        "workflow": 6
+      },
+      "seconds": [
+        1.4663462999742478,
+        1.3395574999740347
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/terraform-aws-modules/terraform-aws-iam",
+      "revision": "da8e6a8673933ee651f0f0fe611d5ac6b9f9bcb9",
+      "license": "Apache-2.0",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 3,
+      "diagnostics": {
+        "D-TF-BOUNDARY-UNRESOLVED": 1,
+        "D-TF-HCL-LIMIT": 58,
+        "D-TF-POLICY-UNRESOLVED": 2,
+        "D-TF-ROLE-UNBOUND": 5,
+        "D-TF-UNKNOWN": 2
+      },
+      "graph": {
+        "edge_kinds": {
+          "CONTAINS": 12,
+          "HOLDS": 11,
+          "RUNS_IN": 17
+        },
+        "edges": 40,
+        "node_kinds": {
+          "ACTION_REF": 10,
+          "AWS_ROLE": 1,
+          "CREDENTIAL": 8,
+          "JOB": 7,
+          "REPOSITORY": 1,
+          "WORKFLOW": 5
+        },
+        "nodes": 32
+      },
+      "input_categories": {
+        "tf_hcl": 99,
+        "workflow": 5
+      },
+      "seconds": [
+        3.038440000033006,
+        1.634682400035672
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/terraform-aws-modules/terraform-aws-rds",
+      "revision": "175da043429cbbe41c512f976105719f6d0e538c",
+      "license": "Apache-2.0",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 3,
+      "diagnostics": {
+        "D-TF-BOUNDARY-UNRESOLVED": 1,
+        "D-TF-DB-UNBOUND": 1,
+        "D-TF-HCL-LIMIT": 34,
+        "D-TF-POLICY-UNRESOLVED": 3,
+        "D-TF-ROLE-UNBOUND": 1,
+        "D-TF-ROTATION-UNBOUND": 1,
+        "D-TF-UNKNOWN": 1
+      },
+      "graph": {
+        "edge_kinds": {
+          "CONTAINS": 12,
+          "HOLDS": 11,
+          "RUNS_IN": 17
+        },
+        "edges": 40,
+        "node_kinds": {
+          "ACTION_REF": 10,
+          "AWS_ROLE": 4,
+          "CREDENTIAL": 8,
+          "EXTERNAL_TARGET": 1,
+          "JOB": 7,
+          "REPOSITORY": 1,
+          "WORKFLOW": 5
+        },
+        "nodes": 36
+      },
+      "input_categories": {
+        "tf_hcl": 104,
+        "workflow": 5
+      },
+      "seconds": [
+        1.735285000060685,
+        1.8573878000024706
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/terraform-aws-modules/terraform-aws-secrets-manager",
+      "revision": "f3d3da1c801816563080065c5f37f212c8dee444",
+      "license": "Apache-2.0",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 3,
+      "diagnostics": {
+        "D-TF-HCL-LIMIT": 8,
+        "D-TF-ROTATION-UNBOUND": 1,
+        "D-TF-SINK-UNBOUND": 1,
+        "D-TF-UNKNOWN": 1
+      },
+      "graph": {
+        "edge_kinds": {
+          "CONTAINS": 12,
+          "HOLDS": 11,
+          "RUNS_IN": 17
+        },
+        "edges": 40,
+        "node_kinds": {
+          "ACTION_REF": 10,
+          "CREDENTIAL": 8,
+          "JOB": 7,
+          "REPOSITORY": 1,
+          "WORKFLOW": 5
+        },
+        "nodes": 31
+      },
+      "input_categories": {
+        "tf_hcl": 12,
+        "workflow": 5
+      },
+      "seconds": [
+        1.0749943000264466,
+        1.0984750000061467
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/terraform-aws-modules/terraform-aws-ssm-parameter",
+      "revision": "c798b114a38a36d278e2ba74550bf52f9b944563",
+      "license": "Apache-2.0",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 3,
+      "diagnostics": {
+        "D-TF-HCL-LIMIT": 4,
+        "D-TF-UNKNOWN": 2
+      },
+      "graph": {
+        "edge_kinds": {
+          "CONTAINS": 12,
+          "HOLDS": 11,
+          "RUNS_IN": 17
+        },
+        "edges": 40,
+        "node_kinds": {
+          "ACTION_REF": 10,
+          "CREDENTIAL": 8,
+          "JOB": 7,
+          "REPOSITORY": 1,
+          "WORKFLOW": 5
+        },
+        "nodes": 31
+      },
+      "input_categories": {
+        "tf_hcl": 12,
+        "workflow": 5
+      },
+      "seconds": [
+        1.0953045999631286,
+        1.0636294999858364
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/terraform-linters/tflint",
+      "revision": "295c0d6164e47af25014d31814cb85bb661e1b7b",
+      "license": "MPL-2.0 AND BUSL-1.1",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 1,
+      "diagnostics": {
+        "D-EXPR-VALUE": 2,
+        "D-GHA-REMOTE-REUSABLE": 1,
+        "D-TF-DB-UNBOUND": 1,
+        "D-TF-HCL-LIMIT": 50,
+        "D-TF-HCL-PARSE": 5,
+        "D-TF-POLICY-SHAPE": 1,
+        "D-TF-POLICY-UNRESOLVED": 3
+      },
+      "graph": {
+        "edge_kinds": {
+          "CAN_ASSUME": 1,
+          "CAN_MINT": 1,
+          "CONTAINS": 22,
+          "HOLDS": 19,
+          "RUNS_IN": 27
+        },
+        "edges": 70,
+        "node_kinds": {
+          "ACTION_REF": 11,
+          "AWS_ROLE": 1,
+          "CREDENTIAL": 14,
+          "EXTERNAL_TARGET": 1,
+          "JOB": 12,
+          "OIDC_IDENTITY": 1,
+          "REPOSITORY": 1,
+          "WORKFLOW": 10
+        },
+        "nodes": 51
+      },
+      "input_categories": {
+        "tf_hcl": 117,
+        "workflow": 10
+      },
+      "seconds": [
+        1.6549554000375792,
+        1.574032999924384
+      ],
+      "errors": []
+    },
+    {
+      "repository": "https://github.com/zizmorcore/zizmor",
+      "revision": "4dedfa6ffb40c83e15bae9b6edbc6d1c5dcac422",
+      "license": "MIT",
+      "external": true,
+      "status": "PASS",
+      "deterministic": true,
+      "runs": 2,
+      "findings": 0,
+      "diagnostics": {
+        "D-EXPR-VALUE": 6,
+        "D-GHA-JOB-USES": 4,
+        "D-GHA-REMOTE-REUSABLE": 5,
+        "D-YAML-EMPTY": 1,
+        "D-YAML-PARSE": 1
+      },
+      "graph": {
+        "edge_kinds": {
+          "CAN_MINT": 9,
+          "CONTAINS": 42,
+          "HOLDS": 45,
+          "RUNS_IN": 63
+        },
+        "edges": 159,
+        "node_kinds": {
+          "ACTION_REF": 16,
+          "CREDENTIAL": 40,
+          "JOB": 31,
+          "OIDC_IDENTITY": 9,
+          "REPOSITORY": 1,
+          "WORKFLOW": 11
+        },
+        "nodes": 108
+      },
+      "input_categories": {
+        "composite_action": 17,
+        "workflow": 11
+      },
+      "seconds": [
+        1.400737600051798,
+        1.4097687000175938
+      ],
+      "errors": []
+    }
+  ]
+}

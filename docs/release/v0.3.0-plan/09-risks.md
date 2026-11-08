@@ -1,5 +1,7 @@
 # 9. Risk register
 
+> **Revised 2026-11-02.** Where this part conflicts with [12-revision-2.md](12-revision-2.md) (final design review: corrections, deviations, verified sources) or [11-ui-direction.md](11-ui-direction.md), those documents win. See the implementation log for what was built.
+
 | # | Risk | Likelihood / impact | Mitigation | Owner signal |
 |---|---|---|---|---|
 | 1 | Diff reports a false "resolved" (false assurance) | M / High | Strict resolved rule; `not_observed` state; Hypothesis line/order permutation tests | Any `resolved` under drift fails a test |

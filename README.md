@@ -17,7 +17,7 @@
   <a href="https://github.com/DKtech-dev/nhi-blast/actions/workflows/ci.yml"><img src="https://github.com/DKtech-dev/nhi-blast/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status"></a>
   <img src="https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-a8201a?style=flat-square&amp;labelColor=111010" alt="Python 3.12, 3.13 and 3.14">
   <img src="https://img.shields.io/badge/licence-MIT-a8201a?style=flat-square&amp;labelColor=111010" alt="MIT licence">
-  <img src="https://img.shields.io/badge/release-v0.2.0%20beta-a8201a?style=flat-square&amp;labelColor=111010" alt="v0.2.0 public beta">
+  <img src="https://img.shields.io/badge/release-v0.3.0%20beta-a8201a?style=flat-square&amp;labelColor=111010" alt="v0.3.0 public beta">
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
 </p>
 
 > [!IMPORTANT]
-> Version 0.2.0 is a public beta for testing and evaluation, not a production security
+> Version 0.3.0 is a public beta for testing and evaluation, not a production security
 > control. No independent security audit has been performed or is claimed.
 
 ## Why NHI-Blast
@@ -50,19 +50,19 @@ expressions are never evaluated.
 
 ## The offline report
 
-<p align="center"><img src="assets/readme/report-dark.png" alt="Offline HTML report for the synthetic fx07-incident fixture, showing the summary and R/E/Z survival panel" width="100%"></p>
+<p align="center"><img src="assets/readme/report-light.png" alt="Offline HTML report for the synthetic fx07-incident fixture in the light theme, showing the summary, survival counts and rotation entrypoints" width="100%"></p>
 
-<p align="center"><sub>The offline HTML report for the synthetic <code>fx07-incident</code> fixture: summary, R/E/Z survival panel, rotation plan, findings and evidence detail.</sub></p>
+<p align="center"><sub>The offline HTML report for the synthetic <code>fx07-incident</code> fixture, light theme: summary, R/E/Z survival, rotation plan, findings and evidence detail. The System / Light / Dark switcher and Motion toggle work from <code>file://</code> with no network access.</sub></p>
 
-<p align="center"><img src="assets/readme/report-graph-dark.png" alt="Authority graph from the same fx07-incident report, grouped by stage with evidence-coded edges and a highlighted entrypoint" width="100%"></p>
+<p align="center"><img src="assets/readme/completeness-light.png" alt="Analysis completeness panel listing each input family as analysed, partially analysed, not provided, not supported or not applicable" width="100%"></p>
 
-<p align="center"><sub>The same report's authority graph, grouped by authority stage; line style encodes evidence class and the selected entrypoint's reachable path is highlighted.</sub></p>
+<p align="center"><sub>Analysis completeness, new in 0.3.0: every input family is labelled, so a silent gap cannot read as a clean result. There is no score and no "complete" badge.</sub></p>
 
 ## Quickstart
 
-Requires **Python 3.12+** (tested on 3.12, 3.13 and 3.14). Version 0.2.0 is a public beta,
+Requires **Python 3.12+** (tested on 3.12, 3.13 and 3.14). Version 0.3.0 is a public beta,
 available from this source tree and, for Windows, as a pre-release executable on
-[GitHub Releases](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.2.0). No
+[GitHub Releases](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.3.0). No
 package-index publication is made. The tool needs no cloud credentials and makes no network
 requests.
 
@@ -78,10 +78,10 @@ On Windows use `.venv\Scripts\python.exe`. `[hcl]` adds the optional Terraform H
 
 The standalone Windows x64 build, `nhi-blast-windows-x64.exe`, does not require Python, pip or
 administrator rights. Download the executable and its `.sha256` record from the
-[`v0.2.0` release](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.2.0):
-[`nhi-blast-windows-x64.exe`](https://github.com/DKtech-dev/nhi-blast/releases/download/v0.2.0/nhi-blast-windows-x64.exe)
+[`v0.3.0` release](https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.3.0):
+[`nhi-blast-windows-x64.exe`](https://github.com/DKtech-dev/nhi-blast/releases/download/v0.3.0/nhi-blast-windows-x64.exe)
 and
-[`nhi-blast-windows-x64.exe.sha256`](https://github.com/DKtech-dev/nhi-blast/releases/download/v0.2.0/nhi-blast-windows-x64.exe.sha256).
+[`nhi-blast-windows-x64.exe.sha256`](https://github.com/DKtech-dev/nhi-blast/releases/download/v0.3.0/nhi-blast-windows-x64.exe.sha256).
 Verify a download before running it:
 
 ```powershell
@@ -148,6 +148,9 @@ but not the full graph; use `nhi-blast export` for JSON or DOT.
 | `nhi-blast export PATH --format json\|dot` | Export the authority graph | `graph.json` or `graph.dot` |
 | `nhi-blast schema` | Print the report JSON Schema to stdout | none |
 | `nhi-blast version [--data]` | Print tool, schema and data-file versions | none |
+| `nhi-blast diff BASE HEAD` | Compare two saved reports; findings are new, changed, unchanged, resolved or not observed | `diff.json` with `--format json`; optional reviewed `--baseline` |
+| `nhi-blast baseline accept\|prune` | Record or remove reviewed diff suppressions with a reason and reviewer | updates the baseline file |
+| `nhi-blast whatif REPORT --plan PLAN` | Model containment offline on a saved report; refuses non-replayable reports | `whatif.json` and `playbook.md` |
 
 | Exit code | Meaning |
 | --- | --- |
@@ -201,7 +204,7 @@ evidence path with shell-style globs; `--strict` reports suppressed findings as 
 
 ## Public beta
 
-Version 0.2.0 is a public beta for testing and evaluation, not a production security control. Its
+Version 0.3.0 is a public beta for testing and evaluation, not a production security control. Its
 analysis supports an incident response; it is not a substitute for an independent cloud security
 assessment. Treat every result as evidence to verify against your own environment, and read the
 known limitations before relying on a finding.
@@ -218,7 +221,7 @@ exact command, expected result, actual result and sanitised logs. The full proce
 - No execution of scanned content and no network access: no Terraform, Git or shell commands, no downloads, no `${{ ... }}` evaluation.
 - Reads stay inside the scan root; escaping symlinks and junctions are rejected. Credential values are never stored, printed, logged or embedded.
 - Evidence is ordered `DECLARED` > `DERIVED` > `ASSUMED` > `UNKNOWN`; UNKNOWN authority feeds only the `potential` set, never R, E or Z.
-- Not modelled: SCPs, permission boundaries, KMS key policies, environment protection, branch rules and live AWS state.
+- Not modelled: SCPs, session policies, permission boundaries, KMS key policies, role chaining, environment protection, branch rules and live AWS state.
 
 > [!NOTE]
 > See [known limitations](docs/known-limitations.md) for the full boundary, including unsupported
@@ -234,6 +237,10 @@ exact command, expected result, actual result and sanitised logs. The full proce
 | [Rules](docs/rules/README.md) | Finding rules and severities |
 | [Assumptions](docs/assumptions.md) | Platform and analysis assumptions |
 | [Known limitations](docs/known-limitations.md) | Unsupported inputs and result boundaries |
+| [Report diff](docs/diff.md) | Comparing reports and reviewed baselines |
+| [Containment what-if](docs/whatif.md) | Offline intervention modelling and playbooks |
+| [Install](docs/install.md) | Local build and post-publication installation |
+| [Verify a release](docs/verify-release.md) | Checksums, provenance and SBOM checks |
 | [Security audit](docs/security-audit.md) | Internal review and findings |
 | [Beta testing](docs/beta-testing.md) | Test scope and reporting |
 | [Release procedure](docs/release.md) | Release gates and artifacts |
@@ -242,6 +249,6 @@ exact command, expected result, actual result and sanitised logs. The full proce
 ## Licence
 
 MIT License; see [LICENSE](LICENSE). The published `0.1.0` and `0.1.1` releases remain under the
-MIT License. Third-party components keep their own licences: the embedded Instrument Serif, Geist
+MIT License. Third-party components keep their own licences: the embedded Host Grotesk, Instrument Sans
 and Geist Mono fonts are SIL Open Font License 1.1; see [NOTICE](NOTICE) and
 [third-party notices](THIRD_PARTY_NOTICES.md).

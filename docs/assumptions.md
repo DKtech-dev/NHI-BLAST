@@ -16,11 +16,13 @@ confirmed from a primary source during specification research and is treated as
 | A-PRT-SUB | assumption | yes | `pull_request_target` mints a subject for the base-branch ref. |
 | A-DISPATCH-ANYREF | assumption | no | A user with write access can dispatch a workflow or push on any branch or tag. |
 | A-ENV-UNPROTECTED | assumption | yes | Environment protection and branch rules are unknown, so anyone who can edit workflows may satisfy an environment claim. |
-| A-STS-TTL | assumption | no | A `AssumeRoleWithWebIdentity` session lasts at most the role's `max_session_duration` (default 3600 s). |
+| A-STS-TTL | assumption | no | When the requested session duration is not declared or cannot be read, a session is assumed to last at most the role's `max_session_duration` (1 h when unset, 12 h when the role maximum is unknown). |
+| A-CAC-DEFAULT | assumption | yes | The action default for this ref is unverified. Use the known role maximum or the STS 43200 s cap as the conservative upper bound; the one-hour chaining cap applies only when chaining is established. Verified refs are listed in `configure_aws_credentials.yaml`. |
+| A-SESSION-POLICY | assumption | no | A session policy can only narrow access. It is not evaluated, so reachable access may be broader than the session allows; a resource policy naming the session ARN is not limited by it. |
 | A-NO-SCP | assumption | no | SCPs, RCPs, session policies and permission boundaries that were not supplied are not modelled; Allow results may over-approximate. |
 | A-SCOPE-INPUT | assumption | no | Only resources present in the inputs exist; a wildcard resource may cover resources outside the scan and is reported as `UNKNOWN_EXTERNAL`, feeding potential paths only. |
 | A-DEFAULT-BRANCH | assumption | no | The default branch is `main` unless configured. |
-| A-REPO-AGE | assumption | no | Whether a repository mints classic or immutable subjects is unknown, so both are evaluated. |
+| A-REPO-AGE | assumption | no | Whether a repository mints classic or immutable subjects is unknown, so both are evaluated; declare `[github] subject_format` to settle it. GitHub documents the immutable form `repo:OWNER@OWNER-ID/REPO@REPO-ID` as the default for repositories created after 2026-07-15, as opt-in for older ones, as the result of a rename or transfer after that date, and as unavailable on GitHub Enterprise Server. |
 | A-REPO-WRITE | assumption | yes | A repository writer can edit a workflow on a branch, add `id-token: write` and request the default audience; branch protection is unknown. |
 | A-KMS-UNMODELLED | assumption | yes | KMS key policies are not modelled; a customer-managed-key read without an explicit grant is conditional. |
 | A-TRUST-UNMODELLED | assumption | yes | An unresolved role trust policy produces UNKNOWN-class potential paths, never declared authority. |

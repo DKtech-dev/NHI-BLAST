@@ -1,5 +1,7 @@
 # 5. Full implementation sequence
 
+> **Revised 2026-11-02.** Where this part conflicts with [12-revision-2.md](12-revision-2.md) (final design review: corrections, deviations, verified sources) or [11-ui-direction.md](11-ui-direction.md), those documents win. See the implementation log for what was built.
+
 Branch `feature/v0.3.0-beta-consolidated` from `main` (after PR #6 is merged, or rebased onto it). Small commits; CI must be green at each stage boundary. Logs: `docs/release/v0.3.0-beta-implementation-log.md` and `docs/release/v0.3.0-beta-progress.md`, updated after every stage. Size estimate: S < 0.5 day, M ≈ 1 day, L ≈ 2+ days.
 
 | Step | Work | Main files | Size |

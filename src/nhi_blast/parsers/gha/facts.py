@@ -90,6 +90,13 @@ class AwsAuthUse(BaseModel):
     static_keys: bool = False
     static_secret_refs: tuple[str, ...] = ()
     line: int = 0
+    action_ref: str | None = None
+    duration_kind: str = "default"  # default, literal, expression, invalid
+    duration_seconds: int | None = None
+    role_chaining: str = "false"  # true, false, expression
+    inline_session_policy: str = "none"  # none, literal, expression
+    managed_session_policies: tuple[str, ...] = ()
+    managed_session_policy_expression: bool = False
 
 
 class LiteralHit(BaseModel):

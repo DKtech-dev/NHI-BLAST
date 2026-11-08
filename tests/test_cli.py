@@ -66,7 +66,7 @@ def test_version_and_data_report() -> None:
 
     data = _invoke("version", "--data")
     assert data.exit_code == 0
-    assert "Data files: 8" in data.stdout
+    assert "Data files: 10" in data.stdout
     assert "rules.yaml" in data.stdout
     assert "verified 20" in data.stdout
     assert "https://" in data.stdout

@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import ctypes
-import io
 import json
 import os
 from ctypes import wintypes
 from pathlib import Path
-from typing import IO, Any
+from typing import Any, BinaryIO
 
 import pytest
 from typer.testing import CliRunner
@@ -24,24 +23,36 @@ pytestmark = pytest.mark.security
 _CONFIG_CAP = 5 * 1024 * 1024
 
 
-class _ReadProbe(io.BytesIO):
-    def __init__(self, data: bytes) -> None:
-        super().__init__(data)
+class _ReadProbe:
+    def __init__(self, handle: BinaryIO) -> None:
+        self.handle = handle
         self.requests: list[int] = []
         self.bytes_read = 0
 
+    def __enter__(self) -> _ReadProbe:
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self.handle.close()
+
+    def fileno(self) -> int:
+        return self.handle.fileno()
+
+    def tell(self) -> int:
+        return self.handle.tell()
+
     def read(self, size: int = -1, /) -> bytes:
         self.requests.append(size)
-        data = super().read(size)
+        data = self.handle.read(size)
         self.bytes_read += len(data)
         return data
 
 
 def _observe_reads(path: Path, monkeypatch: pytest.MonkeyPatch) -> _ReadProbe:
-    probe = _ReadProbe(path.read_bytes())
     original = Path.open
+    probe = _ReadProbe(original(path, "rb"))
 
-    def recording_open(self: Path, *args: Any, **kwargs: Any) -> IO[Any]:
+    def recording_open(self: Path, *args: Any, **kwargs: Any) -> Any:
         if self == path:
             return probe
         return original(self, *args, **kwargs)
@@ -209,15 +220,15 @@ def test_unreadable_autodetect_json_is_diagnostic_and_preserves_strict_exit(
     original = Path.open
     sentinel = "FIXTURE_ONLY_PRIVATE_IO_DETAIL"
 
-    class UnreadableStream(io.BytesIO):
+    class UnreadableStream(_ReadProbe):
         def read(self, size: int = -1, /) -> bytes:
             del size
             raise PermissionError(sentinel)
 
-    def unreadable_open(self: Path, *args: Any, **kwargs: Any) -> IO[Any]:
+    def unreadable_open(self: Path, *args: Any, **kwargs: Any) -> Any:
         if self == path:
             if fail_during_read:
-                return UnreadableStream()
+                return UnreadableStream(original(self, *args, **kwargs))
             raise PermissionError(sentinel)
         return original(self, *args, **kwargs)
 

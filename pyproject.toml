@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "nhi-blast"
-version = "0.2.0"
+version = "0.3.0"
 description = "Offline, evidence-labelled analysis of GitHub Actions to AWS OIDC authority and revocation survival"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -54,24 +54,26 @@ packages = ["src/nhi_blast"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src",
-  "tests",
-  "docs",
-  "scripts",
-  "README.md",
-  "LICENSE",
-  "NOTICE",
-  "THIRD_PARTY_NOTICES.md",
-  "SECURITY.md",
-  "CONTRIBUTING.md",
-  "CHANGELOG.md",
-  "requirements.lock",
-  "requirements-dev.lock",
-  "requirements-windows-build.lock",
+  "/src",
+  "/tests",
+  "/docs",
+  "/scripts",
+  "/README.md",
+  "/LICENSE",
+  "/NOTICE",
+  "/THIRD_PARTY_NOTICES.md",
+  "/SECURITY.md",
+  "/CONTRIBUTING.md",
+  "/CHANGELOG.md",
+  "/requirements.lock",
+  "/requirements-dev.lock",
+  "/requirements-windows-build.lock",
 ]
 exclude = [
   ".buildcheck",
   "docs/research/_cache",
+  # Review screenshots are evidence, not source; they would dominate the sdist size.
+  "docs/usability/screens",
   # Local working notes that must never be distributed, even when the build
   # runs from a working tree that still contains them.
   "docs/engineering-checkpoint.md",
@@ -113,6 +115,7 @@ max-statements = 70
 "tests/**" = ["S", "PLR0915", "PLR0912", "PLR0911"]
 "scripts/**" = ["T201"]  # command-line helpers; printing is their interface
 "src/nhi_blast/report/ui.py" = ["S", "E501"]  # embedded CSS/JS templates, not project code
+"src/nhi_blast/report/effects.py" = ["S", "E501"]  # embedded CSS/JS strings, not project code
 "src/nhi_blast/core/models.py" = ["S105"]  # credential-kind enum names, not values
 
 [tool.ruff.format]

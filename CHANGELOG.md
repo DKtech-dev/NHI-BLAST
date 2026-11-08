@@ -4,6 +4,75 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project intends to
 use semantic versioning from its first published release.
 
+## 0.3.0 — public beta
+
+Adds recorded analysis context, evidence completeness, report diff with a reviewed baseline, an
+offline containment what-if, corrected AWS condition and session semantics, and a light and dark
+report theme. Report schema is `nhi-blast-report/1.1` (additive; 1.0 reports still load). Distributed
+as a GitHub pre-release with a wheel, sdist, SHA-256 sums and a standalone Windows executable; there
+is no package-index publication.
+
+### Added
+
+- Report schema 1.1: `context` (analyzer identity, effective configuration, limits, scenarios,
+  graph and context digests) and `completeness` (nineteen input families plus analysis limits,
+  each `analysed`, `partially_analysed`, `not_provided`, `not_supported` or `not_applicable`).
+- `nhi-blast diff BASE HEAD` and `nhi-blast baseline accept|prune`: findings are new, changed,
+  unchanged, resolved or not observed. A finding is "resolved" only when the analyzer, inputs and
+  completeness are comparable; otherwise it is "not observed" with reasons. See `docs/diff.md`.
+- `nhi-blast whatif REPORT --plan PLAN`: offline containment model with a Markdown playbook. It
+  refuses to run when the saved report cannot be replayed exactly. See `docs/whatif.md`.
+- `[github]` configuration for the subject format (`classic`, `immutable`), owner and repository
+  IDs, and `ghes` hosts.
+- Session duration provenance: `role-duration-seconds`, the role maximum, the one-hour role-chaining
+  limit, and recorded (not evaluated) session policies.
+- HTML report: light and dark themes with a System / Light / Dark switcher that works when
+  `sessionStorage` is unavailable, an Analysis completeness panel, and a scope-aware empty state.
+- Release workflow (`release.yml`), install and verification guides, and a CycloneDX SBOM step.
+- Sensitive-field minimization: credential-like values are reduced to kind and length before they
+  reach facts, reports or logs.
+- Staged artifact writes: outputs are rendered to a staging area and promoted with rollback and
+  cleanup on failure; a denied output directory fails explicitly instead of writing nothing.
+- Report identity: embedded Host Grotesk and Instrument Sans fonts (SIL OFL 1.1), an electric-blue
+  accent, vendored Motion micro-interactions with a Motion Off control, and a halftone header that
+  degrades gracefully.
+
+### Changed
+
+- **Condition evaluation (correctness fix).** A key the analyser has no information about is now
+  Unknown, never Absent. Previously `...IfExists` and `Null` produced definite results for such
+  keys, and an undocumented key forced a whole block to FALSE. Numeric, Date, IP, Binary and `Bool`
+  operators are evaluated; results can be broader than in 0.2.0 where a block was wrongly FALSE.
+- A definite Allow combined with a conditional Deny is a conditional Allow.
+- The session lifetime is the requested duration bounded by the role maximum, with its provenance.
+  The flat 3600 s default is gone.
+- `Config.path` is a scan-root-relative path. 0.2.0 recorded the absolute host path in evidence
+  and edge identifiers when a configuration file supplied bindings, so those reports differed by
+  checkout location.
+- The scope text is generated from completeness.
+- `dead` condition keys are reported as a configuration smell rather than a FALSE result.
+- Essential report values (R/E/Z counts, findings and scroll progress) render independently of
+  decorative animation frames, so delayed or suspended motion cannot show intermediate or doubled
+  numbers.
+- Windows output staging uses an unpredictable directory with a bounded collision-retry budget;
+  permission, disk and path errors fail promptly.
+
+### Fixed
+
+- A trust finding that moves between scenarios no longer reports as both "resolved" and "new"; the
+  move alone is "unchanged".
+- A denied or missing output directory is reported as an explicit error rather than a silent no-op.
+
+### Security
+
+- Artifact IO records actual-open identities and rejects name/inode aliases that escape the selected
+  inputs; host paths are excluded from serialized model and hash metadata.
+
+### Not included
+
+- Diff and what-if HTML pages, the GitHub Action, the GitHub environment context import, session
+  policy evaluation, the public-corpus benchmark, and Linux or macOS verification.
+
 ## 0.2.0 — public beta
 
 Offline-report and graph redesign with a standalone Windows build, prepared as a public

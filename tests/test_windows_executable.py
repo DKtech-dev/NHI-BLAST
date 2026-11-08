@@ -165,15 +165,17 @@ def test_standalone_copy_runs_without_python_or_the_repository(tmp_path: Path) -
     assert version.returncode == 0, version.stderr
     assert version.stdout == f"nhi-blast {__version__}\nreport schema {SCHEMA_VERSION}\n"
     assert data.returncode == 0
-    assert "Data files: 8" in data.stdout
+    assert "Data files: 10" in data.stdout
     for name in (
         "assumptions.yaml",
         "aws_github_condition_keys.yaml",
+        "configure_aws_credentials.yaml",
         "credential_heuristics.yaml",
         "permission_scopes.yaml",
         "rotation_hints.yaml",
         "rules.yaml",
         "sinks_catalog.yaml",
+        "sensitive_fields.yaml",
         "trigger_profiles.yaml",
     ):
         assert name in data.stdout

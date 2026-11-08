@@ -1,5 +1,7 @@
 # 10. Final v0.3.0 release acceptance checklist
 
+> **Revised 2026-11-02.** Where this part conflicts with [12-revision-2.md](12-revision-2.md) (final design review: corrections, deviations, verified sources) or [11-ui-direction.md](11-ui-direction.md), those documents win. See the implementation log for what was built.
+
 Each item is marked DONE / PARTIAL / BLOCKED / NOT RUN / N/A, with evidence, in `docs/production-readiness.md`.
 
 **Stage gates:**

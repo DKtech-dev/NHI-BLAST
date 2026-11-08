@@ -14,16 +14,6 @@
   ],
   "fonts": [
     {
-      "name": "geist-latin.woff2",
-      "family": "Geist",
-      "version": "google-fonts-v5",
-      "sha256": "19f9c92546aa300c312235e3125af1b81394d8db9a4bc4a425cd5b641d2d54e1",
-      "license": "OFL-1.1",
-      "license_file": "OFL.txt",
-      "source_url": "https://fonts.gstatic.com/s/geist/v5/gyByhwUxId8gMEwcGFU.woff2",
-      "weight": "400 700"
-    },
-    {
       "name": "geist-mono-latin.woff2",
       "family": "Geist Mono",
       "version": "google-fonts-v6",
@@ -34,14 +24,80 @@
       "weight": "400 700"
     },
     {
-      "name": "instrument-serif-latin.woff2",
-      "family": "Instrument Serif",
+      "name": "host-grotesk-latin.woff2",
+      "family": "Host Grotesk",
       "version": "google-fonts-v5",
-      "sha256": "5eb09b5ac0e28b67c2f041c8ba6d244604ca0c0980d65912ab2d47fed84ddc31",
+      "sha256": "ce9c9db8a488852eb7e4a52f51fd8ce0c93ef61a8d3bfa054b509ec92958dcfe",
       "license": "OFL-1.1",
-      "license_file": "OFL-InstrumentSerif.txt",
-      "source_url": "https://fonts.gstatic.com/s/instrumentserif/v5/jizBRFtNs2ka5fXjeivQ4LroWlx-6zUTjg.woff2",
-      "weight": "400"
+      "license_file": "OFL-HostGrotesk.txt",
+      "source_url": "https://fonts.gstatic.com/s/hostgrotesk/v5/co3BmWBnlCJ3U42vbbfdwMjZpFjm.woff2",
+      "weight": "400 800"
+    },
+    {
+      "name": "instrument-sans-latin.woff2",
+      "family": "Instrument Sans",
+      "version": "google-fonts-v4",
+      "sha256": "2ee17598a98d8a59e4df8152d015bec9ab8e4d5672cc0ab42bef806b568e3971",
+      "license": "OFL-1.1",
+      "license_file": "OFL-InstrumentSans.txt",
+      "source_url": "https://fonts.gstatic.com/s/instrumentsans/v4/pxiTypc9vsFDm051Uf6KVwgkfoSxQ0GsQv8ToedPibnr0SZe1Q.woff2",
+      "weight": "400 700"
+    }
+  ],
+  "icons": [
+    {
+      "name": "copy.svg",
+      "family": "Phosphor Icons",
+      "version": "core-main",
+      "sha256": "5a892fc6a72866e60c67db2088a87653cf44b57b1a5d183b36e950cdc5dd66b3",
+      "license": "MIT",
+      "license_file": "MIT-Phosphor.txt",
+      "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/copy.svg"
+    },
+    {
+      "name": "check.svg",
+      "family": "Phosphor Icons",
+      "version": "core-main",
+      "sha256": "cbb89a8c42f283d4f846eb935e05d88c1be04462f16480e068c0f82b9ce40b12",
+      "license": "MIT",
+      "license_file": "MIT-Phosphor.txt",
+      "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/check.svg"
+    },
+    {
+      "name": "printer.svg",
+      "family": "Phosphor Icons",
+      "version": "core-main",
+      "sha256": "398705192743d7ced5da5ca18f2b9e69759284276596f3dd3787720093d3f57e",
+      "license": "MIT",
+      "license_file": "MIT-Phosphor.txt",
+      "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/printer.svg"
+    },
+    {
+      "name": "arrow-up.svg",
+      "family": "Phosphor Icons",
+      "version": "core-main",
+      "sha256": "361aa9f9c52a759bf598faf6ed38ccd426f949f541d662c65b5b5d868fa76980",
+      "license": "MIT",
+      "license_file": "MIT-Phosphor.txt",
+      "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/arrow-up.svg"
+    },
+    {
+      "name": "arrow-right.svg",
+      "family": "Phosphor Icons",
+      "version": "core-main",
+      "sha256": "e45bc4a12592b8723110db42c6deffdf177e4fe7704cf50324963fa0a59b2d74",
+      "license": "MIT",
+      "license_file": "MIT-Phosphor.txt",
+      "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/arrow-right.svg"
+    },
+    {
+      "name": "info.svg",
+      "family": "Phosphor Icons",
+      "version": "core-main",
+      "sha256": "438a1f319d53d86e840af73fb7b1d224c9224a437b9fa449a4e2cb45a82a3552",
+      "license": "MIT",
+      "license_file": "MIT-Phosphor.txt",
+      "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/info.svg"
     }
   ]
 }

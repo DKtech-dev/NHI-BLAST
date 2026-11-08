@@ -18,11 +18,17 @@ The offline HTML report embeds three WOFF2 font subsets as data URIs. They are
 shipped in the installed wheel, are not fetched at runtime, and are recorded with
 digests in src/nhi_blast/report/assets/MANIFEST.json.
 
-  Geist (latin subset)
-  Copyright (c) 2023 Vercel, in collaboration with basement.studio
-  https://github.com/vercel/geist-font
+  Host Grotesk (latin subset)
+  Copyright (c) 2023 The Host Grotesk Project Authors
+  https://github.com/Element-Type/HostGrotesk
   License: SIL Open Font License 1.1 (full text in
-  src/nhi_blast/report/assets/fonts/OFL.txt)
+  src/nhi_blast/report/assets/fonts/OFL-HostGrotesk.txt)
+
+  Instrument Sans (latin subset)
+  Copyright (c) 2022 The Instrument Sans Project Authors
+  https://github.com/Instrument/instrument-sans
+  License: SIL Open Font License 1.1 (full text in
+  src/nhi_blast/report/assets/fonts/OFL-InstrumentSans.txt)
 
   Geist Mono (latin subset)
   Copyright (c) 2023 Vercel, in collaboration with basement.studio
@@ -30,11 +36,17 @@ digests in src/nhi_blast/report/assets/MANIFEST.json.
   License: SIL Open Font License 1.1 (full text in
   src/nhi_blast/report/assets/fonts/OFL.txt)
 
-  Instrument Serif (latin subset)
-  Copyright (c) 2022 The Instrument Serif Project Authors
-  https://github.com/Instrument/instrument-serif
-  License: SIL Open Font License 1.1 (full text in
-  src/nhi_blast/report/assets/fonts/OFL-InstrumentSerif.txt)
+Embedded icons
+---------------
+
+The offline HTML report embeds six regular weight Phosphor icons as an inline SVG sprite.
+They are shipped in the installed wheel, are not fetched at runtime, and are recorded with
+digests in src/nhi_blast/report/assets/MANIFEST.json.
+
+  Phosphor Icons (copy, check, printer, arrow-up, arrow-right, info)
+  Copyright (c) 2023 Phosphor Icons
+  https://github.com/phosphor-icons/core
+  License: MIT (full text in src/nhi_blast/report/assets/icons/MIT-Phosphor.txt)
 
 Vendored JavaScript
 -------------------

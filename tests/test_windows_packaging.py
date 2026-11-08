@@ -56,7 +56,7 @@ def test_build_bundles_every_runtime_data_file_and_report_asset() -> None:
     assert destinations == _expected_resources() | {"LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"}
     assert any(name.endswith("rules.yaml") for name in destinations)
     assert any(name.endswith("MANIFEST.json") for name in destinations)
-    assert any(name.endswith("geist-latin.woff2") for name in destinations)
+    assert any(name.endswith("host-grotesk-latin.woff2") for name in destinations)
     assert any(name.endswith("motion-14.7.1.min.js") for name in destinations)
     assert not any(
         "__pycache__" in name or name.endswith((".pyc", ".pyo")) for name in destinations
@@ -131,7 +131,8 @@ def test_sdist_contains_the_windows_build_inputs() -> None:
     config = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     include = config["tool"]["hatch"]["build"]["targets"]["sdist"]["include"]
 
-    assert "requirements-windows-build.lock" in include
+    # Root anchoring preserves this build input without matching unrelated nested trees.
+    assert "/requirements-windows-build.lock" in include
 
 
 def test_windows_workflow_is_manual_only_and_never_publishes() -> None:

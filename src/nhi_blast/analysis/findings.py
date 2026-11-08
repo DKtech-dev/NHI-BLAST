@@ -31,6 +31,10 @@ from nhi_blast.core.models import (
     Severity,
 )
 
+# Rules whose finding belongs to one scenario's partition. Every other rule is derived from
+# graph facts alone; its `scenario` field only records which scenario reached it first.
+SCENARIO_RULES = frozenset({"NHB-SURV-001", "NHB-ROT-001", "NHB-ROT-002"})
+
 
 @dataclass(frozen=True, slots=True)
 class FindingBuild:

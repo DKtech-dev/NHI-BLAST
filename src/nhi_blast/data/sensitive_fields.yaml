@@ -1,0 +1,75 @@
+# Local source-fact retention policy; not a provider schema or a secret scanner.
+policy_version: "1"
+source: "docs/SPEC.md sections 2.5, 5.2, 8; src/nhi_blast/resolvers/roles.py consumer review"
+source_url: "https://developer.hashicorp.com/terraform/internals/json-format"
+verified_on: "2026-11-03"
+verification_scope: "Local contract and current resolver field consumption verified; public URL is provenance, not freshly fetched provider-schema verification."
+credential_fields: [value, secret_string, secret_binary, password, master_password, secret, secret_string_wo, value_wo, password_wo, master_password_wo]
+blocks:
+  inline_policy:
+    name: text
+    policy: policy
+  rotation_rules:
+    automatically_after_days: integer
+  master_user_secret:
+    secret_arn: text
+    arn: text
+resources:
+  aws_iam_role:
+    name: text
+    arn: text
+    max_session_duration: integer
+    permissions_boundary: text
+    managed_policy_arns: text_list
+    assume_role_policy: policy
+    inline_policy: "block:inline_policy"
+  aws_iam_policy_document:
+    json: policy
+  aws_iam_policy:
+    name: text
+    arn: text
+    policy: policy
+  aws_iam_role_policy:
+    name: text
+    role: text
+    policy: policy
+  aws_iam_role_policy_attachment:
+    role: text
+    policy_arn: text
+  aws_iam_policy_attachment:
+    roles: text_list
+    role: text_list
+    policy_arn: text
+  aws_iam_openid_connect_provider:
+    url: text
+    client_id_list: text_list
+  aws_secretsmanager_secret:
+    name: text
+    arn: text
+    kms_key_id: text
+    policy: policy
+  aws_secretsmanager_secret_version:
+    secret_id: text
+  aws_secretsmanager_secret_rotation:
+    secret_id: text
+    rotation_enabled: boolean
+    rotation_rules: "block:rotation_rules"
+  aws_secretsmanager_secret_policy:
+    secret_arn: text
+    policy: policy
+  aws_ssm_parameter:
+    name: text
+    arn: text
+    type: text
+    key_id: text
+  aws_db_instance:
+    identifier: text
+    master_user_secret: "block:master_user_secret"
+    manage_master_user_password: boolean
+  aws_rds_cluster: {}
+  aws_iam_access_key: {}
+policy_document:
+  root_fields: [Version, Statement]
+  statement_fields: [Sid, Effect, Action, NotAction, Resource, NotResource, Principal, Condition]
+  principal_types: [AWS, Federated, Service, CanonicalUser]
+  unsupported_semantic_fields: [NotPrincipal]

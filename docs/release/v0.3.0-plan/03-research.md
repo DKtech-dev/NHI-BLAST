@@ -1,5 +1,7 @@
 # 3. Research and competitor findings (accessed 2026-10-31)
 
+> **Revised 2026-11-02.** Where this part conflicts with [12-revision-2.md](12-revision-2.md) (final design review: corrections, deviations, verified sources) or [11-ui-direction.md](11-ui-direction.md), those documents win. See the implementation log for what was built.
+
 ### 3.1 Official semantics (oracles)
 
 | ID | Source | Claim used |
@@ -63,6 +65,6 @@
 - pypa/gh-action-pypi-publish v1.14.x — https://github.com/pypa/gh-action-pypi-publish — `attestations: true` by default with Trusted Publishing.
 - GitHub artifact attestations — https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations — `actions/attest` v4, `gh attestation verify`, needs `id-token: write`.
 - CycloneDX Python (`cyclonedx-py`) 7.6.0 — https://github.com/CycloneDX/cyclonedx-python.
-- `https://pypi.org/pypi/nhi-blast/json` returns 404, so the name appears unclaimed. The owner must register a pending publisher.
+- On 2026-10-31 `https://pypi.org/pypi/nhi-blast/json` returned 404. That shows only that no public project was visible then. Whether the name is available is **unverified**: a pending publisher does not reserve a name (https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/), and the name is secured only by a successful first publish.
 
 **Not verified this session:** Zelkova paper text, the AWS session/cross-account subpage text, the USENIX dataset licences, Checkov/Prowler exact check IDs. Each is to be verified before being cited in docs.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import jsonschema
 import pytest
@@ -12,6 +13,7 @@ from nhi_blast import READABLE_SCHEMAS, SCHEMA_VERSION
 from nhi_blast.core.config import Config
 from nhi_blast.core.models import RankReport
 from nhi_blast.pipeline import ScanOptions, run_scan
+from nhi_blast.report import loader
 from nhi_blast.report.explain import render_explanation
 from nhi_blast.report.loader import ReportLoadError, load_report
 
@@ -123,3 +125,34 @@ def test_config_digest_changes_when_a_setting_changes(changed: dict[str, object]
 
 def test_rank_report_keeps_its_own_schema_label() -> None:
     assert RankReport.model_fields["schema_id"].default == "nhi-blast-report/1.0/rank"
+
+
+def test_report_growth_after_stat_is_rejected_by_opened_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "report.json"
+    raw = REPORT_10.read_bytes()
+    path.write_bytes(raw)
+    monkeypatch.setattr(loader, "_MAX_REPORT_BYTES", len(raw) + 5)
+    original = Path.open
+    grown = False
+
+    def growing(candidate: Path, mode: str = "r", *args: Any, **kwargs: Any) -> Any:
+        nonlocal grown
+        if candidate == path and "r" in mode and not grown:
+            grown = True
+            with original(path, "ab") as handle:
+                handle.write(b" " * 20)
+        return original(candidate, mode, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", growing)
+    with pytest.raises(ReportLoadError, match=r"limit|larger"):
+        load_report(path)
+
+
+def test_binary_report_error_does_not_echo_source_bytes(tmp_path: Path) -> None:
+    path = tmp_path / "binary.json"
+    path.write_bytes(b"marker" + b"\xff")
+    with pytest.raises(ReportLoadError) as caught:
+        load_report(path)
+    assert "marker" not in str(caught.value)
