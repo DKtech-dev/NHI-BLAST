@@ -240,6 +240,9 @@ def test_manifest_relative_spelling_is_committed_last(
         original(source, destination, *args, **kwargs)
 
     monkeypatch.setattr(os, "replace", observe)
+    # tmp_path and the runner workspace can sit on different Windows drives;
+    # relpath across mounts raises, so anchor the relative spelling to tmp_path.
+    monkeypatch.chdir(tmp_path)
     write_artifacts(
         [(manifest, b"manifest"), (data, b"report")],
         manifest=Path(os.path.relpath(manifest)),
