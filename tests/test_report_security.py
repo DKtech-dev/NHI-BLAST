@@ -162,7 +162,7 @@ def test_hostile_strings_do_not_create_html_elements_or_event_handlers() -> None
 
     tags = [tag for tag, _ in collector.tags]
     assert not {"img", "iframe", "object", "embed"} & set(tags)
-    assert tags.count("script") == 3
+    assert tags.count("script") == 5  # theme, data, animation runtime, effects, application
     assert not any(name.lower().startswith("on") for _, attrs in collector.tags for name in attrs)
     assert "<img" not in document.lower()
 

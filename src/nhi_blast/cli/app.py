@@ -8,6 +8,8 @@ from io import TextIOWrapper
 import typer
 
 from nhi_blast.cli.commands import explain, export, rank, scan, schema, version
+from nhi_blast.cli.diff_cmd import baseline_app, diff
+from nhi_blast.cli.whatif_cmd import whatif
 
 app = typer.Typer(
     name="nhi-blast",
@@ -24,6 +26,12 @@ app.command("explain", help="Show the evidence chain for a finding, node or edge
 app.command("export", help="Export the authority graph as JSON or Graphviz DOT.")(export)
 app.command("schema", help="Print the report JSON Schema.")(schema)
 app.command("version", help="Print tool, schema and data-file versions.")(version)
+app.command("diff", help="Compare two saved reports (new, changed, resolved findings).")(diff)
+app.add_typer(baseline_app, name="baseline")
+app.command(
+    "whatif",
+    help="Model containment interventions on a saved report (offline; nothing is executed).",
+)(whatif)
 
 
 def main() -> None:

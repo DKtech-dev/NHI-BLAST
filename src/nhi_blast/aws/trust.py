@@ -16,6 +16,7 @@ from nhi_blast.aws.conditions import (
     ConditionMode,
     ConditionTruth,
     evaluate_conditions,
+    is_request_context_key,
     required_positive_patterns,
 )
 from nhi_blast.aws.glob import glob_intersects, glob_match, has_wildcard, literal_prefix
@@ -221,6 +222,7 @@ def _statement_dead_keys(statement: Statement, registry: ConditionKeyRegistry) -
                 for key_map in _condition_key_maps(statement)
                 for key in key_map
                 if str(key).strip() not in registry.supported
+                and not is_request_context_key(str(key).strip())
             }
         )
     )

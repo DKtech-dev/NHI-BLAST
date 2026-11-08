@@ -85,6 +85,7 @@ EXPECTATIONS = {
     "fx15-scale-smoke": FixtureExpectation(
         4, 4, 40, 86, 83, 33, 8, 4, 20, 0, frozenset({"D-TF-ROTATION-UNBOUND"})
     ),
+    "fx16-containment": FixtureExpectation(1, 1, 6, 19, 16, 5, 2, 1, 3),
 }
 
 SENTINELS = (

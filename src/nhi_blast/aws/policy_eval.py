@@ -245,6 +245,10 @@ def evaluate_action(
             external_wildcard=external_wildcard,
         )
 
+    possible_deny_reasons = tuple(
+        reason for o in conditional_denies for reason in (_statement_label(o.statement), *o.reasons)
+    )
+
     if definite_allows:
         if role.boundary_supplied:
             boundary = _boundary_outcome(role, action, resource_globs)
@@ -265,12 +269,22 @@ def evaluate_action(
                     conditional_reasons=("permissions boundary allows conditionally",),
                     external_wildcard=external_wildcard,
                 )
+        if conditional_denies:
+            # A Deny whose condition is UNRESOLVED may apply at request time and an explicit
+            # Deny always overrides an Allow, so the decision cannot be a definite ALLOW.
+            return DecisionResult(
+                decision=Decision.CONDITIONAL_ALLOW,
+                evidence_class=EvidenceClass.ASSUMED,
+                reasons=tuple(_statement_label(o.statement) for o in definite_allows),
+                assumptions=tuple(assumptions),
+                conditional_reasons=possible_deny_reasons,
+                external_wildcard=external_wildcard,
+            )
         return DecisionResult(
             decision=Decision.ALLOW,
             evidence_class=EvidenceClass.DERIVED,
             reasons=tuple(_statement_label(o.statement) for o in definite_allows),
             assumptions=tuple(assumptions),
-            conditional_reasons=tuple(_statement_label(o.statement) for o in conditional_denies),
             external_wildcard=external_wildcard,
         )
 
@@ -280,7 +294,10 @@ def evaluate_action(
             evidence_class=EvidenceClass.ASSUMED,
             reasons=tuple(_statement_label(o.statement) for o in conditional_allows),
             assumptions=tuple(assumptions),
-            conditional_reasons=tuple(reason for o in conditional_allows for reason in o.reasons),
+            conditional_reasons=(
+                *(reason for o in conditional_allows for reason in o.reasons),
+                *possible_deny_reasons,
+            ),
             external_wildcard=external_wildcard,
         )
 
@@ -307,8 +324,9 @@ def _boundary_outcome(role: RoleFact, action: str, resource_globs: tuple[str, ..
     outcomes, _ = _outcomes(role.boundary_statements, action, resource_globs)
     if any(o.effect is PolicyEffect.DENY and not o.conditional for o in outcomes):
         return Decision.DENY
+    possible_deny = any(o.effect is PolicyEffect.DENY and o.conditional for o in outcomes)
     if any(o.effect is PolicyEffect.ALLOW and not o.conditional for o in outcomes):
-        return Decision.ALLOW
+        return Decision.CONDITIONAL_ALLOW if possible_deny else Decision.ALLOW
     if any(o.effect is PolicyEffect.ALLOW and o.conditional for o in outcomes):
         return Decision.CONDITIONAL_ALLOW
     return Decision.NOT_APPLICABLE

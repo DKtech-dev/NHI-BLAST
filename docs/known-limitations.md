@@ -136,7 +136,7 @@ registry. The registry is in `docs/assumptions.md`.
 - The HTML report needs JavaScript to render its embedded data. Without JavaScript the
   document remains visible (a no-script override defeats the hydration boot gate) and
   shows a notice that the data cannot be displayed; use the console or JSON report
-  instead. Instrument Serif, Geist and Geist Mono are embedded in the file, so the
+  instead. Host Grotesk, Instrument Sans and Geist Mono are embedded in the file, so the
   report makes no font request and renders identically offline. The graph is an SVG
   with focusable node buttons: Tab enters the graph, arrow keys move, Enter selects and
   Escape clears; it also supports pointer pan and zoom. The scenario, survival, findings
@@ -174,3 +174,20 @@ configuration, Cloudflare, live API collection, GitHub settings ingestion, and a
 SaaS, service, database or web application are out of scope. Requests to add them
 conflict with the specification and should be treated as product changes, not bug
 fixes.
+
+
+## Added in 0.3.0
+
+- **Session policies** passed to an assumed role are recorded but not evaluated, so reachable access
+  may be broader than the session allows. A resource policy that names the session ARN is not
+  limited by a session policy in AWS either.
+- **Role chaining** is not modelled. Chained sessions are limited to one hour by AWS and the tool
+  applies that cap, but it does not follow the chain.
+- **Revocation** in `whatif` models the documented `AWSRevokeOlderSessions` deny. The roughly 30 s
+  propagation allowance is an assumption taken from AWS documentation, not a measured value.
+- **Diff comparability** needs both reports from the same analyzer. Re-scan the base revision with
+  the version you compare with; there is no cross-version compatibility registry.
+- **Environment protection and branch protection** are reported as not provided. A job that
+  references an environment is only gated by required reviewers if the environment is configured
+  that way; the tool cannot see that offline and never infers that a run was approved.
+- **Platforms:** only Windows has been exercised locally for this version.

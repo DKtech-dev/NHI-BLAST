@@ -269,9 +269,9 @@ def test_string_equals_truth_is_set_membership(
         supported_keys=None,
     )
 
-    if not context_values:
-        assert evaluation.truth is ConditionTruth.UNRESOLVED
-    elif any(value in context_values for value in policy_values):
+    # A key present with an empty value set is a null dataset: a positive operator is FALSE
+    # (AWS single-vs-multi-valued context keys page), not UNRESOLVED.
+    if any(value in context_values for value in policy_values):
         assert evaluation.truth is ConditionTruth.TRUE
     else:
         assert evaluation.truth is ConditionTruth.FALSE
@@ -294,9 +294,8 @@ def test_string_like_truth_is_glob_intersection(
     matched = any(
         glob_match(pattern, value) for pattern in policy_values for value in context_values
     )
-    if not context_values:
-        assert evaluation.truth is ConditionTruth.UNRESOLVED
-    elif matched:
+    # Empty value set is a null dataset: FALSE for a positive operator.
+    if matched:
         assert evaluation.truth is ConditionTruth.TRUE
     else:
         assert evaluation.truth is ConditionTruth.FALSE
@@ -319,9 +318,8 @@ def test_case_insensitive_equals_truth(
     matched = any(
         pattern.lower() == value.lower() for pattern in policy_values for value in context_values
     )
-    if not context_values:
-        assert evaluation.truth is ConditionTruth.UNRESOLVED
-    elif matched:
+    # Empty value set is a null dataset: FALSE for a positive operator.
+    if matched:
         assert evaluation.truth is ConditionTruth.TRUE
     else:
         assert evaluation.truth is ConditionTruth.FALSE

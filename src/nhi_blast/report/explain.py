@@ -3,54 +3,18 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
-from pydantic import ValidationError
-
-from nhi_blast import SCHEMA_VERSION
 from nhi_blast.core.evidence import Evidence, dedupe_evidence, evidence_sort_key
 from nhi_blast.core.models import Edge, Finding, Node, Report
 from nhi_blast.report._text import safe_text
+from nhi_blast.report.loader import ReportLoadError
 
-_MAX_REPORT_BYTES = 512 * 1024 * 1024
 _MAX_INCIDENT_EDGES = 200
 
 
-class ExplainError(ValueError):
-    """The saved report or identifier cannot be explained."""
-
-
-def load_report(path: Path) -> Report:
-    candidate = path.expanduser()
-    try:
-        size = candidate.stat().st_size
-    except OSError as exc:
-        msg = f"cannot read report {path}: {exc.strerror or exc}"
-        raise ExplainError(msg) from None
-    if not candidate.is_file():
-        msg = f"report path is not a file: {path}"
-        raise ExplainError(msg)
-    if size > _MAX_REPORT_BYTES:
-        msg = f"report is larger than the {_MAX_REPORT_BYTES}-byte limit: {path}"
-        raise ExplainError(msg)
-    try:
-        text = candidate.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        msg = f"cannot read report {path}: {exc}"
-        raise ExplainError(msg) from None
-    try:
-        report = Report.model_validate_json(text)
-    except ValidationError as exc:
-        location = "document"
-        if exc.errors():
-            location = ".".join(str(part) for part in exc.errors()[0]["loc"]) or location
-        msg = f"report is not valid nhi-blast JSON at {location}"
-        raise ExplainError(msg) from None
-    if report.schema_id != SCHEMA_VERSION:
-        msg = f"unsupported report schema: {safe_text(report.schema_id, 80)}"
-        raise ExplainError(msg)
-    return report
+class ExplainError(ReportLoadError):
+    """The requested identifier cannot be explained from the report."""
 
 
 def _evidence_lines(evidence: tuple[Evidence, ...], *, indent: str = "    ") -> list[str]:
@@ -197,4 +161,4 @@ def render_explanation(report: Report, identifier: str) -> str:
     raise ExplainError(msg)
 
 
-__all__ = ["ExplainError", "load_report", "render_explanation"]
+__all__ = ["ExplainError", "render_explanation"]

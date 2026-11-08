@@ -1,0 +1,62 @@
+[
+  {
+    "scheme": "light",
+    "width": 375,
+    "scrollWidth": 375,
+    "theme": "light",
+    "motion": "off",
+    "shaderHosts": 3,
+    "issues": [],
+    "externalRequests": 0
+  },
+  {
+    "scheme": "light",
+    "width": 768,
+    "scrollWidth": 768,
+    "theme": "light",
+    "motion": "off",
+    "shaderHosts": 3,
+    "issues": [],
+    "externalRequests": 0
+  },
+  {
+    "scheme": "light",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "light",
+    "motion": "off",
+    "shaderHosts": 3,
+    "issues": [],
+    "externalRequests": 0
+  },
+  {
+    "scheme": "dark",
+    "width": 375,
+    "scrollWidth": 375,
+    "theme": "dark",
+    "motion": "off",
+    "shaderHosts": 3,
+    "issues": [],
+    "externalRequests": 0
+  },
+  {
+    "scheme": "dark",
+    "width": 768,
+    "scrollWidth": 768,
+    "theme": "dark",
+    "motion": "off",
+    "shaderHosts": 3,
+    "issues": [],
+    "externalRequests": 0
+  },
+  {
+    "scheme": "dark",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "theme": "dark",
+    "motion": "off",
+    "shaderHosts": 3,
+    "issues": [],
+    "externalRequests": 0
+  }
+]

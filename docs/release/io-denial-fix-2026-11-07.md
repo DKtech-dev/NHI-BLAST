@@ -1,0 +1,57 @@
+# Windows staging denial fix — 2026-11-07
+
+This is the Lead-only continuation of the [IO checkpoint](<io-continuation-2026-11-05.md>) and [approved scoped plan](<io-continuation-plan-2026-11-05.md>). No further agents were started or resumed. Existing changes were preserved; no staging, commits, pushes, publication or host-security changes.
+
+## Root cause and repair
+
+The native deny-write output test exposed a real operational failure: CPython's Windows temporary-directory allocator retries PermissionError when os.access appears writable, which does not reliably reflect the directory ACL. It can therefore perform a large candidate loop under a genuinely denied parent; the previous standalone test was stopped after sustained CPU usage. Its timeout was not increased or removed.
+
+[Staging allocation](<../../src/nhi_blast/core/artifact_io.py#L179-L194>) now creates unpredictable unique directories directly, retries only FileExistsError, and stops after 32 genuine collisions. Permission, disk-full and invalid-path errors reach the existing controlled artifact-output boundary immediately. Directory mode remains 0700; rollback, input protection, manifest ordering and cleanup-state contracts are unchanged. This is not a cross-file atomicity, hostile-directory race-free or crash-durability claim.
+
+[New regressions](<../../tests/test_artifact_staging.py>) observed the old denied-parent retry count (3 instead of 1) and unbounded library budget (33 instead of 32) before implementation. Red execution included three filesystem-error controls and a real standalone inventory check: 3 failed, 3 passed. The actual binary exposed an obsolete eight-file expectation; [the standalone inventory check](<../../tests/test_windows_executable.py#L168-L180>) now checks all ten existing policy files, explicitly including configure-aws-credentials and sensitive-field policy. It was corrected against the actual source/binary inventory, not weakened.
+
+## Verified so far
+
+- Focused denial/transaction/input-preservation suite: **135 passed, 35 symlink-privilege skips**, 5.74 seconds.
+- Fresh lint clean; formatting **196 files already formatted**; strict mypy clean in **108 source/script files**; schema generator check exit 0.
+- Corrected wheel/sdist build and content checks passed: **133 wheel entries, 442 sdist entries**. Two sequential builds produced identical SHA-256 values under fixed SOURCE_DATE_EPOCH and the same local toolchain. The packaged source snapshot predates final session-note updates; hashes are retained outside the distributions to avoid recursive claims.
+- Corrected wheel installed offline into the isolated consumer; pip check passed; all **126 package files** byte-matched both wheel and current source. No runtime pins changed.
+- Rebuilt Windows executable and embedded-resource/checksum validation passed under the existing isolated pinned PyInstaller 6.22.3 toolchain. Optional hidden tzdata import warning remains recorded.
+- Real standalone no-Python/inventory case and deny-write output case: **2 passed in 15.04 seconds**, with unchanged existing timeouts and ACL assertions.
+- Full Python gate including slow/security and all eight standalone executable cases: **1988 passed, 43 skipped in 184.15 seconds**, exit 0. The 43 skips comprise 42 unavailable file-symlink-privilege cases and the deliberately separate browser wrapper. No executable case was skipped in this run.
+- Fresh non-slow coverage gate: **1978 passed, 51 skipped, 2 slow tests deselected; 90.78% overall**, every enforced module at or above 80%, exit 0 in 139.37 seconds. The full suite above separately executed all slow and executable cases.
+- Complete Chromium/Firefox/WebKit browser rerun finished: **401 passed, 1 Firefox scroll-progress case failed**, 22.9 minutes, exit 1, with no competing validation workloads. The halfway progress remained zero. The full gate remains failed; isolated native-scroll/frame measurements are now running. The failed run preserved assertions/deadlines. Subsequent isolated measurement showed default CSS smooth scrolling had not started after 300 ms in four of five samples: scrollY, event count and progress all remained zero, despite completed frame callbacks. Instant native positioning produced actual halfway/bottom offsets and progress 0.5/1 in all five samples; focus/font controls did not remove the issue. The test now specifies instant native positioning, retains all original monotonic assertions and the same 300 ms waits/45-second timeout, adds actual halfway-position and exact 0.5/1 progress checks, and closes its context in finally. Production UI/CSS/effects are unchanged. The strengthened test passed 15 executions across Chromium/Firefox/WebKit; a new complete 402-case gate is running as `pwsh-77977428986145ab`, without competing validation jobs.
+
+## Historical failures retained
+
+The [November 5 record](<io-continuation-2026-11-05.md>) retains the failed/in-flight coverage attempts, interrupted standalone gate, and complete browser run (**401 passed, 1 Firefox scroll case failed**). The unchanged Firefox case later passed once in isolation, but that did not establish the root cause or turn the full browser gate green. No UI assertion, deadline or implementation was altered to suppress it.
+
+The first corrected executable checker command selected the old default distribution directory, which contained two wheels and two sdists and failed its one-pair requirement. The same unchanged checker passed when given this continuation's actual build directory. The checker was not weakened.
+
+An unscoped git diff whitespace check reported two pre-existing trailing spaces in quoted font licence text in [third-party notices](<../../THIRD_PARTY_NOTICES.md#L124>) (also [line 222](<../../THIRD_PARTY_NOTICES.md#L222>)). That file was not changed to make the check green; this failed auxiliary check is retained. A chained documentation test command did not execute after that check failed and is not counted as passing. The canonical lint/format/type/schema gates above are separate and passed.
+
+## Essential-status contrast repair discovered by the full gate
+
+The complete scroll-corrected 402-case run finished **401 passed, 1 WebKit full-page color-contrast failure**, 19.4 minutes. It exposed essential completeness badges mid-fade: reported contrast ratios 2.77 and 1.44, below the 4.5 requirement. This is retained as a failed gate, not relabelled a timeout or flake.
+
+A new actual effective-opacity regression failed with Motion On in all three engines and passed its three Motion Off controls. The one-selector production repair removes `.cmp-counts li` from decorative reveal targets; essential status text remains fully opaque. Fonts, palette, layout, other effects and every AXE assertion/deadline remain unchanged. The new opacity controls and the original full-page light/Motion On AXE case then passed **27 repeated executions across Chromium, Firefox and WebKit**. The repaired current source has been rebuilt and byte-checked against the installed wheel; both sequential package builds matched. The current-source full Python gate passed **1988 tests, 43 skips, 171.01 seconds**, including all slow and standalone cases. Current-source coverage passed **1986 tests, 43 skips, 2 slow deselections, 90.78% overall**, every enforced module above its floor, 221.80 seconds. A fresh full **408-case** browser suite is running alone as `pwsh-7126a16a86a64783`; final stage sign-off remains pending its complete result.
+
+## General essential-text readability policy
+
+The first 408-case run finished **407 passed, 1 WebKit dark/Motion On contrast failure**, 27.9 minutes. The same fade problem remained in definition/evidence text (reported contrast 3.37, 2.0 and 1.63). Expanded real-opacity regressions reproduced Motion On failures in all three engines while Motion Off controls passed.
+
+The final repair marks essential report-text containers `data-fx-readable`. Their translate reveals and existing timing remain, but CSS keeps opacity at 1 throughout. The generic decorative reveal API and its fade tests are unchanged; fonts, palette, layout, all original contrast assertions and deadlines remain. The expanded opacity and both-theme/Motion On AXE cases passed **24 repeated tests across all three engines**. Current generalized-source static/schema, package content, repeat-build and installed-package checks passed. The full Python gate passed **1988 tests, 43 skips in 293.70 seconds**, including all slow and standalone cases; the coverage gate passed **1986 tests, 43 skips, 2 slow deselections, 90.78%**, every enforced module above its floor, in 420.15 seconds. That final 408-case run was interrupted before a completed result was retained. On 2026-11-08 the source still byte-matched the verified installed wheel, and no old browser process remained. That fresh attempt was also interrupted before completion: its saved stdout reaches case368/408 and records WebKit scroll-progress and count-up assertion failures. No completed JSON report or live job remains. Sign-off is still pending targeted diagnosis and an unchanged complete browser gate; see the [current publishing assessment](<publishing-status-2026-11-08.md>). Previous passing artifacts remain earlier snapshots, not substitutes for the current source.
+
+## Exact next approved milestone
+
+After this increment's local gates are fully collected, resume P0-B—not a new UI redesign or dataset audit. Preserve the current uncommitted tree and retained evidence.
+
+1. Read the [normative specification](<../SPEC.md>), [operating rules](<../../AGENTS.md>), and already approved transformation blueprint. Write explicit sourced normative amendments for boundary ceilings, supported trust Deny and whole-request witnesses before changing semantics.
+2. Add failing counterexamples for boundary Deny over conditional identity Allow, no-Allow boundary ceilings, supported trust Deny, and mutually contradictory subject restrictions that pairwise pattern tests currently accept. Preserve Unknown for missing or unsupported request context.
+3. Implement the smallest shared supported-fragment policy/request-witness contract, retaining evidence provenance and public legacy-reading boundaries. Do not infer live approval, credential acquisition or cloud-wide guarantees from repository files.
+4. Validate against independently specified finite supported-fragment cases/property tests, then run fresh full/static/security/schema gates. Review golden differences by changed meaning; never regenerate them blindly or weaken a valid test.
+5. Only after that acceptance passes, advance to attacker/configured/existing population separation, custody/version/time replay, per-source comparison/receipt/completion-manifest contracts and release safety. Publication, pushes, commits, paid cloud services and host-security changes remain unauthorized.
+
+## Remaining gates and scope
+
+Native Linux/macOS execution and file-symlink privilege remain unavailable in the recorded Windows environment; they are not marked passed. Complete fresh local checks, record their exact counts/failures, then follow the approved P0-B authorization/witness phase. The broader session/custody, dependency-specific comparison, source-receipt/completion-manifest, report-schema and release changes remain open. No overall production-readiness, local release-candidate or authorization-correctness claim is made.

@@ -17,6 +17,7 @@ from nhi_blast.aws.policy_eval import (
     can_modify,
     can_read,
 )
+from nhi_blast.aws.sessions import effective_ttl, requested_duration
 from nhi_blast.aws.sinks import candidate_arns, modify_actions, read_actions
 from nhi_blast.aws.trust import (
     TrustEvaluation,
@@ -26,7 +27,12 @@ from nhi_blast.aws.trust import (
     trust_subject_filter,
 )
 from nhi_blast.core.config import Config
-from nhi_blast.core.data import ConditionKeyRegistry, condition_keys, credential_heuristics
+from nhi_blast.core.data import (
+    ConditionKeyRegistry,
+    condition_keys,
+    configure_aws_credentials,
+    credential_heuristics,
+)
 from nhi_blast.core.diagnostics import Diagnostic, DiagnosticBag, error, info
 from nhi_blast.core.evidence import (
     Evidence,
@@ -60,19 +66,19 @@ from nhi_blast.core.models import (
     Lifetime,
     Node,
     NodeKind,
+    OidcSettings,
     RoleFact,
     SinkFact,
     SinkType,
     Statement,
-    SubFormat,
     SubjectCandidate,
     TrustMatch,
 )
 from nhi_blast.discovery.repo import RepoIdentity
 from nhi_blast.graph.store import GraphBudgetError, GraphIntegrityError, GraphStore
-from nhi_blast.oidc.github_subject import subject_candidates
+from nhi_blast.oidc.github_subject import format_is_declared, repo_prefixes, subject_candidates
 from nhi_blast.oidc.solver import evaluate_trust, trust_match_from_evaluation
-from nhi_blast.parsers.gha.facts import JobFact, LiteralHit, UsesRef, WorkflowFact
+from nhi_blast.parsers.gha.facts import AwsAuthUse, JobFact, LiteralHit, UsesRef, WorkflowFact
 from nhi_blast.parsers.gha.uses import local_action_dir
 from nhi_blast.resolvers.composite import ExpandedJob, ExpandedStep
 from nhi_blast.resolvers.permissions import EffectivePerms
@@ -82,10 +88,12 @@ from nhi_blast.resolvers.workflows import effective_job_permissions, reusable_in
 DEFAULT_AUDIENCE = "sts.amazonaws.com"
 
 
-def _repo_write_candidates(repository: RepoIdentity) -> tuple[SubjectCandidate, ...]:
+def _repo_write_candidates(
+    repository: RepoIdentity, oidc: OidcSettings | None = None
+) -> tuple[SubjectCandidate, ...]:
     if repository.slug is None or "/" not in repository.slug:
         return ()
-    owner, name = repository.slug.split("/", 1)
+    owner = repository.slug.split("/", 1)[0]
     ref = "refs/heads/*"
     evidence = Evidence(
         cls=EvidenceClass.ASSUMED,
@@ -98,25 +106,17 @@ def _repo_write_candidates(repository: RepoIdentity) -> tuple[SubjectCandidate, 
         "ref": ref,
         "job_workflow_ref": f"{repository.slug}/.github/workflows/*@{ref}",
     }
-    return (
+    return tuple(
         SubjectCandidate(
-            subject=f"repo:{repository.slug}:ref:{ref}",
-            format=SubFormat.CLASSIC,
+            subject=f"{prefix}:ref:{ref}",
+            format=fmt,
             trigger="repo-write",
             audience=DEFAULT_AUDIENCE,
             claims=claims,
             evidence_class=EvidenceClass.ASSUMED,
             evidence=(evidence,),
-        ),
-        SubjectCandidate(
-            subject=f"repo:{owner}@*/{name}@*:ref:{ref}",
-            format=SubFormat.IMMUTABLE,
-            trigger="repo-write",
-            audience=DEFAULT_AUDIENCE,
-            claims=claims,
-            evidence_class=EvidenceClass.ASSUMED,
-            evidence=(evidence,),
-        ),
+        )
+        for fmt, prefix in repo_prefixes(repository.slug, oidc)
     )
 
 
@@ -367,7 +367,9 @@ class _Builder:
                         "missing_audience": evaluation.missing_audience,
                     }
                 self.trust_audit.setdefault(role.id, []).append(audit)
-        repo_write_candidates = _repo_write_candidates(self.inputs.repository)
+        repo_write_candidates = _repo_write_candidates(
+            self.inputs.repository, self.inputs.config.oidc_settings()
+        )
         for role in self.roles:
             if role.trust_unresolved:
                 continue
@@ -465,6 +467,7 @@ class _Builder:
             default_branch=self.inputs.repository.default_branch,
             sub_template=self.inputs.config.sub_template,
             caller_candidates=caller_candidates,
+            oidc=self.inputs.config.oidc_settings(),
         )
         if key not in stack:
             self.candidates[key] = candidates
@@ -1006,6 +1009,7 @@ class _Builder:
                     "name": role.name,
                     "arn": role.arn,
                     "max_session_duration": role.max_session_duration,
+                    "max_session_source": role.max_session_source,
                     "trust_unresolved": role.trust_unresolved,
                     "unresolved_policy_refs": list(role.unresolved_policy_refs),
                     "managed_policy_arns": list(role.managed_policy_arns),
@@ -1045,7 +1049,8 @@ class _Builder:
                     match = evaluate_trust(role, candidates, job_id=item.job.id, registry=registry)
                 if match is None:
                     continue
-                self._use("A-REPO-AGE")
+                if not format_is_declared(self.inputs.config.oidc_settings()):
+                    self._use("A-REPO-AGE")
                 for audience, identity_id in identities:
                     self._trust_edge(
                         role,
@@ -1053,7 +1058,24 @@ class _Builder:
                         audience,
                         match,
                         intended=role.id in intended,
+                        auth=self._auth_for_role(item, role),
+                        auth_file=item.workflow.path,
                     )
+
+    def _auth_for_role(self, item: ExpandedJob, role: RoleFact) -> AwsAuthUse | None:
+        r"""The configure-aws-credentials step in this job that targets ``role``, if any."""
+        for expanded in item.steps:
+            auth = expanded.step.aws_auth
+            if auth is None:
+                continue
+            target: str | None = None
+            if auth.role_ref_kind == "ARN" and auth.role_arn:
+                target = auth.role_arn
+            elif auth.role_ref_kind == "EXPR" and auth.role_ref_name:
+                target = self.inputs.config.role_binding(auth.role_ref_name)
+            if target is not None and self._find_role(target) is role:
+                return auth
+        return None
 
     def _role_evidence(self, role: RoleFact) -> tuple[Evidence, ...]:
         if role.evidence:
@@ -1103,22 +1125,59 @@ class _Builder:
         match: TrustMatch,
         *,
         intended: bool,
+        auth: AwsAuthUse | None = None,
+        auth_file: str | None = None,
     ) -> None:
         role_evidence = self._role_evidence(role)
         file, line = self._first_location(role_evidence)
-        ttl = role.max_session_duration or 3600
+        defaults = configure_aws_credentials()
+        chained: bool | None = False
+        if auth is not None and auth.role_chaining != "false":
+            chained = True if auth.role_chaining == "true" else None
+        session = effective_ttl(
+            requested_duration(
+                auth,
+                action_ref=None if auth is None else auth.action_ref,
+                verified_refs=defaults.default_verified_refs,
+            ),
+            role_max=role.max_session_duration,
+            role_max_source=role.max_session_source,
+            chained=chained,
+            action_default_seconds=defaults.default_duration_seconds,
+        )
+        ttl = session.seconds
+        declared_here = session.requested_kind == "declared" and auth is not None
         session_id = credential_node_id(identity_id, f"sts-session:{role.id}")
         session_evidence = [
             *role_evidence,
             *match.evidence,
             self._evidence(
-                EvidenceClass.ASSUMED,
-                "A-STS-TTL",
-                file=file,
-                line=line,
-                detail=f"session lasts at most {ttl} s (role max_session_duration)",
+                session.evidence_class,
+                (
+                    "CAC.role-duration-seconds"
+                    if declared_here
+                    else session.assumptions[0]
+                    if session.assumptions
+                    else "CAC.default-duration"
+                ),
+                file=auth_file if declared_here else file,
+                line=auth.line if declared_here and auth is not None else line,
+                detail=f"session lasts at most {ttl} s: {session.provenance}",
             ),
         ]
+        session_policy: dict[str, object] = {}
+        if auth is not None and (
+            auth.inline_session_policy != "none"
+            or auth.managed_session_policies
+            or auth.managed_session_policy_expression
+        ):
+            session_policy = {
+                "session_policy_inline": auth.inline_session_policy,
+                "session_policy_managed": list(auth.managed_session_policies),
+                "session_policy_managed_expression": auth.managed_session_policy_expression,
+                "session_policy_evaluated": False,
+            }
+            self._use("A-SESSION-POLICY")
         self._node(
             session_id,
             NodeKind.CREDENTIAL,
@@ -1133,11 +1192,28 @@ class _Builder:
                 "audience": audience,
                 "criticality": credential_heuristics().criticality(CredentialKind.STS_SESSION),
                 "survival_window": f"up to {ttl} s",
+                "ttl_provenance": session.provenance,
+                "ttl_requested": session.requested_kind,
+                "issuance": session.outcome,
+                **session_policy,
             },
         )
         edge_evidence = [
             *match.evidence,
             *role_evidence,
+            *(
+                [
+                    self._evidence(
+                        EvidenceClass.UNKNOWN,
+                        "CAC.role-duration-seconds",
+                        file=auth_file,
+                        line=None if auth is None else auth.line,
+                        detail=session.provenance,
+                    )
+                ]
+                if session.outcome == "fails_as_declared"
+                else []
+            ),
             self._evidence(
                 match.confidence,
                 "R8.can-assume",
@@ -1169,10 +1245,19 @@ class _Builder:
                 "unresolved_reasons": list(match.unresolved_reasons),
                 "dead_condition_keys": list(match.dead_condition_keys),
                 "missing_audience": match.missing_audience,
-                "assumptions": ["A-REPO-AGE"],
+                "session_outcome": session.outcome,
+                "assumptions": [
+                    *(
+                        []
+                        if format_is_declared(self.inputs.config.oidc_settings())
+                        else ["A-REPO-AGE"]
+                    ),
+                    *(["A-SESSION-POLICY"] if session_policy else []),
+                ],
             },
         )
-        self._use("A-STS-TTL")
+        for assumption in session.assumptions:
+            self._use(assumption)
 
     # ----------------------------------------------------------------- R9
 

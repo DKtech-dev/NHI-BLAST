@@ -1,0 +1,919 @@
+{
+  "caveats": [
+    {
+      "id": "C-ISSUED-STATE",
+      "text": "Containment steps change paths for future runs only. Sessions already issued stay issued until their TTL; persistent credentials stay in Z until rotated."
+    },
+    {
+      "id": "C-OFFLINE-MODEL",
+      "text": "Offline model of the saved report. Nothing was executed and no AWS account, repository or secret store was read or changed."
+    },
+    {
+      "id": "C-REVOKE-1",
+      "text": "Sessions issued inside the propagation window (the assumed 30 s before the cutoff) are covered by the deny."
+    },
+    {
+      "id": "C-REVOKE-2",
+      "text": "Sessions issued after the cutoff are not covered; a role that can still be assumed yields new sessions."
+    },
+    {
+      "id": "C-REVOKE-3",
+      "text": "The deny applies to every user of the role, including legitimate sessions issued before the cutoff."
+    },
+    {
+      "id": "C-REVOKE-4",
+      "text": "Service-linked roles cannot be revoked this way."
+    },
+    {
+      "id": "C-REVOKE-5",
+      "text": "Derived credentials (chained role sessions, access keys created by the session, secrets already read) are not affected by the deny; role chaining is not modelled, so they are listed as residual_unknown."
+    },
+    {
+      "id": "C-REVOKE-6",
+      "text": "The 30 s propagation window is ASSUMED from https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_revoke-sessions.html (\"approximately 30 seconds into the future\") and is not a guarantee."
+    },
+    {
+      "id": "C-UNKNOWN-EDGES",
+      "text": "UNKNOWN-class edges never contribute to R, E or Z; they are reported only as potential."
+    }
+  ],
+  "header": "Offline model. Not executed. Verify in your account.",
+  "per_scenario": [
+    {
+      "after": {
+        "E": [
+          {
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "ttl_seconds": 3600
+          }
+        ],
+        "R": [
+          "cred:job:.github/workflows/deploy.yml#deploy:GITHUB_TOKEN",
+          "cred:job:.github/workflows/deploy.yml#deploy:OIDC_REQUEST_TOKEN"
+        ],
+        "Z": [
+          {
+            "credential": "cred:aws:secret:ops/db-password:stored",
+            "criticality": 100,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:secret:ci/deploy-key:stored",
+            "criticality": 85,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:ssm:/ci/registry-token:stored",
+            "criticality": 65,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          }
+        ],
+        "issued_before_containment": [
+          {
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "label": "issued_before_containment",
+            "max_remaining_seconds": 3600,
+            "role": "aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "still_obtainable_by_new_runs": true
+          }
+        ],
+        "re_exposure_risk": [
+          {
+            "credential": "cred:aws:ssm:/ci/registry-token:stored",
+            "path_edges": [
+              "c4d27ac3e0afdd1c",
+              "48129c6636e0a2e4",
+              "7491eb5cf5cea43f",
+              "b70e3c12f7289f6c"
+            ],
+            "reason": "surviving_path",
+            "weakest": "assumed"
+          }
+        ],
+        "revoked_access": [
+          {
+            "access": "unknown",
+            "assessed_at": null,
+            "conditional_on_propagation": false,
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "cutoff": "2026-03-01T10:00:30Z",
+            "cutoff_assumed": true,
+            "cutoff_source": "assumed_revoked_at_plus_30s",
+            "display_state": "unknown",
+            "issue_time_basis": "upper_bound",
+            "issued_no_later_than": null,
+            "re_issue_possible": true,
+            "residual_unknown": [
+              {
+                "detail": "derived credentials (chained role sessions, access keys created by the session, secrets already read) are not affected by the deny; role chaining is not modelled",
+                "kind": "derived_credentials"
+              }
+            ],
+            "revoked_at": "2026-03-01T10:00:00Z",
+            "role": "aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "step": 0,
+            "ttl_seconds": 3600,
+            "validity": "unknown"
+          }
+        ],
+        "rotated": []
+      },
+      "before": {
+        "E": [
+          {
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "ttl_seconds": 3600
+          }
+        ],
+        "R": [
+          "cred:job:.github/workflows/deploy.yml#deploy:GITHUB_TOKEN",
+          "cred:job:.github/workflows/deploy.yml#deploy:OIDC_REQUEST_TOKEN"
+        ],
+        "Z": [
+          {
+            "credential": "cred:aws:secret:ops/db-password:stored",
+            "criticality": 100,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:secret:ci/deploy-key:stored",
+            "criticality": 85,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:ssm:/ci/registry-token:stored",
+            "criticality": 65,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          }
+        ]
+      },
+      "future_reach": {
+        "E": [
+          {
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "ttl_seconds": 3600
+          }
+        ],
+        "R": [
+          "cred:job:.github/workflows/deploy.yml#deploy:GITHUB_TOKEN",
+          "cred:job:.github/workflows/deploy.yml#deploy:OIDC_REQUEST_TOKEN"
+        ],
+        "Z": [
+          {
+            "credential": "cred:aws:secret:ops/db-password:stored",
+            "criticality": 100,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:secret:ci/deploy-key:stored",
+            "criticality": 85,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:ssm:/ci/registry-token:stored",
+            "criticality": 65,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          }
+        ],
+        "truncated": false
+      },
+      "potential": {
+        "after": {
+          "edges": [],
+          "nodes": [],
+          "unresolved_inputs": []
+        },
+        "before": {
+          "edges": [],
+          "nodes": []
+        }
+      },
+      "residual_paths": [
+        {
+          "class": "E",
+          "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+          "path_edges": [
+            "c4d27ac3e0afdd1c",
+            "48129c6636e0a2e4"
+          ],
+          "weakest": "derived"
+        },
+        {
+          "class": "Z",
+          "credential": "cred:aws:secret:ci/deploy-key:stored",
+          "depth": 0,
+          "path_edges": [
+            "c4d27ac3e0afdd1c",
+            "48129c6636e0a2e4",
+            "af4d70f625d23e20",
+            "b13a4e4062ecb7ad"
+          ],
+          "weakest": "assumed"
+        },
+        {
+          "class": "Z",
+          "credential": "cred:aws:secret:ops/db-password:stored",
+          "depth": 0,
+          "path_edges": [
+            "c4d27ac3e0afdd1c",
+            "48129c6636e0a2e4",
+            "af4d70f625d23e20",
+            "b13a4e4062ecb7ad",
+            "984179f9d879fc03",
+            "2f4769cb9cdcccc9",
+            "8d98e10e30f3be00"
+          ],
+          "weakest": "assumed"
+        },
+        {
+          "class": "Z",
+          "credential": "cred:aws:ssm:/ci/registry-token:stored",
+          "depth": 0,
+          "path_edges": [
+            "c4d27ac3e0afdd1c",
+            "48129c6636e0a2e4",
+            "7491eb5cf5cea43f",
+            "b70e3c12f7289f6c"
+          ],
+          "weakest": "assumed"
+        }
+      ],
+      "rotation_order": [
+        {
+          "batch": false,
+          "credentials": [
+            {
+              "id": "cred:aws:secret:ci/deploy-key:stored",
+              "label": "ci/deploy-key",
+              "planned": false,
+              "re_exposure_risk": false
+            }
+          ],
+          "depends_on": [],
+          "generation": 0,
+          "order": 1
+        },
+        {
+          "batch": false,
+          "credentials": [
+            {
+              "id": "cred:aws:ssm:/ci/registry-token:stored",
+              "label": "/ci/registry-token",
+              "planned": true,
+              "re_exposure_risk": true
+            }
+          ],
+          "depends_on": [],
+          "generation": 0,
+          "order": 2
+        },
+        {
+          "batch": false,
+          "credentials": [
+            {
+              "id": "cred:aws:secret:ops/db-password:stored",
+              "label": "ops/db-password",
+              "planned": false,
+              "re_exposure_risk": false
+            }
+          ],
+          "depends_on": [
+            "cred:aws:secret:ci/deploy-key:stored"
+          ],
+          "generation": 1,
+          "order": 3
+        }
+      ],
+      "selector": "action:acme/build-helper@v1",
+      "selector_kind": "action",
+      "start_nodes": [
+        "job:.github/workflows/deploy.yml#deploy"
+      ]
+    },
+    {
+      "after": {
+        "E": [
+          {
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "ttl_seconds": 3600
+          }
+        ],
+        "R": [
+          "cred:job:.github/workflows/deploy.yml#deploy:GITHUB_TOKEN",
+          "cred:job:.github/workflows/deploy.yml#deploy:OIDC_REQUEST_TOKEN"
+        ],
+        "Z": [
+          {
+            "credential": "cred:aws:secret:ops/db-password:stored",
+            "criticality": 100,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:secret:ci/deploy-key:stored",
+            "criticality": 85,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:ssm:/ci/registry-token:stored",
+            "criticality": 65,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          }
+        ],
+        "issued_before_containment": [
+          {
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "label": "issued_before_containment",
+            "max_remaining_seconds": 3600,
+            "role": "aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "still_obtainable_by_new_runs": true
+          }
+        ],
+        "re_exposure_risk": [
+          {
+            "credential": "cred:aws:ssm:/ci/registry-token:stored",
+            "path_edges": [
+              "a6f91404853a253c",
+              "7491eb5cf5cea43f",
+              "b70e3c12f7289f6c"
+            ],
+            "reason": "surviving_path",
+            "weakest": "assumed"
+          }
+        ],
+        "revoked_access": [
+          {
+            "access": "unknown",
+            "assessed_at": null,
+            "conditional_on_propagation": false,
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "cutoff": "2026-03-01T10:00:30Z",
+            "cutoff_assumed": true,
+            "cutoff_source": "assumed_revoked_at_plus_30s",
+            "display_state": "unknown",
+            "issue_time_basis": "upper_bound",
+            "issued_no_later_than": null,
+            "re_issue_possible": true,
+            "residual_unknown": [
+              {
+                "detail": "derived credentials (chained role sessions, access keys created by the session, secrets already read) are not affected by the deny; role chaining is not modelled",
+                "kind": "derived_credentials"
+              }
+            ],
+            "revoked_at": "2026-03-01T10:00:00Z",
+            "role": "aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "step": 0,
+            "ttl_seconds": 3600,
+            "validity": "unknown"
+          }
+        ],
+        "rotated": []
+      },
+      "before": {
+        "E": [
+          {
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "ttl_seconds": 3600
+          }
+        ],
+        "R": [
+          "cred:job:.github/workflows/deploy.yml#deploy:GITHUB_TOKEN",
+          "cred:job:.github/workflows/deploy.yml#deploy:OIDC_REQUEST_TOKEN"
+        ],
+        "Z": [
+          {
+            "credential": "cred:aws:secret:ops/db-password:stored",
+            "criticality": 100,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:secret:ci/deploy-key:stored",
+            "criticality": 85,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:ssm:/ci/registry-token:stored",
+            "criticality": 65,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          }
+        ]
+      },
+      "future_reach": {
+        "E": [
+          {
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "ttl_seconds": 3600
+          }
+        ],
+        "R": [
+          "cred:job:.github/workflows/deploy.yml#deploy:GITHUB_TOKEN",
+          "cred:job:.github/workflows/deploy.yml#deploy:OIDC_REQUEST_TOKEN"
+        ],
+        "Z": [
+          {
+            "credential": "cred:aws:secret:ops/db-password:stored",
+            "criticality": 100,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:secret:ci/deploy-key:stored",
+            "criticality": 85,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:ssm:/ci/registry-token:stored",
+            "criticality": 65,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          }
+        ],
+        "truncated": false
+      },
+      "potential": {
+        "after": {
+          "edges": [],
+          "nodes": [],
+          "unresolved_inputs": []
+        },
+        "before": {
+          "edges": [],
+          "nodes": []
+        }
+      },
+      "residual_paths": [
+        {
+          "class": "E",
+          "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+          "path_edges": [
+            "c4d27ac3e0afdd1c",
+            "48129c6636e0a2e4"
+          ],
+          "weakest": "derived"
+        },
+        {
+          "class": "Z",
+          "credential": "cred:aws:secret:ci/deploy-key:stored",
+          "depth": 0,
+          "path_edges": [
+            "a6f91404853a253c",
+            "af4d70f625d23e20",
+            "b13a4e4062ecb7ad"
+          ],
+          "weakest": "assumed"
+        },
+        {
+          "class": "Z",
+          "credential": "cred:aws:secret:ops/db-password:stored",
+          "depth": 0,
+          "path_edges": [
+            "a6f91404853a253c",
+            "af4d70f625d23e20",
+            "b13a4e4062ecb7ad",
+            "984179f9d879fc03",
+            "2f4769cb9cdcccc9",
+            "8d98e10e30f3be00"
+          ],
+          "weakest": "assumed"
+        },
+        {
+          "class": "Z",
+          "credential": "cred:aws:ssm:/ci/registry-token:stored",
+          "depth": 0,
+          "path_edges": [
+            "a6f91404853a253c",
+            "7491eb5cf5cea43f",
+            "b70e3c12f7289f6c"
+          ],
+          "weakest": "assumed"
+        }
+      ],
+      "rotation_order": [
+        {
+          "batch": false,
+          "credentials": [
+            {
+              "id": "cred:aws:secret:ci/deploy-key:stored",
+              "label": "ci/deploy-key",
+              "planned": false,
+              "re_exposure_risk": false
+            }
+          ],
+          "depends_on": [],
+          "generation": 0,
+          "order": 1
+        },
+        {
+          "batch": false,
+          "credentials": [
+            {
+              "id": "cred:aws:ssm:/ci/registry-token:stored",
+              "label": "/ci/registry-token",
+              "planned": true,
+              "re_exposure_risk": true
+            }
+          ],
+          "depends_on": [],
+          "generation": 0,
+          "order": 2
+        },
+        {
+          "batch": false,
+          "credentials": [
+            {
+              "id": "cred:aws:secret:ops/db-password:stored",
+              "label": "ops/db-password",
+              "planned": false,
+              "re_exposure_risk": false
+            }
+          ],
+          "depends_on": [
+            "cred:aws:secret:ci/deploy-key:stored"
+          ],
+          "generation": 1,
+          "order": 3
+        }
+      ],
+      "selector": "repo-write",
+      "selector_kind": "repo-write",
+      "start_nodes": [
+        "job:.github/workflows/deploy.yml#deploy"
+      ]
+    },
+    {
+      "after": {
+        "E": [
+          {
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "ttl_seconds": 3600
+          }
+        ],
+        "R": [],
+        "Z": [
+          {
+            "credential": "cred:aws:secret:ops/db-password:stored",
+            "criticality": 100,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:secret:ci/deploy-key:stored",
+            "criticality": 85,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:ssm:/ci/registry-token:stored",
+            "criticality": 65,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          }
+        ],
+        "issued_before_containment": [
+          {
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "label": "issued_before_containment",
+            "max_remaining_seconds": 3600,
+            "role": "aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "still_obtainable_by_new_runs": true
+          }
+        ],
+        "re_exposure_risk": [
+          {
+            "credential": "cred:aws:ssm:/ci/registry-token:stored",
+            "path_edges": [
+              "7491eb5cf5cea43f",
+              "b70e3c12f7289f6c"
+            ],
+            "reason": "surviving_path",
+            "weakest": "assumed"
+          }
+        ],
+        "revoked_access": [
+          {
+            "access": "unknown",
+            "assessed_at": null,
+            "conditional_on_propagation": false,
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "cutoff": "2026-03-01T10:00:30Z",
+            "cutoff_assumed": true,
+            "cutoff_source": "assumed_revoked_at_plus_30s",
+            "display_state": "unknown",
+            "issue_time_basis": "upper_bound",
+            "issued_no_later_than": null,
+            "re_issue_possible": true,
+            "residual_unknown": [
+              {
+                "detail": "derived credentials (chained role sessions, access keys created by the session, secrets already read) are not affected by the deny; role chaining is not modelled",
+                "kind": "derived_credentials"
+              }
+            ],
+            "revoked_at": "2026-03-01T10:00:00Z",
+            "role": "aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "step": 0,
+            "ttl_seconds": 3600,
+            "validity": "unknown"
+          }
+        ],
+        "rotated": []
+      },
+      "before": {
+        "E": [
+          {
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "ttl_seconds": 3600
+          }
+        ],
+        "R": [],
+        "Z": [
+          {
+            "credential": "cred:aws:secret:ops/db-password:stored",
+            "criticality": 100,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:secret:ci/deploy-key:stored",
+            "criticality": 85,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:ssm:/ci/registry-token:stored",
+            "criticality": 65,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          }
+        ]
+      },
+      "future_reach": {
+        "E": [
+          {
+            "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+            "ttl_seconds": 3600
+          }
+        ],
+        "R": [],
+        "Z": [
+          {
+            "credential": "cred:aws:secret:ops/db-password:stored",
+            "criticality": 100,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:secret:ci/deploy-key:stored",
+            "criticality": 85,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          },
+          {
+            "credential": "cred:aws:ssm:/ci/registry-token:stored",
+            "criticality": 65,
+            "depth": 0,
+            "lifetime": "persistent",
+            "survival_window": "until rotated"
+          }
+        ],
+        "truncated": false
+      },
+      "potential": {
+        "after": {
+          "edges": [],
+          "nodes": [],
+          "unresolved_inputs": []
+        },
+        "before": {
+          "edges": [],
+          "nodes": []
+        }
+      },
+      "residual_paths": [
+        {
+          "class": "E",
+          "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+          "path_edges": [],
+          "weakest": "declared"
+        },
+        {
+          "class": "Z",
+          "credential": "cred:aws:secret:ci/deploy-key:stored",
+          "depth": 0,
+          "path_edges": [
+            "af4d70f625d23e20",
+            "b13a4e4062ecb7ad"
+          ],
+          "weakest": "assumed"
+        },
+        {
+          "class": "Z",
+          "credential": "cred:aws:secret:ops/db-password:stored",
+          "depth": 0,
+          "path_edges": [
+            "af4d70f625d23e20",
+            "b13a4e4062ecb7ad",
+            "984179f9d879fc03",
+            "2f4769cb9cdcccc9",
+            "8d98e10e30f3be00"
+          ],
+          "weakest": "assumed"
+        },
+        {
+          "class": "Z",
+          "credential": "cred:aws:ssm:/ci/registry-token:stored",
+          "depth": 0,
+          "path_edges": [
+            "7491eb5cf5cea43f",
+            "b70e3c12f7289f6c"
+          ],
+          "weakest": "assumed"
+        }
+      ],
+      "rotation_order": [
+        {
+          "batch": false,
+          "credentials": [
+            {
+              "id": "cred:aws:secret:ci/deploy-key:stored",
+              "label": "ci/deploy-key",
+              "planned": false,
+              "re_exposure_risk": false
+            }
+          ],
+          "depends_on": [],
+          "generation": 0,
+          "order": 1
+        },
+        {
+          "batch": false,
+          "credentials": [
+            {
+              "id": "cred:aws:ssm:/ci/registry-token:stored",
+              "label": "/ci/registry-token",
+              "planned": true,
+              "re_exposure_risk": true
+            }
+          ],
+          "depends_on": [],
+          "generation": 0,
+          "order": 2
+        },
+        {
+          "batch": false,
+          "credentials": [
+            {
+              "id": "cred:aws:secret:ops/db-password:stored",
+              "label": "ops/db-password",
+              "planned": false,
+              "re_exposure_risk": false
+            }
+          ],
+          "depends_on": [
+            "cred:aws:secret:ci/deploy-key:stored"
+          ],
+          "generation": 1,
+          "order": 3
+        }
+      ],
+      "selector": "role:aws_iam_role.ci_deploy",
+      "selector_kind": "role",
+      "start_nodes": [
+        "aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+        "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy"
+      ]
+    }
+  ],
+  "plan_digest": "b5c82bdf2d9fc2fc35f86b9c2725622c19a03e81893682c4fa2ba7f83a6e3b42",
+  "rejected": [],
+  "schema": "nhi-blast-whatif/1.0",
+  "source_report_digest": "<source-report-digest>",
+  "steps": [
+    {
+      "args": {
+        "assessed_at": null,
+        "cutoff": null,
+        "issued_no_later_than": {},
+        "issued_no_later_than_all": null,
+        "revoked_at": "2026-03-01T10:00:00Z",
+        "role": "aws:role:arn:aws:iam::111122223333:role/ci-deploy"
+      },
+      "effects": {
+        "cutoff": "2026-03-01T10:00:30Z",
+        "cutoff_source": "assumed_revoked_at_plus_30s",
+        "role": "aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+        "sessions_in_scope": [
+          "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy"
+        ]
+      },
+      "future_reach_counts": [
+        {
+          "E": 1,
+          "R": 2,
+          "Z": 3,
+          "potential": 0,
+          "selector": "action:acme/build-helper@v1"
+        },
+        {
+          "E": 1,
+          "R": 2,
+          "Z": 3,
+          "potential": 0,
+          "selector": "repo-write"
+        },
+        {
+          "E": 1,
+          "R": 0,
+          "Z": 3,
+          "potential": 0,
+          "selector": "role:aws_iam_role.ci_deploy"
+        }
+      ],
+      "index": 0,
+      "notes": [],
+      "status": "applied",
+      "type": "revoke_role_sessions"
+    },
+    {
+      "args": {
+        "credential": "cred:aws:ssm:/ci/registry-token:stored"
+      },
+      "effects": {
+        "credential": "cred:aws:ssm:/ci/registry-token:stored"
+      },
+      "future_reach_counts": [
+        {
+          "E": 1,
+          "R": 2,
+          "Z": 3,
+          "potential": 0,
+          "selector": "action:acme/build-helper@v1"
+        },
+        {
+          "E": 1,
+          "R": 2,
+          "Z": 3,
+          "potential": 0,
+          "selector": "repo-write"
+        },
+        {
+          "E": 1,
+          "R": 0,
+          "Z": 3,
+          "potential": 0,
+          "selector": "role:aws_iam_role.ci_deploy"
+        }
+      ],
+      "index": 1,
+      "notes": [],
+      "status": "applied",
+      "type": "rotate_credential"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "W-WHATIF-REVOKE-WITHOUT-REMOVE-TRUST",
+      "detail": "re_issue_possible: aws:role:arn:aws:iam::111122223333:role/ci-deploy"
+    }
+  ]
+}

@@ -9,7 +9,7 @@ from nhi_blast import SCHEMA_VERSION
 from nhi_blast.core.models import Report
 from nhi_blast.report.redaction import redact_payload
 
-_SCHEMA_URI = "urn:nhi-blast:report:1.0"
+_SCHEMA_URI = "urn:nhi-blast:report:1.1"
 
 
 def report_dict(report: Report) -> dict[str, Any]:

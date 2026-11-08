@@ -1,0 +1,46 @@
+{
+  "schema": "nhi-blast-interventions/1.0",
+  "interventions": [
+    {
+      "type": "revoke_role_sessions",
+      "role": "aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+      "revoked_at": "2026-03-01T10:00:00Z",
+      "assessed_at": "2026-03-01T10:05:00Z",
+      "issued_no_later_than": {
+        "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy": "2026-03-01T09:30:00Z"
+      }
+    },
+    {
+      "type": "remove_trust",
+      "role": "aws:role:arn:aws:iam::111122223333:role/ci-deploy",
+      "principal": "oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com"
+    },
+    {
+      "type": "remove_trust",
+      "role": "aws:role:arn:aws:iam::111122223333:role/ops-admin",
+      "principal": "cred:aws:secret:ci/deploy-key:stored"
+    },
+    {
+      "type": "disable_entrypoint",
+      "node": "job:.github/workflows/deploy.yml#deploy"
+    },
+    {
+      "type": "rotate_credential",
+      "credential": "cred:aws:secret:ci/deploy-key:stored"
+    },
+    {
+      "type": "rotate_credential",
+      "credential": "cred:aws:ssm:/ci/registry-token:stored"
+    },
+    {
+      "type": "rotate_credential",
+      "credential": "cred:aws:secret:ops/db-password:stored"
+    },
+    {
+      "type": "inject_deny_policy"
+    },
+    {
+      "type": "teleport"
+    }
+  ]
+}

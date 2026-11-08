@@ -1,14 +1,14 @@
-# Beta testing NHI-Blast 0.2.0
+# Beta testing NHI-Blast 0.3.0
 
-NHI-Blast 0.2.0 is a public beta. The purpose of the beta is to find reproducible
+NHI-Blast 0.3.0 is a public beta. The purpose of the beta is to find reproducible
 defects in the offline analysis, the reports and the Windows executable before a stable
 release. It is not a production security control, and its output is not a substitute
 for an independent cloud security assessment.
 
 ## What you can test
 
-- The Windows x64 executable from the `v0.2.0` GitHub pre-release, once that pre-release
-  is published, or an installation from the source tree with
+- The wheel, sdist or Windows x64 executable from the `v0.3.0` GitHub pre-release
+  (see [install.md](install.md)), or an installation from the source tree with
   `python -m pip install ".[hcl]"`.
 - The reference fixtures under `tests/fixtures/`, especially `fx07-incident`, and the
   documented commands in the README.

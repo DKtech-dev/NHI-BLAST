@@ -16,7 +16,14 @@ import tempfile
 from pathlib import Path
 
 OVERALL_MINIMUM = 80.0
-ENFORCED_PACKAGES = ("aws", "analysis", "report")
+ENFORCED_PACKAGES = ("aws", "analysis", "report", "diff", "whatif")
+ENFORCED_FILES = frozenset(
+    {
+        "src/nhi_blast/core/canonical.py",
+        "src/nhi_blast/core/completeness.py",
+        "src/nhi_blast/core/context.py",
+    }
+)
 PACKAGE_MINIMUM = 80.0
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -61,7 +68,8 @@ def main() -> int:
         if not path.startswith("src/nhi_blast/"):
             continue
         parts = path.split("/")
-        if len(parts) < 4 or parts[2] not in ENFORCED_PACKAGES:
+        enforced = path in ENFORCED_FILES or (len(parts) >= 4 and parts[2] in ENFORCED_PACKAGES)
+        if not enforced:
             continue
         percent = float(data["summary"]["percent_covered"])
         if percent < PACKAGE_MINIMUM:

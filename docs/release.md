@@ -5,8 +5,9 @@ published release is `0.1.1`, distributed as GitHub Release assets (wheel, sdist
 SHA-256 sums) under the MIT License; `0.1.0` remains available. There is no
 package-index upload or deployment. Version `0.2.0` is a public beta under the MIT
 License, prepared as a GitHub pre-release that adds the standalone Windows executable.
-The gate record for `0.1.1` and its run URLs are in `docs/production-readiness.md`; the
-0.2.0 beta has its own results recorded there and in the release notes. No independent
+Version `0.3.0` is the current public beta pre-release (wheel, sdist, SHA-256 sums, a
+CycloneDX SBOM and the Windows executable); its gate record is in
+`docs/production-readiness.md` and `docs/release-notes-0.3.0.md`. No independent
 human audit has been performed.
 
 ## Preconditions
@@ -22,9 +23,10 @@ human audit has been performed.
 6. Every gate in `docs/production-readiness.md` has a recorded command and result.
 7. Explicit authorization to tag or publish has been given. The maintainer authorized
    GitHub Releases with wheel, sdist and SHA-256 sums for `v0.1.0` and, separately, for
-   the `v0.1.1` report patch, and authorized the `v0.2.0` public-beta pre-release with
-   the Windows executable and checksum. That authorization does not extend to package
-   indexes, deployments or later versions.
+   the `v0.1.1` report patch, authorized the `v0.2.0` public-beta pre-release with
+   the Windows executable and checksum, and authorized the `v0.3.0` public-beta
+   pre-release. That authorization does not extend to package indexes, deployments or
+   later versions.
 
 ## 1. Run the full gate set
 

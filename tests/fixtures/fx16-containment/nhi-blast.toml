@@ -1,0 +1,7 @@
+repo_slug = "acme/shop"
+default_branch = "main"
+
+[bindings.credentials]
+# Fixture binding: the stored deploy key authenticates as the ops-admin role once its
+# value is obtained, which makes ops/db-password a second-level surviving credential.
+"ci/deploy-key" = "aws_iam_role.ops_admin"

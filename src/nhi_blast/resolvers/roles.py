@@ -101,6 +101,7 @@ class _RoleDraft:
     name: str
     arn: str | None
     max_session_duration: int = 3600
+    max_session_source: str = "aws_default"
     trust: list[Statement] = field(default_factory=list)
     trust_unresolved: bool = False
     inline: list[Statement] = field(default_factory=list)
@@ -359,6 +360,14 @@ def _create_role_draft(
     arn = _text(values, "arn")
     name = _text(values, "name") or _role_name_from_arn(arn) or resource.name
     max_session = _integer(values, "max_session_duration")
+    declared = bool(max_session and 3600 <= max_session <= 43_200)
+    session_unknown = not declared and "max_session_duration" in resource.unknown_fields
+    session_source = "declared" if declared else "unknown" if session_unknown else "aws_default"
+    session_seconds = 3600
+    if declared and max_session:
+        session_seconds = max_session
+    elif session_unknown:
+        session_seconds = 43_200
     draft = _RoleDraft(
         address=resource.address,
         resource=resource,
@@ -366,7 +375,8 @@ def _create_role_draft(
         line=resource.line,
         name=name,
         arn=arn,
-        max_session_duration=max_session if max_session and max_session > 0 else 3600,
+        max_session_duration=session_seconds,
+        max_session_source=session_source,
         boundary_raw=_text(values, "permissions_boundary"),
     )
     draft.evidence.append(_evidence_for(resource, "TF.role", f"role {name}"))
@@ -776,6 +786,7 @@ def _finalise_roles(drafts: Iterable[_RoleDraft]) -> tuple[RoleFact, ...]:
                 name=primary.name,
                 arn=primary.arn,
                 max_session_duration=primary.max_session_duration,
+                max_session_source=primary.max_session_source,
                 trust_statements=_unique_statements(trust),
                 inline_statements=_unique_statements(inline),
                 managed_policy_arns=tuple(sorted(managed)),

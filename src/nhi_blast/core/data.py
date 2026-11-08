@@ -7,6 +7,7 @@ code. Each file carries source_url and verified_on so reports can show provenanc
 from __future__ import annotations
 
 import functools
+import hashlib
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -525,15 +526,135 @@ def permission_scopes() -> PermissionScopes:
     )
 
 
+@dataclass(frozen=True, slots=True)
+class ConfigureAwsCredentials:
+    info: DataFileInfo
+    default_duration_seconds: int
+    default_verified_refs: frozenset[str]
+
+
+@functools.cache
+def configure_aws_credentials() -> ConfigureAwsCredentials:
+    document = _read_document("configure_aws_credentials.yaml")
+    refs = document.payload.get("default_verified_refs", ())
+    seconds = document.payload.get("default_duration_seconds", 3600)
+    if not isinstance(refs, list) or isinstance(seconds, bool) or not isinstance(seconds, int):
+        msg = "configure_aws_credentials.yaml: malformed defaults"
+        raise DataFileError(msg)
+    return ConfigureAwsCredentials(
+        info=DataFileInfo(
+            name="configure_aws_credentials.yaml",
+            verified_on=document.verified_on,
+            source_url=document.source_url,
+            entry_count=len(refs),
+        ),
+        default_duration_seconds=seconds,
+        default_verified_refs=frozenset(str(ref) for ref in refs),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class SensitiveFieldPolicy:
+    """Versioned allow-projection of fields consumed by local Terraform resolvers."""
+
+    info: DataFileInfo
+    version: str
+    credential_fields: frozenset[str]
+    resources: Mapping[str, Mapping[str, str]]
+    blocks: Mapping[str, Mapping[str, str]]
+    policy_root_fields: frozenset[str]
+    policy_statement_fields: frozenset[str]
+    policy_principal_types: frozenset[str]
+    policy_unsupported_semantic_fields: frozenset[str]
+
+
+def _projection_shapes(raw: Any) -> dict[str, dict[str, str]]:
+    if not isinstance(raw, dict):
+        message = "sensitive_fields.yaml: projection shapes must be mappings"
+        raise DataFileError(message)
+    result: dict[str, dict[str, str]] = {}
+    for name, shape in raw.items():
+        if not isinstance(name, str) or not isinstance(shape, dict):
+            message = "sensitive_fields.yaml: invalid projection shape"
+            raise DataFileError(message)
+        if any(
+            not isinstance(key, str) or not isinstance(kind, str) for key, kind in shape.items()
+        ):
+            message = "sensitive_fields.yaml: fields and kinds must be strings"
+            raise DataFileError(message)
+        result[name] = dict(shape)
+    return result
+
+
+def _projection_strings(raw: Any) -> frozenset[str]:
+    if not isinstance(raw, list) or any(not isinstance(item, str) for item in raw):
+        message = "sensitive_fields.yaml: field lists must contain strings"
+        raise DataFileError(message)
+    return frozenset(raw)
+
+
+@functools.cache
+def sensitive_field_policy() -> SensitiveFieldPolicy:
+    document = _read_document("sensitive_fields.yaml")
+    payload = document.payload
+    resources = _projection_shapes(payload.get("resources"))
+    blocks = _projection_shapes(payload.get("blocks"))
+    for shape in (*resources.values(), *blocks.values()):
+        for kind in shape.values():
+            if kind not in {"text", "text_list", "integer", "boolean", "policy"} and (
+                not kind.startswith("block:") or kind[6:] not in blocks
+            ):
+                message = "sensitive_fields.yaml: unknown projection kind"
+                raise DataFileError(message)
+    policy = payload.get("policy_document")
+    if not isinstance(policy, dict) or payload.get("policy_version") != "1":
+        message = "sensitive_fields.yaml: unsupported policy contract"
+        raise DataFileError(message)
+    return SensitiveFieldPolicy(
+        info=DataFileInfo(
+            name="sensitive_fields.yaml",
+            verified_on=document.verified_on,
+            source_url=document.source_url,
+            entry_count=len(resources),
+        ),
+        version="1",
+        credential_fields=_projection_strings(payload.get("credential_fields")),
+        resources=resources,
+        blocks=blocks,
+        policy_root_fields=_projection_strings(policy.get("root_fields")),
+        policy_statement_fields=_projection_strings(policy.get("statement_fields")),
+        policy_principal_types=_projection_strings(policy.get("principal_types")),
+        policy_unsupported_semantic_fields=_projection_strings(
+            policy.get("unsupported_semantic_fields")
+        ),
+    )
+
+
 def all_data_file_infos() -> tuple[DataFileInfo, ...]:
     infos = [
         assumptions().info,
         condition_keys().info,
+        configure_aws_credentials().info,
         sinks().info,
         credential_heuristics().info,
         rotation_hints().info,
         trigger_profiles().info,
         permission_scopes().info,
         rules().info,
+        sensitive_field_policy().info,
     ]
     return tuple(sorted(infos, key=lambda info: info.name))
+
+
+def data_digests() -> dict[str, str]:
+    """SHA-256 of every packaged data file, with line endings normalised to LF."""
+    digests: dict[str, str] = {}
+    base = resources.files(DATA_PACKAGE)
+    for info in all_data_file_infos():
+        try:
+            raw = base.joinpath(info.name).read_bytes()
+        except FileNotFoundError as exc:
+            msg = f"packaged data file missing: {info.name}"
+            raise DataFileError(msg) from exc
+        digests[info.name] = hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()
+    return dict(sorted(digests.items()))

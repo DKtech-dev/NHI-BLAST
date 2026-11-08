@@ -24,11 +24,13 @@ REQUIRED_WHEEL_DATA = frozenset(
     {
         "nhi_blast/data/assumptions.yaml",
         "nhi_blast/data/aws_github_condition_keys.yaml",
+        "nhi_blast/data/configure_aws_credentials.yaml",
         "nhi_blast/data/credential_heuristics.yaml",
         "nhi_blast/data/permission_scopes.yaml",
         "nhi_blast/data/rotation_hints.yaml",
         "nhi_blast/data/rules.yaml",
         "nhi_blast/data/sinks_catalog.yaml",
+        "nhi_blast/data/sensitive_fields.yaml",
         "nhi_blast/data/trigger_profiles.yaml",
     }
 )
@@ -36,10 +38,18 @@ REQUIRED_WHEEL_ASSETS = frozenset(
     {
         "nhi_blast/report/assets/MANIFEST.json",
         "nhi_blast/report/assets/fonts/OFL.txt",
-        "nhi_blast/report/assets/fonts/OFL-InstrumentSerif.txt",
-        "nhi_blast/report/assets/fonts/geist-latin.woff2",
+        "nhi_blast/report/assets/fonts/OFL-HostGrotesk.txt",
+        "nhi_blast/report/assets/fonts/OFL-InstrumentSans.txt",
         "nhi_blast/report/assets/fonts/geist-mono-latin.woff2",
-        "nhi_blast/report/assets/fonts/instrument-serif-latin.woff2",
+        "nhi_blast/report/assets/fonts/host-grotesk-latin.woff2",
+        "nhi_blast/report/assets/fonts/instrument-sans-latin.woff2",
+        "nhi_blast/report/assets/icons/MIT-Phosphor.txt",
+        "nhi_blast/report/assets/icons/arrow-right.svg",
+        "nhi_blast/report/assets/icons/arrow-up.svg",
+        "nhi_blast/report/assets/icons/check.svg",
+        "nhi_blast/report/assets/icons/copy.svg",
+        "nhi_blast/report/assets/icons/info.svg",
+        "nhi_blast/report/assets/icons/printer.svg",
         "nhi_blast/report/assets/vendor/MIT-Motion.txt",
         "nhi_blast/report/assets/vendor/motion-14.7.1.min.js",
     }

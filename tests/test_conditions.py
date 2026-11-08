@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 from nhi_blast.aws.conditions import (
+    ABSENT,
     ConditionMode,
     ConditionTruth,
     evaluate_conditions,
@@ -56,14 +57,19 @@ def test_empty_conditions_are_true() -> None:
         ),
         ("Bool", ["true"], {"k": frozenset({"true"})}, ConditionTruth.TRUE),
         ("Bool", ["false"], {"k": frozenset({"true"})}, ConditionTruth.FALSE),
-        ("NumericLessThan", ["10"], {"k": frozenset({"5"})}, ConditionTruth.UNRESOLVED),
+        # Numeric/Date/IpAddress operators are evaluated (AWS IAM condition-operators page)
+        # instead of being left UNRESOLVED as before.
+        ("NumericLessThan", ["10"], {"k": frozenset({"5"})}, ConditionTruth.TRUE),
+        ("NumericLessThan", ["10"], {"k": frozenset({"50"})}, ConditionTruth.FALSE),
         (
             "DateLessThan",
             ["2026-01-01"],
             {"k": frozenset({"2025-01-01"})},
-            ConditionTruth.UNRESOLVED,
+            ConditionTruth.TRUE,
         ),
-        ("IpAddress", ["10.0.0.0/8"], {"k": frozenset({"10.1.1.1"})}, ConditionTruth.UNRESOLVED),
+        ("IpAddress", ["10.0.0.0/8"], {"k": frozenset({"10.1.1.1"})}, ConditionTruth.TRUE),
+        ("IpAddress", ["10.0.0.0/8"], {"k": frozenset({"11.1.1.1"})}, ConditionTruth.FALSE),
+        ("TotallyNewOperator", ["x"], {"k": frozenset({"x"})}, ConditionTruth.UNRESOLVED),
     ],
 )
 def test_string_and_unsupported_operators(
@@ -112,7 +118,11 @@ def test_policy_variable_is_unresolved() -> None:
 
 
 def test_null_operator() -> None:
-    assert evaluate({"Null": {"k": ["true"]}}).truth is ConditionTruth.TRUE
+    # A key missing from the map is UNKNOWN to the offline analyser, not absent: Null can
+    # only be decided for a key explicitly marked ABSENT or present.
+    absent = {"k": ABSENT}
+    assert evaluate({"Null": {"k": ["true"]}}, absent).truth is ConditionTruth.TRUE
+    assert evaluate({"Null": {"k": ["true"]}}).truth is ConditionTruth.UNRESOLVED
     assert (
         evaluate({"Null": {"k": ["true"]}}, {"k": frozenset({"present"})}).truth
         is ConditionTruth.FALSE
@@ -121,12 +131,18 @@ def test_null_operator() -> None:
         evaluate({"Null": {"k": ["false"]}}, {"k": frozenset({"present"})}).truth
         is ConditionTruth.TRUE
     )
-    assert evaluate({"Null": {"k": ["false"]}}).truth is ConditionTruth.FALSE
+    assert evaluate({"Null": {"k": ["false"]}}, absent).truth is ConditionTruth.FALSE
+    assert evaluate({"Null": {"k": ["false"]}}).truth is ConditionTruth.UNRESOLVED
 
 
 def test_if_exists_absent_key_is_true() -> None:
-    result = evaluate({"StringEqualsIfExists": {"environment": ["prod"]}})
+    result = evaluate({"StringEqualsIfExists": {"environment": ["prod"]}}, {"environment": ABSENT})
     assert result.truth is ConditionTruth.TRUE
+
+
+def test_if_exists_unknown_key_is_unresolved() -> None:
+    result = evaluate({"StringEqualsIfExists": {"environment": ["prod"]}})
+    assert result.truth is ConditionTruth.UNRESOLVED
 
 
 def test_negative_operator_inverts_concrete_result() -> None:

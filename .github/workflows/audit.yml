@@ -44,9 +44,13 @@ jobs:
       - name: OSV dependency scan
         env:
           OSV_SHA256: "160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b"
+          GH_TOKEN: ${{ github.token }}
         run: |
-          curl -fsSLo "$RUNNER_TEMP/osv-scanner" \
-            "https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_linux_amd64"
+          # Asset 632251666 is osv-scanner v2.7.0 linux_amd64. The API asset
+          # endpoint serves the pinned bytes when the release CDN path 504s.
+          curl -fsSL --retry 3 --retry-all-errors -o "$RUNNER_TEMP/osv-scanner" \
+            -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream" \
+            "https://api.github.com/repos/google/osv-scanner/releases/assets/632251666"
           echo "${OSV_SHA256}  $RUNNER_TEMP/osv-scanner" | sha256sum -c -
           chmod +x "$RUNNER_TEMP/osv-scanner"
           mkdir -p "$RUNNER_TEMP/osv"
@@ -56,9 +60,12 @@ jobs:
       - name: Secret scan
         env:
           GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+          GH_TOKEN: ${{ github.token }}
         run: |
-          curl -fsSLo "$RUNNER_TEMP/gitleaks.tar.gz" \
-            "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz"
+          # Asset 378332058 is gitleaks v8.30.1 linux_x64 (same CDN workaround).
+          curl -fsSL --retry 3 --retry-all-errors -o "$RUNNER_TEMP/gitleaks.tar.gz" \
+            -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream" \
+            "https://api.github.com/repos/gitleaks/gitleaks/releases/assets/378332058"
           echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
           "$RUNNER_TEMP/gitleaks" dir . --redact --no-banner --config .gitleaks.toml

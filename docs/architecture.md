@@ -108,7 +108,7 @@ All renderers consume the same validated `Report` model:
   `<`, `>`, `&`, U+2028 and U+2029, a restrictive CSP with a hash for each of the three
   inline scripts, and DOM construction through `textContent`/`setAttribute` only. The
   authority graph is deterministic layered SVG computed in Python and inlined, so the
-  same geometry is used on screen and in print. The embedded Instrument Serif, Geist
+  same geometry is used on screen and in print. The embedded Host Grotesk, Instrument Sans
   and Geist Mono fonts and the vendored Motion 14.7.1 runtime (MIT) are hash-verified
   against `assets/MANIFEST.json`.
   Motion controls only presentation: the title entrance, the atmospheric header

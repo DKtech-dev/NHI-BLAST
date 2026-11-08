@@ -14,6 +14,7 @@ from pathlib import Path
 import jsonschema
 import pytest
 
+from nhi_blast import SCHEMA_VERSION, __version__
 from tests.entrypoint_support import resolve_cli_entrypoint
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -162,17 +163,19 @@ def test_standalone_copy_runs_without_python_or_the_repository(tmp_path: Path) -
     for command in ("scan", "rank", "explain", "export", "schema", "version"):
         assert command in help_result.stdout
     assert version.returncode == 0, version.stderr
-    assert version.stdout == "nhi-blast 0.2.0\nreport schema nhi-blast-report/1.0\n"
+    assert version.stdout == f"nhi-blast {__version__}\nreport schema {SCHEMA_VERSION}\n"
     assert data.returncode == 0
-    assert "Data files: 8" in data.stdout
+    assert "Data files: 10" in data.stdout
     for name in (
         "assumptions.yaml",
         "aws_github_condition_keys.yaml",
+        "configure_aws_credentials.yaml",
         "credential_heuristics.yaml",
         "permission_scopes.yaml",
         "rotation_hints.yaml",
         "rules.yaml",
         "sinks_catalog.yaml",
+        "sensitive_fields.yaml",
         "trigger_profiles.yaml",
     ):
         assert name in data.stdout

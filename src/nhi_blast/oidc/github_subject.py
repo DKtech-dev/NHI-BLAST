@@ -2,8 +2,8 @@
 
 A candidate is a glob describing the ``sub`` values a job could mint for one
 trigger. GitHub's precedence is environment, then pull-request context, then ref.
-Both classic and immutable repository formats are emitted because the repository's
-mint format cannot be determined from files (A-REPO-AGE).
+Both classic and immutable repository formats are emitted unless the configuration
+declares the format, because it cannot be determined from files (A-REPO-AGE).
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from nhi_blast.core.evidence import Evidence, EvidenceClass, weakest
-from nhi_blast.core.models import SubFormat, SubjectCandidate
+from nhi_blast.core.models import OidcSettings, SubFormat, SubjectCandidate
 from nhi_blast.parsers.gha.facts import JobFact, Trigger, WorkflowFact
 
 DEFAULT_AUDIENCE = "sts.amazonaws.com"
@@ -177,14 +177,38 @@ def _contexts_for_trigger(
     )
 
 
-def _repo_formats(repo_slug: str | None) -> tuple[tuple[SubFormat, str], ...]:
+def repo_prefixes(
+    repo_slug: str | None, oidc: OidcSettings | None = None
+) -> tuple[tuple[SubFormat, str], ...]:
+    """Repository segment of the ``sub`` claim in every format the repository may mint.
+
+    GitHub documents ``repo:OWNER@OWNER-ID/REPO@REPO-ID`` for repositories created after
+    2026-07-15 and for older ones that opted in; renames and transfers after that date also
+    move a repository to it. It is not available on GitHub Enterprise Server. Without a
+    declared format both are emitted (A-REPO-AGE); without IDs the immutable form keeps a
+    wildcard for them.
+    """
     if repo_slug is None:
         return ((SubFormat.UNKNOWN, "*/*"),)
+    settings = oidc or OidcSettings()
     owner, _, name = repo_slug.partition("/")
-    return (
-        (SubFormat.CLASSIC, f"repo:{owner}/{name}"),
-        (SubFormat.IMMUTABLE, f"repo:{owner}@*/{name}@*"),
-    )
+    classic = (SubFormat.CLASSIC, f"repo:{owner}/{name}")
+    if settings.host == "ghes" or settings.subject_format == "classic":
+        return (classic,)
+    if settings.owner_id is not None and settings.repo_id is not None:
+        exact = (
+            SubFormat.IMMUTABLE,
+            f"repo:{owner}@{settings.owner_id}/{name}@{settings.repo_id}",
+        )
+        return (exact,) if settings.subject_format == "immutable" else (classic, exact)
+    wildcard = (SubFormat.IMMUTABLE, f"repo:{owner}@*/{name}@*")
+    return (wildcard,) if settings.subject_format == "immutable" else (classic, wildcard)
+
+
+def format_is_declared(oidc: OidcSettings | None) -> bool:
+    """True when files or config settle which subject format the repository mints."""
+    settings = oidc or OidcSettings()
+    return settings.host == "ghes" or settings.subject_format != "unknown"
 
 
 def _contexts_for(
@@ -267,10 +291,11 @@ def subject_candidates(
     default_branch: str = "main",
     sub_template: tuple[str, ...] | None = None,
     caller_candidates: Sequence[SubjectCandidate] = (),
+    oidc: OidcSettings | None = None,
 ) -> tuple[SubjectCandidate, ...]:
     """Build deterministic OIDC subject candidates for a job."""
     base_repo = repo_slug or "*/*"
-    formats = _repo_formats(repo_slug)
+    formats = repo_prefixes(repo_slug, oidc)
     repo_class = EvidenceClass.ASSUMED if repo_slug is None else EvidenceClass.DERIVED
     triggers = workflow.triggers or (Trigger(event="unknown", line=job.line),)
     audiences = _audiences(job)

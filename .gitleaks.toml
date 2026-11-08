@@ -5,3 +5,14 @@ useDefault = true
 description = "Deterministic fake action SHAs used by the fixture generator"
 paths = ['''scripts/gen_fixtures\.py''']
 regexes = ['''abcdef0123456789abcdef0123456789abcdef0[12]''']
+
+# Saved-report fixtures embed the report context's data-file SHA-256 digests.
+# Names like aws_github_condition_keys.yaml next to a hex digest trip
+# generic-api-key. Allow only that exact assignment shape (a .yaml-named key
+# assigned a 64-char lowercase hex digest); reports store credential kind +
+# length only, never values. No paths condition: a global allowlist with paths
+# would skip whole files instead of single findings.
+[[allowlists]]
+description = "Data-file SHA-256 digests assigned to .yaml names in report context"
+regexTarget = "match"
+regexes = ['''[a-z_]+\.yaml": "[0-9a-f]{64}"''']

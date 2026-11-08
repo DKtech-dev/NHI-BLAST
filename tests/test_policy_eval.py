@@ -96,7 +96,10 @@ def test_definite_deny_wins_over_allow() -> None:
     assert result.evidence_class is EvidenceClass.DERIVED
 
 
-def test_conditional_deny_does_not_remove_a_definite_allow() -> None:
+def test_conditional_deny_makes_a_definite_allow_conditional() -> None:
+    # AWS policy evaluation logic: an explicit Deny overrides any Allow, and a Deny whose
+    # condition cannot be decided offline may apply at request time. The decision must
+    # therefore never be a definite ALLOW (previously asserted ALLOW; that was the defect).
     conditional_deny = _statement(
         PolicyEffect.DENY,
         conditions={"StringEquals": {"aws:SourceAccount": (ACCOUNT,)}},
@@ -104,8 +107,55 @@ def test_conditional_deny_does_not_remove_a_definite_allow() -> None:
 
     result = evaluate_action(_role(_statement(), conditional_deny), ACTION, RESOURCE, _ctx())
 
-    assert result.decision is Decision.ALLOW
+    assert result.decision is Decision.CONDITIONAL_ALLOW
+    assert result.evidence_class is EvidenceClass.ASSUMED
     assert result.conditional_reasons
+
+
+def test_unresolved_deny_via_if_exists_or_null_is_a_possible_deny() -> None:
+    # An unknown key is not an absent key, so IfExists/Null cannot make the Deny definite
+    # or definitely inapplicable.
+    for conditions in (
+        {"StringEqualsIfExists": {"aws:SourceAccount": (ACCOUNT,)}},
+        {"Null": {"aws:SourceAccount": ("true",)}},
+        {"StringNotEquals": {"aws:SourceAccount": (ACCOUNT,)}},
+    ):
+        deny = _statement(PolicyEffect.DENY, conditions=conditions)
+
+        result = evaluate_action(_role(_statement(), deny), ACTION, RESOURCE, _ctx())
+
+        assert result.decision is Decision.CONDITIONAL_ALLOW, conditions
+
+
+def test_unresolved_deny_alone_never_allows() -> None:
+    deny = _statement(PolicyEffect.DENY, conditions={"Bool": {"aws:SecureTransport": ("false",)}})
+
+    result = evaluate_action(_role(deny), ACTION, RESOURCE, _ctx())
+
+    assert result.decision not in (Decision.ALLOW, Decision.CONDITIONAL_ALLOW)
+
+
+def test_definite_deny_still_wins_over_unresolved_allow_and_unresolved_deny() -> None:
+    conditional = {"StringEquals": {"aws:SourceAccount": (ACCOUNT,)}}
+    role = _role(
+        _statement(conditions=conditional),
+        _statement(PolicyEffect.DENY, conditions=conditional),
+        _statement(PolicyEffect.DENY),
+    )
+
+    assert evaluate_action(role, ACTION, RESOURCE, _ctx()).decision is Decision.DENY
+
+
+def test_unresolved_boundary_deny_makes_the_decision_conditional() -> None:
+    boundary_allow = _statement()
+    boundary_deny = _statement(
+        PolicyEffect.DENY, conditions={"StringEquals": {"aws:SourceAccount": (ACCOUNT,)}}
+    )
+    role = _role(_statement(), boundary=(boundary_allow, boundary_deny))
+
+    result = evaluate_action(role, ACTION, RESOURCE, _ctx())
+
+    assert result.decision is Decision.CONDITIONAL_ALLOW
 
 
 def test_conditional_allow_only_is_assumed() -> None:

@@ -331,7 +331,11 @@ def _render_node(node: Mapping[str, Any]) -> str:
         classes.append("is-entry")
     if critical:
         classes.append("is-critical")
-    accessible = f"{label}, {kind.replace('_', ' ').lower()}, id {node_id}"
+    # WCAG 2.5.3: the drawn text (possibly wrapped or shortened) must appear in the name.
+    badge_words = (["ENTRY"] if entry else []) + (["CRITICAL"] if critical else [])
+    visible = " ".join([*lines, *meta_lines, *badge_words])
+    spoken = visible if label in visible or label in node_id else f"{visible}, {label}"
+    accessible = f"{spoken}, {kind.replace('_', ' ').lower()}, id {node_id}"
     if entry:
         accessible += ", entrypoint"
     if critical:
@@ -412,6 +416,14 @@ def _shape_markup(shape: str, x: float, y: float, width: float, height: float) -
     )
 
 
+def _gap(x: float, y: float) -> str:
+    """A zero-width word break between wrapped rows, so their text is not run together.
+
+    It is its own absolutely positioned chunk, so it does not shift the anchored rows.
+    """
+    return f'<tspan x="{_fmt(x)}" y="{_fmt(y)}"> </tspan>'
+
+
 def _text_markup(
     center_x: float,
     top: float,
@@ -430,11 +442,13 @@ def _text_markup(
     first_baseline = cursor + 12
     parts = ['<text class="gnode-label" text-anchor="middle">']
     for index, line in enumerate(lines or [" "]):
+        y_label = first_baseline + index * _LABEL_LINE
         parts.append(
-            f'<tspan x="{_fmt(center_x)}" y="{_fmt(first_baseline + index * _LABEL_LINE)}">'
+            f"{_gap(center_x, y_label) if index else ''}"
+            f'<tspan x="{_fmt(center_x)}" y="{_fmt(y_label)}">'
             f"{html.escape(line, quote=False)}</tspan>"
         )
-    parts.append("</text>")
+    parts.append("</text> ")
     meta_baseline = first_baseline + rows * _LABEL_LINE
     if meta_lines:
         parts.append(
@@ -442,11 +456,13 @@ def _text_markup(
             f'y="{_fmt(meta_baseline)}" text-anchor="middle">'
         )
         for index, line in enumerate(meta_lines):
+            y_meta = meta_baseline + index * _META_LINE
             parts.append(
-                f'<tspan x="{_fmt(center_x)}" y="{_fmt(meta_baseline + index * _META_LINE)}">'
+                f"{_gap(center_x, y_meta) if index else ''}"
+                f'<tspan x="{_fmt(center_x)}" y="{_fmt(y_meta)}">'
                 f"{html.escape(line, quote=False)}</tspan>"
             )
-        parts.append("</text>")
+        parts.append("</text> ")
     if badges:
         baseline = meta_baseline + len(meta_lines) * _META_LINE
         parts.append(

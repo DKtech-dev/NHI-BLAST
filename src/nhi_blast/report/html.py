@@ -12,21 +12,34 @@ from pathlib import Path
 from typing import Any
 
 from nhi_blast.core.models import Report
+from nhi_blast.report.effects import EFFECTS_JS
 from nhi_blast.report.graph_layout import build_layout, render_graph_svg
 from nhi_blast.report.model_json import report_dict
 from nhi_blast.report.redaction import redact_model
-from nhi_blast.report.ui import APP_JS, TEMPLATE
+from nhi_blast.report.ui import APP_JS, TEMPLATE, THEME_JS
 
 _FONT_ASSETS = (
-    "geist-latin.woff2",
+    "host-grotesk-latin.woff2",
+    "instrument-sans-latin.woff2",
     "geist-mono-latin.woff2",
-    "instrument-serif-latin.woff2",
 )
 _FONT_FAMILIES = {
-    "geist-latin.woff2": "Geist",
+    "host-grotesk-latin.woff2": "Host Grotesk",
+    "instrument-sans-latin.woff2": "Instrument Sans",
     "geist-mono-latin.woff2": "Geist Mono",
-    "instrument-serif-latin.woff2": "Instrument Serif",
 }
+_ICON_ASSETS = (
+    "arrow-right.svg",
+    "arrow-up.svg",
+    "check.svg",
+    "copy.svg",
+    "info.svg",
+    "printer.svg",
+)
+_ICON_PATTERN = re.compile(
+    r'^<svg xmlns="http://www\.w3\.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">'
+    r'((?:<path d="[0-9A-Za-z.,\- ]+"/>)+)</svg>$'
+)
 _RUNTIME_ASSET = "motion-14.7.1.min.js"
 _RUNTIME_VERSION = "14.7.1"
 _RUNTIME_GLOBAL = "Motion"
@@ -37,6 +50,7 @@ _UNICODE_RANGE = (
     "U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, "
     "U+2212, U+2215, U+FEFF, U+FFFD"
 )
+_PLACEHOLDER = re.compile(r"__(?:CSP|THEME_SCRIPT|FONT_CSS|GRAPH_SVG|ICON_SPRITE|SCRIPTS)__")
 _DATA_OPEN = '<script type="application/json" id="report-data">'
 
 
@@ -93,6 +107,48 @@ def _runtime_js() -> str:
         msg = "report animation runtime contains a closing script tag"
         raise RuntimeError(msg)
     return text
+
+
+@cache
+def _icon_sprite() -> str:
+    """Phosphor regular icons as one hidden inline sprite; each file is hash and licence checked."""
+    base = resources.files("nhi_blast.report.assets")
+    entries = {str(entry["name"]): entry for entry in _manifest().get("icons", ())}
+    if set(entries) != set(_ICON_ASSETS):
+        msg = "report asset manifest does not pin the expected icons"
+        raise RuntimeError(msg)
+    symbols: list[str] = []
+    for name in _ICON_ASSETS:
+        entry = entries[name]
+        licence_name = entry.get("license_file")
+        if (
+            entry.get("license") != "MIT"
+            or not isinstance(licence_name, str)
+            or not _LICENSE_NAME_PATTERN.fullmatch(licence_name)
+        ):
+            msg = f"report icon is not pinned to its MIT licence: {name}"
+            raise RuntimeError(msg)
+        licence = base.joinpath("icons", licence_name).read_text(encoding="utf-8")
+        if "MIT License" not in licence or "Phosphor" not in licence:
+            msg = f"report icon licence file is not the Phosphor MIT licence: {name}"
+            raise RuntimeError(msg)
+        payload = base.joinpath("icons", name).read_bytes()
+        if hashlib.sha256(payload).hexdigest() != entry.get("sha256"):
+            msg = f"report icon hash mismatch: {name}"
+            raise RuntimeError(msg)
+        match = _ICON_PATTERN.fullmatch(payload.decode("utf-8"))
+        if match is None:
+            msg = f"report icon is not a plain single colour path icon: {name}"
+            raise RuntimeError(msg)
+        symbols.append(
+            f'<symbol id="i-{name.removesuffix(".svg")}" viewBox="0 0 256 256">'
+            f"{match.group(1)}</symbol>"
+        )
+    return (
+        '<svg class="icon-sprite" width="0" height="0" aria-hidden="true" focusable="false">'
+        + "".join(symbols)
+        + "</svg>"
+    )
 
 
 @cache
@@ -165,10 +221,11 @@ def _embedded_json(report: Report) -> str:
     )
 
 
-def _inline_scripts(data: str, runtime: str) -> str:
+def _inline_scripts(data: str, runtime: str, effects: str = EFFECTS_JS) -> str:
     for name, body in (
         ("report data", data),
         ("animation runtime", runtime),
+        ("effects script", effects),
         ("application script", APP_JS),
     ):
         if "</script" in body.lower():
@@ -177,9 +234,18 @@ def _inline_scripts(data: str, runtime: str) -> str:
     blocks = [
         f"{_DATA_OPEN}{data}</script>",
         f"<script>{runtime}</script>",
+        f"<script>{effects}</script>",
         f"<script>{APP_JS}</script>",
     ]
     return "\n".join(blocks)
+
+
+def _head_script() -> str:
+    """The early theme script: it must run before first paint, so it lives in <head>."""
+    if "</script" in THEME_JS.lower():
+        msg = "theme script contains a closing script tag"
+        raise RuntimeError(msg)
+    return f"<script>{THEME_JS}</script>"
 
 
 def html_report(report: Report) -> str:
@@ -190,16 +256,22 @@ def html_report(report: Report) -> str:
     scripts = _inline_scripts(data, runtime)
     layout = build_layout(report)
     graph_svg = render_graph_svg(layout, report)
-    bodies = [data, runtime, APP_JS]
+    bodies = [THEME_JS, data, runtime, EFFECTS_JS, APP_JS]
     hashes = " ".join(f"'sha256-{_script_hash(body)}'" for body in bodies)
     csp = (
         "default-src 'none'; style-src 'unsafe-inline'; font-src data:; "
         f"script-src {hashes}; base-uri 'none'; form-action 'none'"
     )
-    document = TEMPLATE.replace("__CSP__", csp)
-    document = document.replace("__FONT_CSS__", _font_css())
-    document = document.replace("__GRAPH_SVG__", graph_svg)
-    document = document.replace("__SCRIPTS__", scripts)
+    parts = {
+        "__CSP__": csp,
+        "__THEME_SCRIPT__": _head_script(),
+        "__FONT_CSS__": _font_css(),
+        "__GRAPH_SVG__": graph_svg,
+        "__ICON_SPRITE__": _icon_sprite(),
+        "__SCRIPTS__": scripts,
+    }
+    # One pass: report-derived text inserted for one placeholder is never rescanned for another.
+    document = _PLACEHOLDER.sub(lambda match: parts[match.group(0)], TEMPLATE)
     return document.rstrip() + "\n"
 
 

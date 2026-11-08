@@ -18,6 +18,7 @@ from nhi_blast.core.limits import Limits
 from nhi_blast.core.models import ParseResult, TfSource
 from nhi_blast.parsers._json import decode_json
 from nhi_blast.parsers._unicode import validate_unicode
+from nhi_blast.parsers.sensitive_fields import project_resource_values
 from nhi_blast.parsers.terraform.facts import (
     TfModelFact,
     TfPolicyDocumentFact,
@@ -265,9 +266,21 @@ def parse_tf_json(label: str, text: str, *, limits: Limits) -> ParseResult[TfMod
             for mask in (sensitive_trees.get(address), resource.get("sensitive_values")):
                 blind.extend(_flatten_unknown(mask))
                 plain_values = _strip_sensitive(plain_values, mask)
-            sensitive_fields = tuple(sorted(set(blind)))
+            resource_type = str(resource.get("type", ""))
+            projection = project_resource_values(
+                resource_type, plain_values, sensitive_fields=tuple(blind)
+            )
+            plain_values = projection.values
+            sensitive_fields = tuple(sorted({*blind, *projection.sensitive_fields}))
             unknown_tree = unknown_trees.get(address)
-            unknown_fields = _flatten_unknown(unknown_tree) if unknown_tree else ()
+            unknown_fields = tuple(
+                sorted(
+                    {
+                        *_flatten_unknown(unknown_tree),
+                        *projection.unknown_fields,
+                    }
+                )
+            )
             expressions = references.get(address)
             reference_map: dict[str, tuple[str, ...]] = {}
             if isinstance(expressions, Mapping):
@@ -279,7 +292,7 @@ def parse_tf_json(label: str, text: str, *, limits: Limits) -> ParseResult[TfMod
             resources[address] = TfResource(
                 address=address,
                 mode=str(resource.get("mode", "managed")),
-                type=str(resource.get("type", "")),
+                type=resource_type,
                 name=str(resource.get("name", "")),
                 index=resource.get("index")
                 if isinstance(resource.get("index"), (int, str))

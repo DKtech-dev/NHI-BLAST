@@ -25,7 +25,8 @@ from nhi_blast.pipeline import (
     run_scan,
 )
 from nhi_blast.report._text import safe_text
-from nhi_blast.report.explain import ExplainError, load_report, render_explanation
+from nhi_blast.report.explain import render_explanation
+from nhi_blast.report.loader import ReportLoadError, load_report
 from nhi_blast.report.model_json import report_schema
 
 PathArgument = Annotated[Path, typer.Argument(metavar="PATH", help="Repository root to read.")]
@@ -209,7 +210,7 @@ def explain(
         try:
             report = load_report(report_path)
             text = render_explanation(report, identifier)
-        except ExplainError as exc:
+        except ReportLoadError as exc:
             raise UsageError(str(exc)) from None
         typer.echo(text, nl=False)
         return 0

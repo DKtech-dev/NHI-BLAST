@@ -1,0 +1,14 @@
+{
+  "name": "nhi-blast-ui-tests",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Dev-time browser tests for the generated offline HTML report. Not shipped; the report itself makes no network requests.",
+  "scripts": {
+    "test": "playwright test",
+    "install:browsers": "playwright install chromium firefox webkit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "axe-core": "^4.10.0"
+  }
+}

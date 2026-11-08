@@ -15,6 +15,7 @@ from typing import Any
 import pytest
 
 from nhi_blast.report import html as report_html_module
+from nhi_blast.report.effects import EFFECTS_JS
 from nhi_blast.report.html import html_report, write_html
 from tests.report_support import HOSTILE, make_report
 
@@ -108,9 +109,16 @@ def test_csp_hashes_every_inline_script_and_forbids_inline_execution() -> None:
     policy = html_module.unescape(match.group(1))
     scripts = _scripts(document)
 
-    assert len(scripts) == 3
-    assert scripts[0][0].get("type") == "application/json"
-    assert scripts[1][1] == (ASSETS / "vendor" / "motion-14.7.1.min.js").read_text(encoding="utf-8")
+    # G6: the effects script (halftone field, journey line, reveals) is the fourth inline script.
+    assert len(scripts) == 5
+    # The early theme script sits in <head> so the theme is set before first paint.
+    assert scripts[0][0] == {}
+    assert "window.NHBTheme" in scripts[0][1]
+    assert document.index(scripts[0][1]) < document.index("<body>")
+    assert scripts[1][0].get("type") == "application/json"
+    assert scripts[2][1] == (ASSETS / "vendor" / "motion-14.7.1.min.js").read_text(encoding="utf-8")
+    assert scripts[3][1] == EFFECTS_JS
+    assert "NHBEffects" in scripts[3][1]
     for attrs, body in scripts:
         assert "src" not in attrs
         digest = base64.b64encode(hashlib.sha256(body.encode("utf-8")).digest()).decode("ascii")
@@ -169,11 +177,14 @@ def test_design_tokens_cover_reduced_motion_and_local_pointer_lighting() -> None
     document = html_report(make_report())
     app = _scripts(document)[-1][1]
 
-    assert "--dur-2: 140ms" in document
-    assert "--bg: #050505" in document
-    assert "--accent: #ff382f" in document
-    assert "--r-panel: 16px" in document
-    assert '--serif: "Instrument Serif"' in document
+    # G5/G6 owner design system: durations follow the 300 ms base, colours are --dp-* tokens, the
+    # display face is Host Grotesk and panels use the 12 px radius token.
+    assert "--dur-2: 300ms" in document
+    assert "--dp-ground: #0e1116" in document
+    assert "--dp-accent: #6f9bff" in document
+    assert "--r-panel: var(--dp-radius-panel)" in document
+    assert "--dp-radius-panel: 12px" in document
+    assert '--display: "Host Grotesk"' in document
     assert "prefers-reduced-motion: reduce" in document
     assert "--dur-1: 1ms" in document
     assert 'class="summary-band" id="summary-grid" data-light' in document
@@ -190,17 +201,20 @@ def test_motion_drives_intro_reveals_readouts_and_presence_with_reduced_motion_s
     app = _scripts(document)[-1][1]
 
     assert 'window.Motion && typeof window.Motion.animate === "function"' in app
-    assert "MotionGlobalConfig.skipAnimations = prefersReducedMotion()" in app
-    assert "function startMotionIntro()" in app
-    assert "function startMotionReveals()" in app
-    assert "motion.inView(" in app
+    # Effective motion includes the user switch and live system preference, not OS state alone.
+    assert "MotionGlobalConfig.skipAnimations = !on" in app
+    assert "window.NHBTheme.subscribeMotion(syncMotion)" in app
+    assert "if (!on) { Array.from(presenceAnimations.keys()).forEach(clearPresence); }" in app
+    assert "running.cancel(); presenceAnimations.delete(item);" in app
+    # G6: the owner's brief removed the page entrance sequence. Motion stays optional and only
+    # answers actions: readouts, presence of the entity panel, and the effects layer.
+    assert "function startMotionIntro()" not in app
+    assert "function startMotionReveals()" not in app
+    assert "data-motion-reveal" not in app
     assert "function animatePresence(" in app
     assert "motion.animate(from, to, {" in app
-    assert '["#survival-content", "#rotation-content", "#graph .graph-frame"]' in app
-    assert "startMotionIntro();" in app
-    assert "startMotionReveals();" in app
-    assert "[data-motion-reveal] { opacity: 1 !important; transform: none !important; }" in document
-    assert 'document.querySelectorAll("[data-motion-reveal]")' in app
+    assert "startEffects();" in app
+    assert "window.NHBEffects" in app
     assert "@keyframes title-in" not in document
     assert "@keyframes ambient-glow-in" not in document
     assert "@keyframes ambient-ring-in" not in document
@@ -329,9 +343,9 @@ def test_asset_manifest_pins_the_fonts_and_the_motion_runtime() -> None:
     assert "MIT License" in licence
     assert "Motion" in licence
     assert {entry["name"] for entry in manifest["fonts"]} == {
-        "geist-latin.woff2",
         "geist-mono-latin.woff2",
-        "instrument-serif-latin.woff2",
+        "host-grotesk-latin.woff2",
+        "instrument-sans-latin.woff2",
     }
 
 
@@ -340,15 +354,15 @@ def test_embedded_fonts_match_the_pinned_manifest_and_carry_their_licence() -> N
     entries = {entry["name"]: entry for entry in manifest["fonts"]}
 
     assert set(entries) == {
-        "geist-latin.woff2",
         "geist-mono-latin.woff2",
-        "instrument-serif-latin.woff2",
+        "host-grotesk-latin.woff2",
+        "instrument-sans-latin.woff2",
     }
     for name, entry in entries.items():
         payload = (FONTS / name).read_bytes()
         assert payload[:4] == b"wOF2"
         assert hashlib.sha256(payload).hexdigest() == entry["sha256"]
-        assert entry["family"] in {"Geist", "Geist Mono", "Instrument Serif"}
+        assert entry["family"] in {"Geist Mono", "Host Grotesk", "Instrument Sans"}
         assert entry["license"] == "OFL-1.1"
         assert (FONTS / entry["license_file"]).is_file()
         assert entry["source_url"].startswith("https://")
@@ -388,9 +402,9 @@ def test_embedded_font_payloads_are_byte_identical_to_the_licensed_files() -> No
     source = sorted(
         hashlib.sha256((FONTS / name).read_bytes()).hexdigest()
         for name in (
-            "geist-latin.woff2",
             "geist-mono-latin.woff2",
-            "instrument-serif-latin.woff2",
+            "host-grotesk-latin.woff2",
+            "instrument-sans-latin.woff2",
         )
     )
     assert embedded == source

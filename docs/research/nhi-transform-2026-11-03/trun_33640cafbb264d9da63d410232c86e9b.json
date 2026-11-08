@@ -1,0 +1,454 @@
+{
+  "run_id": "trun_33640cafbb264d9da63d410232c86e9b",
+  "result_url": "https://platform.parallel.ai/play/deep-research/trun_33640cafbb264d9da63d410232c86e9b",
+  "status": "completed",
+  "processor": "pro-fast",
+  "source_content_sha256": "2e5d92791494e84fc65621cd1a46165bf1dc5df696fb57092c2fd81c9c66c841",
+  "saved_content_sha256": "2e5d92791494e84fc65621cd1a46165bf1dc5df696fb57092c2fd81c9c66c841",
+  "redacted_for_known_credential_patterns": false,
+  "output": {
+    "type": "text",
+    "content_file": "trun_33640cafbb264d9da63d410232c86e9b.md",
+    "basis": [
+      {
+        "field": "answer",
+        "reasoning": "Reasoning for completeness assessment:\n- The field_description asks for a 2200-word, offline technical report with inline citations, explicit known/unknown facts, and sources; it also requests 5 high-value innovations, 15-25 sources, and careful handling of uncertainty, provenance, and offline architecture. The provided field_answer appears to be long and multi-section, but it is not clear that it reaches the ~2200 words target, and it may not fully satisfy all requested concrete requirements (e.g., explicit inline citations density, comprehensive 15-25 official sources, and a fully fleshed-out 5 innovations with all acceptance criteria). Therefore, completeness is judged false.\n- Excerpts provided cover many related aspects (policy evaluation, Deny/Allow semantics, OIDC, STS durations, revocation, SMT/Zelkova, MulVAL/Datalog, CSP references, etc.), but the field_answer’s direct alignment with every requested element is not guaranteed. Thus, as a separate criterion, the field_answer is likely supported by excerpts in many parts but not guaranteed to be fully corroborated in every claim. Therefore, completeness = false; supported = true (to a reasonable extent).\n- If the user expected a stricter 2200-word report with exact inline citations and full source-traceability across 15-25 sources, this answer may fall short. However, the excerpts do provide substantial backing for many statements in the answer, indicating some level of support.\n",
+        "citations": [
+          {
+            "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic_policy-eval-denyallow.html",
+            "excerpts": [
+              "An explicit deny overrides an explicit allow.",
+              "In all those policies, the enforcement code looks for a `Deny` statement that applies to the request. This is called an [explicit deny](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic_AccessPolicyLanguage_Interplay.html) . If the enforcement code finds even one explicit deny that applies, the enforcement code returns a final decision of **Deny** . If there is no explicit deny, the enforcement code evaluation continues.",
+              "**Resource-based policies** – Within the same account, resource-based policies impact policy evaluation differently depending on the type of principal accessing the resource, and the principal that is allowed in the resource-based policy. Depending on the type of principal, an `Allow` in a resource-based policy can result in a final decision of `Allow` , even if an implicit deny in an identity-based policy, permissions boundary, or session policy is present.",
+              "For single account policy evaluation requests, resource-based policy logic differs from other policy types if the specified principal is an IAM user, an IAM role, or a session principal. Session principals include [IAM role sessions](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html) or an [AWS STS federated user principals](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html) . If a resource-based policy grants permission directly to the IAM user or the session principal that is making the request, then an implicit deny in an identity-based policy, a permissions boundary, or a session policy does not impact the final decision.",
+              "**IAM role** – Resource-based policies that grant permissions to an IAM role ARN are limited by an implicit deny in a permissions boundary or session policy. You can specify the role ARN in the Principal element or the `aws:PrincipalArn` condition key.",
+              "**IAM role session** – Within the same account, resource-based policies that grant permissions to an IAM role session ARN grant permissions directly to the assumed role session. Permissions granted directly to a session are not limited by an implicit deny in an identity-based policy, a permissions boundary, or session policy. When you assume a role and make a request, the principal making the request is the IAM role session ARN and not the ARN of the role itself.",
+              "same account, resource-based policies that grant permissions to an IAM role session ARN grant permissions directly to the assumed role session. Permissions granted directly to a session are not limited by an implicit deny in an identity-based policy, a permissions boundary, or session policy. When you assume a role and make a request, the principal making the request is the IAM role session ARN and not the ARN of the role itself.",
+              "**IAM user** – Within the same account, resource-based policies that grant permissions to an IAM user ARN (that is not a federated user session) are not limited by an implicit deny in an identity-based policy or permissions boundary. **Example IAM user ARN** ``` arn:aws:iam::111122223333:user/exampleuser ```",
+              "**AWS Organizations RCPs** – The enforcement code evaluates AWS Organizations resource control policies (RCPs) that apply to the request. RCPs apply to resources of the account where the RCPs are attached. If the enforcement code does not find any applicable `Allow` statements in the RCPs, the enforcement code returns a final decision of **Deny** . Note that an AWS managed policy called `RCPFullAWSAccess` is automatically created and attached to every entity in your organization including the root, each OU, and AWS account when RCPs are enabled. `RCPFullAWSAccess` can't be detached, so there will always be an `Allow` statement. If there is no RCP, or if the RCP allows the requested action, the enforcement code evaluation continues.",
+              "Policy evaluation can differ depending on whether the request is within a single account or a cross-account request. For details about how a policy evaluation decision is made for an IAM role or user within a single account, see [Policy evaluation for requests within a single account](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic_policy-eval-basics.html) . For details about how a policy evaluation decision is made for cross-account requests, see [Cross-account policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic-cross-account.html) .",
+              "For most resources, you only need an explicit `Allow` for the principal in either an identity-based policy or a resource-based policy to grant access. [IAM role trust policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies-cross-account-resource-access.html) and [KMS key policies](https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html) are exceptions to this logic, because they must explicitly allow access for [principals](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html) .",
+              "[Overview of role templates](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_role-template.html) [Role management](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_manage.html) [Grant permissions to switch roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_permissions-to-switch.html) [Grant permissions to pass a role to a service](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html) [Revoke role temporary credentials](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_revoke-sessions.html) [Update a service-linked role](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_update-service-linked-role.html) [Update a role trust policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_update-role-trust-policy.html) [Update role permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_update-role-permissions.html) [Update role settings](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_update-role-settings.html) [Delete roles or instance profiles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_manage_delete.html) [Methods to assume a role](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_manage-assume.html) [Switch from a user to a role](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-console.html) [Switch roles (AWS CLI)](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-cli.html) [Switch roles (Tools for Windows PowerShell)](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-twp.html) [Switch roles (AWS API)](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-api.html) [Use roles for applications on Amazon EC2](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2.html) [Use instance profiles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html) [Identity providers and federation into AWS](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers.html) [Common scenarios](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_federation_common_scenarios.html) [OIDC federation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_oidc.html) [Create OIDC identity provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html) [Obtain the thumbprint for an OIDC provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html)",
+              "[Delete an IAM group](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_groups_manage_delete.html) [Roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html) [The confused deputy problem](https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html) [Common scenarios](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_common-scenarios.html) [Access across AWS accounts](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_common-scenarios_aws-accounts.html) [Access for non-AWS workloads](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_common-scenarios_non-aws.html) [Access to third-party AWS accounts](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_common-scenarios_third-party.html) [Access to AWS services](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_common-scenarios_services.html) [Access through identity federation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_common-scenarios_federated-users.html) [Role creation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create.html) [Create a role for an IAM user](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user.html) [Create a role for an AWS service](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-service.html) [Create a service-linked role](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create-service-linked-role.html) [Create a role for identity federation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-idp.html) [Create a role for OIDC federation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-idp_oidc.html) [Create a role for SAML 2.0 federation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-idp_saml.html) [Create a role using custom trust policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-custom.html) [Examples of policies for delegating access](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_policy-examples.html) [Create roles automatically with role manager](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_role-manager.html)"
+            ],
+            "title": "How AWS enforcement code logic evaluates requests to allow or deny access - AWS Identity and Access Management"
+          },
+          {
+            "url": "https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoleWithWebIdentity.html",
+            "excerpts": [
+              "By default, the temporary security credentials created by `AssumeRoleWithWebIdentity` last for one hour. However, you can use the optional `DurationSeconds` parameter to specify the duration of your session.",
+              "You can provide a value from 900 seconds (15 minutes) up to the maximum session duration setting for the role. This setting can have a value from 1 hour to 12 hours.",
+              "By default, the value is set to `3600` seconds.",
+              "**DurationSeconds** The duration, in seconds, of the role session. The value can range from 900 seconds (15 minutes) up to the maximum session duration setting for the role. This setting can have a value from 1 hour to 12 hours. If you specify a value higher than this setting, the operation fails.",
+              "Passing policies to this operation returns new temporary credentials. The resulting session's permissions are the intersection of the role's identity-based policy and the session policies.",
+              "You can use the role's temporary credentials in subsequent AWS API calls to access resources in the account that owns the role. You cannot use session policies to grant more permissions than those allowed by the identity-based policy of the role that is being assumed.",
+              "By default, the temporary security credentials created by `AssumeRoleWithWebIdentity` last for one hour. However, you can use the optional `DurationSeconds` parameter to specify the duration of your session. You can provide a value from 900 seconds (15 minutes) up to the maximum session duration setting for the role. This setting can have a value from 1 hour to 12 hours.",
+              "**DurationSeconds** The duration, in seconds, of the role session. The value can range from 900 seconds (15 minutes) up to the maximum session duration setting for the role. This setting can have a value from 1 hour to 12 hours. If you specify a value higher than this setting, the operation fails. For example, if you specify a session duration of 12 hours, but your administrator set the maximum session duration to 6 hours, your operation fails. To learn how to view the maximum value for your role, see [View the Maximum Session Duration Setting for a Role](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html) in the _IAM User Guide_ . By default, the value is set to `3600` seconds."
+            ],
+            "title": "AssumeRoleWithWebIdentity - AWS Security Token Service"
+          },
+          {
+            "url": "https://arxiv.org/html/2601.14455",
+            "excerpts": [
+              "The final dataset consists of 2722 workflows collected from 388 distinct open-source repositories.",
+              "To compare the capacities of the workflow security scanners, we collect a dataset of workflows that are both representative of real-world usages and structurally diverse. To build this benchmark, we mine the repositories of the largest technology companies by revenue ⁶ ⁶ 6 [https://en.wikipedia.org/wiki/List\\_of\\_largest\\_technology\\_companies\\_by\\_revenue](https://en.wikipedia.org/wiki/List_of_largest_technology_companies_by_revenue) , which have at least one verified GitHub organization with public repositories. For each company, we collect all their verified GitHub organizations, and we filter the repositories with a minimum of 2000 GitHub stars, that contain at least one workflow file in the .github/workflows/ directory and have received a commit within the 12 months preceding the collection date (Feb. 28, 2026). For each repository, we collect all yaml files inside .github/workflows/ directory.",
+              "The second threat relates to the absence of ground truth. To the best of our knowledge, there is no verified dataset of GitHub Actions workflows labeled with known weaknesses, which can be used as a ground truth to assess the correctness of the weaknesses reported by different security scanners.",
+              "We mitigate this threat with a comparative study and manual inspection of the scanners’ code to explain the differences in the number of reported weaknesses.",
+              "The third threat relates to the correctness of our code and data analysis pipeline. We have developed an automatic pipeline to run all the scanners against 2722 workflows, collect logs and reports, analyze and consolidate the number of weaknesses. This pipeline is subject to potential bugs. We mitigate this threat through testing and manual inspections. The pipeline and experimental data is publicly available, see section IX .",
+              "Table I provides the curated list of workflow security scanners that we use in this study. The table includes the name of the scanner, the specific commit ID used for our experiments, the date of this commit (as recorded during the collection period from June 3 to June 11, 2025), the primary programming language of the implementation, and the source through which we found this scanner. We also document the exact command we use to run each scanner, as part of our reproducibility package ⁵ ⁵ 5 [https://github.com/sparkrew/github-actions-security/blob/main/tools\\_output/commands.md](https://github.com/sparkrew/github-actions-security/blob/main/tools_output/commands.md) .",
+              "We have developed an automatic pipeline to run all the scanners against 2722 workflows, collect logs and reports, analyze and consolidate the number of weaknesses. This pipeline is subject to potential bugs. We mitigate this threat through testing and manual inspections. The pipeline and experimental data is publicly available, see section IX .",
+              "While security scanners all aim at analyzing GitHub Actions Workflows, they implement rules with different names or different levels of granularity. In order to support a fair and interpretable comparison across scanners that use different naming conventions and detection granularity, we need to determine the common weaknesses that scanners search for.",
+              "In order to classify the common security weaknesses, we proceed in four steps: manually analyze the documentation of the scanners, manually analyze the code of the scanning rules, cluster rules that detect similar weaknesses, validate our classification with the developers of the scanners. First, two authors jointly review the documentation of each scanner to identify the rules it supports. We search for the keywords \" rule \", \" pattern \", and \" check \" within the documentation and locate the sections related to workflow analysis rules. ... When clustering individual rules into weaknesses, we follow three principles: (1) we group rules that address the same security objective; (2) each rule is assigned to exactly one group; and (3) the weaknesses are defined and named in a way that rules from different scanners can be included, regardless of naming differences in different scanners. This process leads to the definition of 10 common weaknesses. Finally, to validate our interpretation of each scanner’s rule semantics and our mapping decisions, we contacted the lead maintainers of each scanner. We share (i) our classification of 10 common weaknesses, as well as (ii) the mapping between the rules of specific scanners and these common weaknesses. We ask the maintainers whether the mapping accurately reflects the intention of their scanner, and whether they agree that all of their rules can be expressed using our 10 common weaknesses. Out of 9 maintainers, 5 responded, 3 of them provided additional feedback, which we considered to adjust the description of 2 common weaknesses. All maintainers agreed with our mapping of rules to the common weaknesses. The final classification of 10 common weaknesses is detailed in section V and forms the basis for our differential analysis of the 9 security scanners.",
+              "poutine and zizmor essentially search for the same common weaknesses. Yet, the two scanners implement different strategies to detect the weaknesses, which explains many of their differences. In particular, all the rules of poutine implement conservative heuristics and focus on specific patterns, to maximize the chances of finding weaknesses that can actually be exploited. Meanwhile, zizmor implements rules that have a broader scope, similar to a linter, reporting a blend of vulnerabilities, anti-patterns, and formatting issues. These differences are particularly visible in the case of AIW, EPW, IW, SEW and UDW."
+            ],
+            "title": "Unpacking Security Scanners for GitHub Actions Workflows"
+          },
+          {
+            "url": "https://assets.amazon.science/1e/e9/6aa1bd1a4203a8869f29d3bb3bff/a-billion-smt-queries-a-day.pdf",
+            "excerpts": [
+              "**A Billion SMT Queries a Day (Invited Paper)**",
+              "Neha Rungta ( B ) Amazon Web Services, Seattle, USA rungta@amazon.com",
+              "c _⃝_ The Author(s) 2022 S. Shoham and Y. Vizel (Eds.): CAV 2022, LNCS 13371, pp. 3–18, 2022. https://doi.org/10.1007/978-3-031-13185-1\\_1",
+              "To help AWS users secure their resources, we built Zelkova, a policy anal- ysis tool designed to reason about the semantics of AWS access control policies.",
+              "Zelkova translates policies and properties into Satisfiability Modulo Theories (SMT) formulas and uses SMT solvers to prove a variety of security properties such as “ _Does the policy grant broad public access?_ ” [6].",
+              "The SMT encoding uses the theory of strings, regular expressions, bit vectors, and integer comparisons.",
+              "The use of the wildcards _∗_ (any number of characters) and ? (exactly one char- acter) in the string constraints makes the decision problem PSPACE-complete.",
+              "Zelkova uses a portfolio solver, where it invokes multiple solvers in the backend and uses the results from the solver that returns first, in a winner takes all strat- egy. This allows us to leverage the diversity among solvers and quickly solve queries—a couple hundred milliseconds to tens of seconds.",
+              "The answer was to design and build domain-specific abstractions. Do one thing and do it really well. We created a higher level service on top of Zelkova called IAM Access Analyzer.",
+              "An account in AWS is a fundamental construct that serves as a container for the user’s resources, workloads, and data. Users can create policies to grant access to resources in their account to other users. In Access Analyzer, we use the account as a _zone of trust_ . This abstraction lets us say that access to resources by users within their zone of trust is considered safe. But access to resources outside their zone of trust is potentially unsafe. Once a user enables Access Analyzer, we use stratified predicate abstraction to analyze the policies and generate findings showing which users outside the zone of trust have access to resources.",
+              "Once a user enables Access Analyzer, we use stratified predicate abstraction to analyze the policies and generate findings showing which users outside the zone of trust have access to resources. We had to shift from a mode where Zelkova can answer “any access query” to Zelkova can enumerate “who has access to what”. This brings to attention the permissions that could lead to unintended access of data. While this idea seems simple in hindsight, it took us a couple of years to figure out the right abstraction for the domain. It can be used by all AWS users. They did not need to be experts in the area of formal methods or even have deep understanding of how access control in the cloud worked. Each finding includes details about the resource, the external entity with access to it, and the permissions granted so that the user can take appropri- ate action.",
+              "Each finding includes details about the resource, the external entity with access to it, and the permissions granted so that the user can take appropri- ate action. We present example findings in Fig. 4. Note these findings are not presented as SMT-lib formulas but rather in the domain that the user expects— AWS access control constructs. These map to the findings presented in the pre- vious section for Fig. 1. Users can view the details included in the finding to determine whether the access is intentional or a potential risk that the user should resolve.",
+              "To that end, Access Analyzer analyzes these policies if a user adds a new policy, or changes an existing policy, and either generates new findings, or removes findings, or updates the existing findings. Access Analyzer also analyzes all policies periodically, to ensure that in a rare case, if a change event to the policy is missed by the system, it is still able to keep the findings updated. The ease of enablement, just-in-time analysis on updates, and periodic analysis across all policies are the key factors in getting us to a billion queries daily.",
+              "In this paper, we focus on how we built abstractions and eliminated specifications to scale a verification engine for AWS access policies, Zelkova, to be usable by all AWS users. We present milestones from our journey from a thousand SMT invocations daily to an unprecedented billion SMT calls in a span of five years. In this paper, we talk about how the cloud is enabling application of formal methods, key insights into what made this scale of a billion SMT queries daily possible, and present some open scientific challenges for the formal methods community.",
+              "The use of SMT solving in AWS features and services means that millions of users are relying on the correctness and timeliness of the underlying solvers for the security of their cloud infrastructure. The challenges around correctness and timeliness in solver queries have been well studied in the automated reasoning community, but they have been treated as independent features. Today, we are generating a billion SMT queries every day to support various use cases across a wide variety of AWS services. We have discovered an intricate dependency between correctness and timeliness that manifests at this scale.",
+              "SMT solver researchers and developers are fixing issues, making improvements to existing features, adding new theories, adding features such as generation of proofs, and making other performance improvements. Before deploying a new version of the solver within the production environment, we perform extensive offline testing and benchmarking to gain confidence in the correctness of the answers, perfor- mance of the queries, and ensure there are no regressions."
+            ],
+            "title": "A Billion SMT Queries a Day (Invited Paper)"
+          },
+          {
+            "url": "https://github.com/sparkrew/github-actions-security",
+            "excerpts": [
+              "The 2,722 collected workflows are stored separately:",
+              "The archive contains `workflows/` , `normalized_workflows/` , and `54_workflows_to_label/` .",
+              "`ground-truth/` — manual labels and per-scanner labels for the 54-workflow accuracy sample ( `manual_label.csv` , `tools_label/` ).",
+              "`accuracy_sampling.ipynb` documents the 54-workflow sample.",
+              "`accuracy.ipynb` compares `ground-truth/tools_label/` with `ground-truth/manual_label.csv` and writes `results/accuracy.csv` .",
+              "The collected workflows are not stored in this GitHub repository, so GitHub does not execute them here.",
+              "Scanner outputs are kept raw in `scanners_output/` .",
+              "Dataset: <https://doi.org/10.5281/zenodo.23129390>",
+              "`dataset/` — workflow metadata and dataset manifests ( `workflow_list.csv` , `workflow_metadata.csv` , `workflow_diversity_features.csv` ).",
+              "`results/` — summary CSV files, execution time measurements, and accuracy metrics ( `coverage_matrix.csv` , `detection_volume_matrix.csv` , `tools_findings_summary.csv` , `accuracy.csv` , `execution_time/` )."
+            ],
+            "title": "GitHub - sparkrew/github-actions-security: Data and code for the comprehensive study of GHA workflows scanners · GitHub"
+          },
+          {
+            "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html",
+            "excerpts": [
+              "String condition operators let you construct `Condition` elements that restrict access based on comparing a key to a string value.",
+              "|`StringEquals` |Exact matching, case sensitive |",
+              "|`StringLike` |Case-sensitive matching.",
+              "The values can include multi-character match wildcards (\\*) and single-character match wildcards (?) anywhere in the string.",
+              "You must specify wildcards to achieve partial string matches.",
+              "If a key contains multiple values, `StringLike` can be qualified with set operators— `ForAllValues:StringLike` and `ForAnyValue:StringLike` .",
+              "|`ForAllValues:StringLike` |All of the values for the condition key in the request must match at least one of the values in your policy. |",
+              "|`ForAnyValue:StringLike` |At least one condition key value in the request must match one of the values in your policy. |",
+              "|`ForAllValues:StringNotLike` |Negated matching. None of the values of the context key in the request can match any of the context key values in your policy. |",
+              "|`ForAnyValue:StringNotLike` |Negated matching. At least one context key value in the request must NOT match any of values in the context key in your policy. |",
+              "If the key that you specify in a policy condition is not present in the request context, the values do not match and the condition is _false_ .",
+              "If the policy condition requires that the key is _not_ matched, such as `StringNotLike` or `ArnNotLike` , and the right key is not present, the condition is _true_ .",
+              "This logic applies to all condition operators except ...IfExists and Null check .",
+              "To prevent missing context keys or context keys with empty values from evaluating to true, you can include the Null condition operator in your policy with a `false` value to check if the context key exists and its value is not null.",
+              "You can add `IfExists` to the end of any condition operator name except the `Null` condition—for example, `StringLikeIfExists` .",
+              "If the key is not present, evaluate the condition element as true.\" Other condition elements in the statement can still result in a nonmatch, but not a missing key when checked with `...IfExists` .",
+              "If you are using an `\"Effect\": \"Deny\"` element with a negated condition operator like `StringNotEqualsIfExists` , the request is still denied even if the condition key is not present.",
+              "_August 6, 2023_",
+              "[Delegate access across AWS accounts using roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html) [Create a customer managed policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_managed-policies.html) [Use attribute-based access control (ABAC)](https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_attribute-based-access-control.html)",
+              "[When do I use IAM?](https://docs.aws.amazon.com/IAM/latest/UserGuide/when-to-use-iam.html) [How do I manage IAM?](https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-managing-iam.html) [How IAM works](https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html)",
+              "[Create SAML identity provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_saml.html) [Configure relying party trust and claims](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_saml_relying-party.html) [Integrate third-party SAML solution providers with AWS](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_saml_3rd-party.html) [Configure SAML assertions for the authentication response](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_saml_assertions.html)"
+            ],
+            "title": "IAM JSON policy elements: Condition operators - AWS Identity and Access Management"
+          },
+          {
+            "url": "https://github.com/iann0036/iam-dataset",
+            "excerpts": [
+              "License: MIT license",
+              "A consolidated series of structured data for cloud identity and access management systems, including datasets for AWS, Azure, and Google Cloud.",
+              "aws/ azure/ gcp/",
+              "URL: https://github.com/iann0036/iam-dataset",
+              "For Amazon Web Services IAM, the primary datasources are map.json and iam\\_definition.json.",
+              "For Azure, the primary datasource is built-in-roles.json.",
+              "For Google Cloud, the primary datasources are methods.json, permissions.json and role\\_permissions.json.",
+              "Default branch: main",
+              "Commits: 2,728",
+              "Created: 2021-01-30T22:58:11.000Z",
+              "Default branch: main Created: 2021-01-30T22:58:11.000Z Commits: 2,728",
+              "map.json A comprehensive mapping from SDK calls to IAM actions, typically created with the assistance of the mapping tool. For more information on this file, see [aws/MAP-README.md](https://github.com/iann0036/iam-dataset/blob/main/aws/MAP-README.md) .",
+              "iam\\_definition.json A scraping of the [AWS Service Authorization Reference](https://docs.aws.amazon.com/service-authorization/latest/reference/reference.html) , the AWS-provided reference of known IAM actions. It is generated using work from [Parliament](https://github.com/duo-labs/parliament) . The file does have some post-crawl patching actions.",
+              "built-in-roles-raw.json The output of the command `az role definition list` with a query for all built-in roles.",
+              "permissions.json IAM Permissions as defined by the online [IAM permissions reference](https://cloud.google.com/iam/docs/permissions-reference) . role\\_permissions.json A mapping of each permission and the roles which the permission has, including whether the containment is undocumented per the IAM permission reference."
+            ],
+            "title": "GitHub - iann0036/iam-dataset: A consolidated series of structured data for cloud identity and access management systems, including datasets for AWS, Azure, and Google Cloud · GitHub"
+          },
+          {
+            "url": "https://github.com/cloud-copilot/iam-simulate",
+            "excerpts": [
+              "License: AGPL-3.0 license",
+              "An AWS IAM Simulator and Policy Tester built as a Node/Typescript library.",
+              "The simulator currently supports these features of AWS IAM IAM Feature Support Identity Policies Resource Policies Service Control Policies Resource Control Policies Permission Boundaries",
+              "All [AWS Condition Operators](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html)",
+              "Same Account and Cross Account Requests",
+              "Currently all [global condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html) are allowed for all requests which is not strictly true.",
+              "More validation will be added in the future.",
+              "Anonymous requests do not have identity policies, session policies, permission boundaries, or SCPs; those principal-side policy inputs are rejected by `runSimulation` .",
+              "const simulation: Simulation = { identityPolicies: [ { name: 'userpolicy', policy: { Version: '2012-10-17', Statement: [ { Effect: 'Allow', Action: ['s3:GetObject'], Resource: ['arn:aws:s3:::mybucket/*'] } ] } }"
+            ],
+            "title": "GitHub - cloud-copilot/iam-simulate: An IAM Simulator that outputs detailed explains of how a request was evaluated. · GitHub"
+          },
+          {
+            "url": "https://d1.awsstatic.com/Security/pdfs/Semantic_Based_Automated_Reasoning_for_AWS_Access_Policies_Using_SMT.pdf",
+            "excerpts": [
+              "Semantic-based Automated Reasoning for AWS Access Policies using SMT",
+              "John Backes, Pauline Bolignano, Byron Cook, Catherine Dodge, Andrew Gacek, Kasper Luckow, Neha Rungta, Oksana Tkachuk, Carsten Varming Amazon Web Services",
+              "ZELKOVA translates policies and properties into Satisfiability Modulo Theories (SMT) formulas and uses SMT solvers to check the validity of the properties.",
+              "The SMT encoding uses the theory of strings, regular expressions, bit vectors, and integer comparisons.",
+              "The semantics of the policy language are encoded as an SMT formula.",
+              "Each condition maps to an operator name, a key name, and a list of values via the function _CO_ ( _O_ ). The meaning of a condition is encoded by a disjunction over all the listed values. The Boolean variable _condExists_ _k_ states that condition key, _k_ , must exist in the request context. The variable _k_ represents the value of the condition key when it exists. The operator ( _op_ ) defines the operations on the key and value pair ( _k, v_ ), _e.g._ , equality or inequality.",
+              "The encoding of policies in ZELKOVA is largely through the use of string constraints.",
+              "ZELKOVA reasons about all possible permissions allowed by a policy in order to verify properties.",
+              "ZELKOVA solves a PSPACE-complete problem and is invoked many millions of times daily.**",
+              "13 shows the performance of ZELKOVA on one million randomly selected policy questions. These contain both policy comparisons and built-in checks. The total time includes time to parse the input JSON, encode the policies into SMT, perform the check, and construct the resulting JSON that is returned. The y-axis represent the count, i.e., number of policies solved within the time. The graph shows that 99% of policies are solved within 160 milliseconds.",
+              "Note that for UNSAT problems, Z3AUTOMATA is never the fastest solver. The SMT problems that ZELKOVA generates contain a mix of both simple and complex string constraints. For the properties that ZELKOVA checks, an UNSAT result is, in our experience, always due to the simple string constraints being unsatisfiable. Z3 and CVC4 can easily and efficiently handle that case, thus Z3AUTOMATA never wins.",
+              "In the case where the constraints are satisfiable, all the constraints must be considered including the complex ones. Here, Z3AUTOMATA is able to win, often in cases where Z3 and CVC4 are non-terminating. Z3AUTOMATA solves regular expression problems using the standard translation to deterministic finite automata (DFAs) via non-deterministic finite automata (NFAs). It uses Hopcroft’s algorithm for DFA minimization [15].",
+              "The condition operators are grouped by their types: String, Numeric, Date and Time, Boolean, Binary, IP address, and others. The operator name ( _OpName_ ) indicates the type and the comparator. String condition operators provide comparison on string conditions, _e.g._ , StringEquals checks string equality, StringLike checks a string against a pattern. The complete list of operators is defined in the IAM documen- tation ² and is supported in our implementation. The operators are applied to condition keys ( _ConditionKey_ ). Each condition key is mapped to a corresponding value. Certain condition keys are defined globally across all services, _e.g._ , aws:sourceIp , while other condition keys are service specific, s3:prefix . 2https://docs.aws.amazon.com/IAM/latest/UserGuide/reference\\_policies\\_ elements\\_condition\\_operators.html",
+              "ZELKOVA supports several built-in checks that can be leveraged to check a variety of security best-practices. Ex- amples of these include checking whether a policy allows world accessibility for services such as Amazon S3, Amazon SQS, Amazon SNS, Amazon Glacier, Amazon Elasticsearch, and AWS Lambda. These AWS services provide compute, storage, messaging, and search capabilities. These checks are used internally by AWS to check adherence to security best practices and also available to external customers through services such as Amazon Macie, AWS Config, AWS Trusted Advisor, and the Amazon S3 console. The built-in checks provide greater security assurances without requiring the users to define the properties."
+            ],
+            "title": "Semantic-based Automated Reasoning for AWS Access Policies using SMT"
+          },
+          {
+            "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_revoke-sessions.html",
+            "excerpts": [
+              "However, you can immediately revoke all permissions to the role's credentials issued before a certain point in time if you need to.",
+              "All temporary credentials for that role issued before the specified time become invalid.",
+              "This forces all users to re-authenticate and request new credentials.",
+              "When you revoke permissions for a role using the procedure in this topic, AWS attaches a new inline policy to the role that denies all permissions to all actions.",
+              "It includes a condition that applies the restrictions only if the user assumed the role _before_ the point in time when you revoke the permissions.",
+              "If the user assumes the role _after_ you revoked the permissions, then the deny policy does not apply to that user.",
+              "This deny policy applies to all users of the specified role, not just those with longer duration console sessions.",
+              "IAM then attaches a policy named `AWSRevokeOlderSessions` to the role.",
+              "After you choose **Revoke active sessions** , the policy denies all access to users who assumed the role in the past as well as approximately 30 seconds into the future.",
+              "Any user who assumes the role more than approximately 30 seconds after you choose Revoke active sessions is not affected.",
+              "Valid users whose sessions are revoked in this way must acquire temporary credentials for a new session to continue working.",
+              "You can also revoke session permissions at any time of your choice using the AWS CLI or SDK to specify a value for the `[aws:TokenIssueTime](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html)` key in the Condition element of a policy.",
+              "This policy denies all permissions when the value of `aws:TokenIssueTime` is earlier than the specified date and time.",
+              "The value of `aws:TokenIssueTime` corresponds to the exact time at which the temporary security credentials were created.",
+              "This policy can also be attached to a role.",
+              "In that case, the policy affects only the temporary security credentials that were created by the role before the specified date and time.",
+              "This future time choice takes into account the propagation delay of the policy in order to deal with a new session that was acquired or renewed before the updated policy is in effect in a given region.",
+              "[Role management](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_manage.html) [Grant permissions to switch roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_permissions-to-switch.html) [Grant permissions to pass a role to a service](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html)",
+              "[Permissions for temporary security credentials](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_control-access.html) [Permissions for AssumeRole API operations](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_control-access_assumerole.html) [Monitor and control actions taken with assumed roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_control-access_monitor.html) [Permissions for GetFederationToken](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_control-access_getfederationtoken.html) [Permissions for GetSessionToken](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_control-access_getsessiontoken.html) [Disabling permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_control-access_disable-perms.html)",
+              "[Create SAML identity provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_saml.html) [Configure relying party trust and claims](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_saml_relying-party.html) [Integrate third-party SAML solution providers with AWS](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_saml_3rd-party.html) [Configure SAML assertions for the authentication response](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_saml_assertions.html)"
+            ],
+            "title": "Revoke IAM role temporary security credentials - AWS Identity and Access Management"
+          },
+          {
+            "url": "https://www.sciencedirect.com/science/article/pii/S0140366406002271",
+            "excerpts": [
+              "Minimum-cost network hardening using attack graphs",
+              "Author links open overlay panel Lingyu Wang , Steven Noel , Sushil Jajodia",
+              "Date: 28 November 2006",
+              "[Computer Communications](https://www.sciencedirect.com/journal/computer-communications/vol/29/issue/18) Computer Communications Date: 28 November 2006 Pages: 3812-3824 Volume: [Volume 29, Issue 18](https://www.sciencedirect.com/journal/computer-communications/vol/29/issue/18 \"Go to table of contents for this volume/issue\") Published by: Elsevier",
+              "More specifically, we first represent given critical resources as a logic proposition of initial conditions. We then simplify the proposition to make hardening options explicit. Among the options we finally choose solutions with the minimum cost.",
+              "Each disjunction in the DNF provides a different option in hardening the network. We then choose options with the minimum costs based on given assumptions on the cost of initial conditions.",
+              "Unlike existing approaches whose solutions require removing exploits, our solution is comprised of initially satisfied conditions only. Our solution is thus more enforceable, because the initial conditions can be independently disabled, whereas exploits are usually consequences of other exploits and hence cannot be disabled without removing the causes.",
+              "Our solution removes the previously mentioned limitation of existing approaches, because the hardening options require disabling initial conditions only. Each initial condition can be independently disabled because they do not depend on other vulnerabilities or conditions. For example, instead of requiring the removal of an FTP vulnerability, our solution may required disabling the vulnerable FTP service or denying FTP accesses to certain hosts, which are both readily enforceable.",
+              "In this paper, we have proposed methods to compute network hardening options for protecting given critical resources. We have also discussed how to choose hardening options with the minimum costs. Unlike previous approaches, the network hardening solutions we provide are in terms of adjustable network configuration elements rather than exploits. Such solutions take into account the often complex relationships among exploits and configuration elements.",
+              "But an intruder can often infiltrate a seemingly well-guarded network through a multi-step intrusion, in which each step prepares for the next. _Attack graphs_ can reveal the threat by enumerating possible sequences of exploits that can be followed to compromise given critical resources.",
+              "In this paper, we propose a solution to automate the task of hardening a network against multi-step intrusions.",
+              "In this paper, we have proposed methods to compute network hardening options for protecting given critical resources.",
+              "The key improvements over the preliminary version of this paper include a formal framework of the minimum network hardening problem, and an improved one-pass algorithm in deriving the logic proposition while avoiding logic loops.",
+              "First, we formalize the notation of attack graph and clearly define the minimum-cost network hardening problem. Second, instead of depending on an extra forward search to remove cycles in attack graphs, we propose a different algorithm that searches the attack graph and removes cycles all in one-pass. This approach removes the difficulty of the previous method in dealing with cycles that cannot be easily removed in the forward search.",
+              "Unlike existing approaches whose solutions require removing exploits, our solution is comprised of initially satisfied conditions only. Our solution is thus more enforceable, because the initial conditions can be independently disabled, whereas exploits are usually consequences of other exploits and hence cannot be disabled without removing the causes. More specifically, we first represent given critical resources as a logic proposition of initial conditions. We then simplify the proposition to make hardening options explicit. Among the options we finally choose solutions with the minimum cost.",
+              "Unlike previous approaches, the network hardening solutions we provide are in terms of adjustable network configuration elements rather than exploits. Such solutions take into account the often complex relationships among exploits and configuration elements."
+            ],
+            "title": "Minimum-cost network hardening using attack graphs - ScienceDirect"
+          },
+          {
+            "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_control-access_disable-perms.html",
+            "excerpts": [
+              "Temporary security credentials are valid until they expire.",
+              "These credentials are valid for the specified duration, from 900 seconds (15 minutes) up to a maximum of 129,600 seconds (36 hours). The default session duration is 43,200 seconds (12 hours).",
+              "You can revoke these credentials, but you must also change permissions for the IAM user or role to stop the use of compromised credentials for malicious account activity.",
+              "Permissions assigned to temporary security credentials are evaluated each time they are used to make an AWS request.",
+              "Once you remove all permissions from the credentials, AWS requests that use them fail.",
+              "It might take a few minutes for policy updates to take effect.",
+              "For IAM role sessions, you can revoke the role’s temporary security credentials to force all users assuming the role to reauthenticate and request new credentials.",
+              "When you update the policy, the changes affect the permissions of all temporary security credentials associated with the role, including credentials that were issued before you changed the role's permissions policy. After you update the policy, you can [revoke the role’s temporary security credentials](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_revoke-sessions.html) to immediately revoke all permissions to the role's issued credentials.",
+              "When you update the policy, the changes affect the permissions of all temporary security credentials associated with the role, including credentials that were issued before you changed the role's permissions policy.",
+              "To change or remove the permissions assigned to the temporary security credentials obtained by calling `AssumeRole` , `AssumeRoleWithSAML` , or `AssumeRoleWithWebIdentity` , `GetFederationToken` , or `GetSessionToken` , you can edit or delete the identity-based policy that defines the permissions for the role.",
+              "If there's a resource-based policy that allows the principal access, you must also add an explicit deny for that resource. See Deny access to a specific principal with resource-based policies for details.",
+              "[Viewing your AWS account ID](https://docs.aws.amazon.com/IAM/latest/UserGuide/console-account-id.html) [Using an alias for your AWS account ID](https://docs.aws.amazon.com/IAM/latest/UserGuide/console-account-alias.html) [Creating an account alias](https://docs.aws.amazon.com/IAM/latest/UserGuide/account-alias-create.html)"
+            ],
+            "title": "Disabling permissions for temporary security credentials - AWS Identity and Access Management"
+          },
+          {
+            "url": "https://www.usenix.org/conference/14th-usenix-security-symposium/mulval-logic-based-network-security-analyzer",
+            "excerpts": [
+              "MulVAL: A Logic-based Network Security Analyzer",
+              "@inproceedings {269256, author = {Xinming Ou and Sudhakar Govindavajhala and Andrew W. Appel}, title = {{MulVAL}: A Logic-based Network Security Analyzer}, booktitle = {14th USENIX Security Symposium (USENIX Security 05)}, year = {2005}, address = {Baltimore, MD}, url = {https://www.usenix.org/conference/14th-usenix-security-symposium/mulval-logic-based-network-security-analyzer}, publisher = {USENIX Association}, month = jul }",
+              "Appel}, title = {{MulVAL}: A Logic-based Network Security Analyzer}, booktitle = {14th USENIX Security Symposium (USENIX Security 05)}, year = {2005}, address = {Baltimore, MD}, url = {https://www.usenix.org/conference/14th-usenix-security-symposium/mulval-logic-based-network-security-analyzer}, publisher = {USENIX Association}, month = jul }",
+              "MulVAL adopts Datalog as the modeling language for the elements in the analysis (bug specification, configuration description, reasoning rules, operating-system permission and privilege model, etc.).",
+              "We easily leverage existing vulnerability-database and scanning tools by expressing their output in Datalog and feeding it to our MulVAL reasoning engine.",
+              "Once the information is collected, the analysis can be performed in seconds for networks with thousands of machines.",
+              "Second, the analysis must be able to scale to networks with thousands of machines.",
+              "We implemented our framework on the Red Hat Linux platform.",
+              "Paper: [http://usenix.org/publications/library/proceedings/sec05/tech/full\\_papers/ou/ou.pdf](http://usenix.org/publications/library/proceedings/sec05/tech/full_papers/ou/ou.pdf)"
+            ],
+            "title": "MulVAL: A Logic-based Network Security Analyzer | USENIX"
+          },
+          {
+            "url": "https://github.com/vlab-cs-ucsb/quacky",
+            "excerpts": [
+              "License: BSD-2-Clause license",
+              "Top-level files docs/ results/ samples/ src/",
+              "The artifact is a .zip file containing the following: source code for Quacky (under `src` ), sample policies used in experiments (under `samples` ), experimental results (under `results` )",
+              "Top-level files docs/ results/ samples/ src/ .gitignore INSTALL.md LICENSE README.md REQUIREMENTS STATUS USAGE.md requirements.txt",
+              "Created: 2022-01-18T20:13:05.000Z Commits: 17",
+              "Getting Quacky You can download the Quacky ICSE 2022 artifact from either of the following sources: [GitHub releases](https://github.com/vlab-cs-ucsb/quacky/releases) Zenodo",
+              "The artifact is a .zip file containing the following: source code for Quacky (under `src` ), sample policies used in experiments (under `samples` ), experimental results (under `results` ) a copy of the accepted technical paper (under `docs` ).",
+              "Quacky supports access control policies written in the following policy languages: [Amazon Web Services (AWS) Identity and Access Management (IAM)](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) [Microsoft Azure](https://docs.microsoft.com/en-us/azure/role-based-access-control/overview) [Google Cloud Platform (GCP)](https://cloud.google.com/iam)",
+              "Quacky Quacky quantitatively assesses the (relative) permissiveness of access control policies for the cloud.",
+              "It translates policies into constraint formulas that conform to the [SMT-LIB 2](http://smtlib.cs.uiowa.edu/language.shtml) standard, and counts models satisfying the formulas using the model counting constraint solver [ABC](https://github.com/vlab-cs-ucsb/ABC) .",
+              "Installing Quacky See `REQUIREMENTS` and `INSTALL` ."
+            ],
+            "title": "GitHub - vlab-cs-ucsb/quacky: A tool for quantitatively assessing permissiveness of access control policies in the cloud · GitHub"
+          },
+          {
+            "url": "https://dl.acm.org/doi/pdf/10.1145/3510003.3510233",
+            "excerpts": [
+              "**ACM Reference Format:** William Eiers, Ganesh Sankaran, Albert Li, Emily O’Mahony, Benjamin Prince, and Tevfik Bultan.",
+              "Quantifying Permissiveness of Access Control Policies.",
+              "2022.",
+              "In _44th International Conference on Software Engineering (ICSE ’22), May 21–29, 2022, Pittsburgh, PA, USA._ ACM, New York, NY, USA, 13 pages. https://doi.org/10.1145/3510003.3510233",
+              "We report permissiveness as number of requests allowed (a request is a tuple ( _𝛿,𝑎,𝑟,𝑒_ )).",
+              "We quantify permissiveness of policies using a model counting constraint solver.",
+              "Our implementation uses the popular Automata-based Model Counter (ABC) [8, 9] which uses automata-theoretic to model count string and numeric constraints.",
+              "In the experiments reported below we assume string variables (principal, action, resource, condition keys) contain any of the 256 ASCII characters and at most 100 characters long, unless otherwise specified.",
+              "We varied the string bound from 16 to 21 to let the wildcard match 0 to 5 characters (resp.), and we set a 20 minute timeout.",
+              "• A formal model for access control policies • A formalization of access control policy permissiveness • An automated approach for quantifying permissiveness of ac- cess control policies by translating a policy to a SMT formula and using a model counting constraint solver to quantify its permissiveness • An extension of the formal model and automated approach to quantify _relative_ permissiveness between policies • A heuristic that transforms formulas extracted from policies for improving model counting performance • An open-source tool, qacky, that implements the auto- mated approach to analyze policies written in AWS Identity and Access Management (IAM) and Azure policy languages • A publicly available policy dataset consisting of dozens of real-world policies from AWS forums and Azure documenta- tion, as well as hundreds of policies synthesized by applying mutation techniques to the real-world policies • An experimental evaluation of qacky on the dataset",
+              "We also compile a dataset of Azure role definitions from Microsoft Docs.",
+              "Consequently, AWS provides forums where users needing assistance often post their policies and other users (and AWS employees) can provide assistance.",
+              "Out of several hundred forum posts dating back several years, we identified 30 posts containing a total of 41 well-formed policies (the vast majority of posts either contained no policies or frag- mented/invalid policies): from ec2 9 posts with single policies and 2 posts with multiple policies (4 policies), from iam 2 posts with single policies and 3 posts with multiple policies (6 policies), from s3 9 posts with single policies and 5 posts with multiple policies (11 policies).",
+              "The policies extracted from AWS forums/Azure documentation are based on a small sample and may not be representative enough.",
+              "Our current experimental evaluation focuses on a subset of AWS/Azure services (s3, ec2, iam for AWS and VM, BS for Azure). Although our techniques are extensible, extensions of our approach to more services requires further experimental evaluation.",
+              "_Policy Translator._ Based on our approach, we implemented an open-source tool called qacky that quantifies permissiveness or relative permissiveness by translating policies into SMT formulas and passing the formulas to a model counting constraint solver.",
+              "1Tool and benchmarks available at https://github.com/vlab-cs-ucsb/quacky 2https://github.com/vlab-cs-ucsb/ABC",
+              "SMT formulas from qacky can also be fed into other SMT-LIB-conformant constraint solvers, such as Microsoft Z3."
+            ],
+            "title": "antifying permissiveness of access control policies"
+          },
+          {
+            "url": "https://github.com/aws-actions/configure-aws-credentials",
+            "excerpts": [
+              "|role-duration-seconds |The assumed role duration in seconds, if assuming a role. Defaults to 1 hour (3600 seconds). Acceptable values range from 15 minutes (900 seconds) to 12 hours (43200 seconds). |No |",
+              "|role-chaining |Use existing credentials from the environment to assume a new role. |No |",
+              "Quick Start (OIDC, recommended) Create an IAM Identity Provider in your AWS account for GitHub OIDC. (See OIDC configuration below for details.) Create an IAM Role in your AWS account with a trust policy that allows GitHub Actions to assume it.",
+              "To use GitHub's OIDC provider, you must first set up federation in your AWS account. This involves creating an IAM Identity Provider that trusts GitHub's OIDC endpoint. You can create an IAM Identity Provider in the AWS Management Console by specifying the following details: **Provider Type** : OIDC **Provider URL** : `https://token.actions.githubusercontent.com` **Audience** : `sts.amazonaws.com` (or your custom audience if you specified one in the `audience` input)",
+              "When the JWT is created, an audience needs to be specified. Normally, you would use `sts.amazonaws.com` , and this action uses this by default if you don't specify one. This will work for most cases. Changing the default audience may be necessary when using non-default AWS partitions, such as China regions. You can specify the audience through the `audience` input:",
+              "```yaml name: Configure AWS Credentials uses: aws-actions/configure-aws-credentials@v6.3.0 with: aws-region: us-east-2 role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role role-session-name: MySessionName ``` In this example, the Action will load the OIDC token from the GitHub-provided environment variable and use it to assume the role `arn:aws:iam::123456789100:role/my-github-actions-role` with the session name `MySessionName` .",
+              "Versioning Starting with version 5.0.0, this action uses semantic-style release tags and [immutable releases](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/immutable-releases) . A floating version tag (vN) is also provided for convenience: this tag will move to the latest major version (vN -> vN.2.1, vM -> vM.0.0, etc.).",
+              "License This code is made available under the MIT license."
+            ],
+            "title": "GitHub - aws-actions/configure-aws-credentials: Configure AWS credential environment variables for use in other GitHub Actions. · GitHub"
+          },
+          {
+            "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_testing-policies.html",
+            "excerpts": [
+              "Test the effect of restrictive controls on access. You can simulate one permissions boundary at a time.",
+              "If your AWS account is a member of an organization in [AWS Organizations](https://docs.aws.amazon.com/organizations/latest/userguide/) , you can also test the impact of service control policies (SCPs) on your identity-based policies. The simulator tells you whether an SCP allows or denies an action, but for security reasons it does not surface the matched statements from an SCP the way it does for other policy types.",
+              "The policy simulator evaluates SCPs, including condition keys and resource scoping in deny statements, but does not support resource control policies (RCPs).",
+              "Test the effect of a resource-based policy that you provide. Except in the console, the simulator does not retrieve a resource's policy for you. To include a resource-based policy in a simulation, you supply the policy along with the resource.",
+              "Simulation results can still differ from live behavior for some advanced configurations, such as VPC endpoint policies, role chaining, or multiple resource-based policies on a single resource.",
+              "Cross-account simulations return per-policy-type decisions (identity policy and resource policy) in `EvalDecisionDetails` .",
+              "The policy simulator does not make an actual AWS service request, so you can safely test requests that might otherwise make unwanted changes to your live AWS environment. It does not use real context key values from production, and because the actions are not actually run, it returns no service response. The only result is whether each requested action would be allowed or denied.",
+              "The policy simulator does not make an actual AWS service request, so you can safely test requests that might otherwise make unwanted changes to your live AWS environment.",
+              "How the IAM policy simulator works When you run a simulation, the policy simulator evaluates the policies in scope for the request, any SCPs in scope, and the inputs that you provide, such as actions, resources, and context key values. In Custom mode you supply the policies directly. In Principal mode the simulator uses the policies attached to the identity you select, and you can include or exclude more policies to the simulation. The result is a binary outcome for each action and resource: allowed or denied."
+            ],
+            "title": "IAM policy testing with the IAM policy simulator - AWS Identity and Access Management"
+          },
+          {
+            "url": "https://www.di.ens.fr/~cousot/publications.www/CousotCousot-POPL-77-ACM-p238--252-1977.pdf",
+            "excerpts": [
+              "Abstract program properties are modeled by a com- plete semilattice, Birkhoff[61].",
+              "Elementary pro- gram constructs are locally interpreted by order preserving functions which are used to associate a system of recursive equations with a program.",
+              "The program global properties are then defined as one of the extreme fixpoints of that system, Tarski [55].",
+              "7, 1, Int> of a program is consistent with a \"con- crete\" interpretation I <C-Cont, 5; S$, T, 1, Int> if the context vector Cv resulting from T is a cor- rect approximation of the context vector Cv resul- ting from the more refined interpretation I. This may be rigorously defined by establishing a corres~ pondence (a abstraction) between concrete and ab- stract context vectors, and inversely Cy : conereti- zation), and requiring 6\\.0 {cv < ¥(Cv)} and {&(Cv) < Cy} In words the abstract context vector must at least contain the concrete one, (but not only the concrete one).",
+              "Our formal definition of abstract interpretations has the completeness property since the model en- sures the existence of a particular solution to the system of equations and therefore defines at least some global property of the program. It must also have the consistency property, that is define only correct properties of programs.",
+              "The least fixpoint of Kir is the limit of Kleene's sequence (the length of the sequence is in general infinite)",
+              "Under the weaker assumption that Int is continuous, the limit Cv of Kleene's sequence can also be shown to be the least fixpoint of Tat (e.g. Wegbreit[75], since in a well founded semi-lattice, any isotone function is con- tinuous). Finally, if Int is only supposed to be isotone, Cv is an approximation (<) of the least fixpoint (e.g. Kam and Ullman[75]).",
+              "8\\.2 Termtnatton The abstract evaluation terminates iff Kleene's sequence is finite. This may be the case because A-Cont is finite (e.g. type checking in ALGOL 60, Naurf65]), or a finite subset only is to be consi- dered for any particular program (e.g. type che- cking in ALGOL 68), or A-Cont may be of finite length m (the length of any strictly increasing chain is bounded by m, Kildall[73], Wegbreit[75]) or A~Cont may satisfy the ascending chain condition (every strictly increasing chain is finite, although not bounded).",
+              "A lattice may have infinite chains, although Int is chosen so that Kleene's sequences are finite. Finally an infinite Kleene's sequence may be arbitrarily truncated (to get a lower bound of its limit), some induction principle (Sintzoff £75]) or heuristics (Katz and Mannal76]) may be used to pass to the limit, or approximate it, (Cousot[76]).",
+              "Note that the results are approximate ones, (e.g. C5). In this example the widening is a very rough ope- ration which introduces a great loss of information. However it can be seen in the trace that tests behave like filters."
+            ],
+            "title": "di.ens.fr"
+          },
+          {
+            "url": "https://www.w3.org/TR/2026/WD-CSP3-20260916/",
+            "excerpts": [
+              "The `frame-ancestors` directive MUST be ignored when contained in a policy declared via a `[meta](https://html.spec.whatwg.org/multipage/semantics.html)` element.",
+              "Note: The `frame-ancestors` directive’s syntax is similar to a source list , but `frame-ancestors` will not fall back to the `default-src` directive’s value if one is specified.",
+              "The style-src directive restricts the locations from which the protected resource can load styles.",
+              "Nonces bypass host-source expressions, enabling developers to load code from any origin.",
+              "To mitigate this risk, it is advisable to set an explicit `[base](https://html.spec.whatwg.org/multipage/semantics.html)` element on every page, or to limit the ability of an attacker to inject their own `[base](https://html.spec.whatwg.org/multipage/semantics.html)` element by setting a `base-uri` directive in your page’s policy.",
+              "For example, `base-uri 'none'` .",
+              "The form-action directive restricts the `[URL](https://url.spec.whatwg.org/)` s which can be used as the target of a form submissions from a given context.",
+              "This directive’s pre-request check is as follows:",
+              "If the result of executing § 6.7.2.5 Does request match source list? on request , this directive’s value , and self-origin , is \" `Does Not Match` \", return \" `Blocked` \".",
+              "Return \" `Allowed` \".",
+              "For example, to limit connections to only `https://example.com` , send the following header:",
+              "``` Content-Security-Policy : connect-src https://example.com/ ```",
+              "Fetches for the following code will all return network errors, as the URLs provided do not match `connect-src` ’s source list :",
+              "The frame-ancestors directive restricts the `[URL](https://url.spec.whatwg.org/)` s which can embed the resource using `[frame](https://html.spec.whatwg.org/multipage/obsolete.html)` , `[iframe](https://html.spec.whatwg.org/multipage/iframe-embed-object.html)` , `[object](https://html.spec.whatwg.org/multipage/iframe-embed-object.html)` , or `[embed](https://html.spec.whatwg. org/multipage/iframe-embed-object.html)` .",
+              "If sandboxing flag set contains either the [sandboxed scripts browsing context flag](https://html.spec.whatwg.org/multipage/browsers.html) or the [sandboxed origin browsing context flag](https://html.spec.whatwg.org/multipage/browsers.html) flags, return \" `Blocked` \"."
+            ],
+            "title": "Content Security Policy Level 3"
+          },
+          {
+            "url": "https://github.com/caleb531/automata",
+            "excerpts": [
+              "Automata is a Python 3 library implementing structures and algorithms for manipulating finite automata, pushdown automata, and Turing machines.",
+              "The library requires Python 3.9 or newer.",
+              "License: MIT license",
+              "Default branch: main",
+              "Commits: 935",
+              "URL: https://github.com/caleb531/automata"
+            ],
+            "title": "GitHub - caleb531/automata: A Python library for simulating finite automata, pushdown automata, and Turing machines · GitHub"
+          },
+          {
+            "url": "https://docs.github.com/en/actions/reference/security/oidc",
+            "excerpts": [
+              "The subject claim includes the tag name of the workflow, but only if the job doesn't reference an environment, and if the workflow is not triggered by a pull request event.",
+              "In this example, the workflow run must have originated from a job that has an environment named `Production:V1`, in a repository named `octo-repo` that is owned by the `octo-org` organization:",
+              "Syntax: `repo:ORG-NAME/REPO-NAME:environment:ENVIRONMENT-NAME`",
+              "Example: `repo:octo-org/octo-repo:environment:Production%3AV1`",
+              "In this example, the workflow run must have originated from a branch named `demo-branch`, in a repository named `octo-repo` that is owned by the `octo-org` organization:",
+              "Syntax:  `repo:ORG-NAME/REPO-NAME:ref:refs/heads/BRANCH-NAME`",
+              "Example: `repo:octo-org/octo-repo:ref:refs/heads/demo-branch`",
+              "You can create a subject that filters for specific tag.",
+              "Syntax: `repo:ORG-NAME/REPO-NAME:ref:refs/tags/TAG-NAME`",
+              "Example: `repo:octo-org/octo-repo:ref:refs/tags/demo-tag`",
+              "Any `:` within the metadata values will be replaced with `%3A` in the subject claim.",
+              "If you need more granular trust conditions, you can customize the subject (`sub`) claim that's included with the JWT.",
+              "To configure the matching condition on GitHub, you can use the REST API to require that the `sub` claim must always include a specific custom claim, such as `job_workflow_ref`.",
+              "```json { \"include_claim_keys\": [ \"job_workflow_ref\" ] } ``` In your cloud provider's OIDC configuration, configure the `sub` condition to require that claims must include a specific value for `job_workflow_ref`. For example: `\"sub\": \"job_workflow_ref:octo-org/octo-automation/.github/workflows/oidc.yml@refs/heads/main\"`.",
+              "**Audience:** By default, this value uses the URL of the organization or repository owner. This can be used to set a condition that only the workflows in the specific organization can access the cloud role.",
+              "The job or workflow must grant the [`id-token: write`](/en/actions/reference/workflows-and-actions/workflow-syntax#permissions) permission to allow GitHub's OIDC provider to create a JSON Web Token (JWT): ```yaml permissions: id-token: write ``` Without `id-token: write`, the OIDC JWT ID token cannot be requested. This setting only enables fetching and setting the OIDC token; it does not grant write access to other resources.",
+              "Without `id-token: write`, the OIDC JWT ID token cannot be requested. This setting only enables fetching and setting the OIDC token; it does not grant write access to other resources.",
+              "In addition, your cloud provider could allow you to assign a role to the access tokens, letting you specify even more granular permissions.",
+              "To help prevent this scenario, repositories created after July 15, 2026 now use an immutable default subject format that includes both the owner ID and repository ID."
+            ],
+            "title": "OpenID Connect reference"
+          },
+          {
+            "url": "https://www.w3.org/TR/2023/REC-WCAG22-20231005/",
+            "excerpts": [
+              "org/WAI/WCAG22/Understanding/distinguishable.html) | [How to Meet Distinguishable](https://www.w3.org/WAI/WCAG22/quickref/)",
+              "Success Criterion 2.1.2 No Keyboard Trap [Understanding No Keyboard Trap](https://www.w3.org/WAI/WCAG22/Understanding/no-keyboard-trap.html) | [How to Meet No Keyboard Trap](https://www.w3.org/WAI/WCAG22/quickref/) (Level A) If keyboard focus can be moved to a component of the page using a keyboard interface , then focus can be moved away from that component using only a keyboard interface, and, if it requires more than unmodified arrow or tab keys or other standard exit methods, the user is advised of the method for moving focus away.",
+              "Success Criterion 2.1.3 Keyboard (No Exception) [Understanding Keyboard (No Exception)](https://www.w3.org/WAI/WCAG22/Understanding/keyboard-no-exception.html) | [How to Meet Keyboard (No Exception)](https://www.w3.org/WAI/WCAG22/quickref/) (Level AAA) All functionality of the content is operable through a keyboard interface without requiring specific timings for individual keystrokes.",
+              "Success Criterion 1.4.1 Use of Color [Understanding Use of Color](https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html) | [How to Meet Use of Color](https://www.w3.org/WAI/WCAG22/quickref/) (Level A) Color is not used as the only visual means of conveying information, indicating an action, prompting a response, or distinguishing a visual element.",
+              "Success Criterion 1.4.3 Contrast (Minimum) [Understanding Contrast (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) | [How to Meet Contrast (Minimum)](https://www.w3.org/WAI/WCAG22/quickref/) (Level AA) The visual presentation of text and images of text has a contrast ratio of at least 4.5:1, except for the following: Large Text",
+              "2 Pause, Stop, Hide [Understanding Pause, Stop, Hide](https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html) | [How to Meet Pause, Stop, Hide](https://www.w3.org/WAI/WCAG22/quickref/) (Level A) For moving, blinking , scrolling, or auto-updating information, all of the following are true: Moving, blinking, scrolling For any moving, blinking or scrolling information that (1) starts automatically, (2) lasts more than five seconds, and (3) is presented in parallel with other content, there is a mechanism for the user to pause , stop, or hide it unless the movement, blinking, or scrolling is part of an activity where it is essential ; and Auto-updating For any auto-updating information that (1) starts automatically and (2) is presented in parallel with other content, there is a mechanism for the user to pause, stop, or hide it or to control the frequency of the update unless the auto-updating is part of an activity where it is essential.",
+              "For moving, blinking , scrolling, or auto-updating information, all of the following are true: Moving, blinking, scrolling For any moving, blinking or scrolling information that (1) starts automatically, (2) lasts more than five seconds, and (3) is presented in parallel with other content, there is a mechanism for the user to pause , stop, or hide it unless the movement, blinking, or scrolling is part of an activity where it is essential ; and Auto-updating For any auto-updating information that (1) starts automatically and (2) is presented in parallel with other content, there is a mechanism for the user to pause, stop, or hide it or to control the frequency of the update unless the auto-updating is part of an activity where it is essential."
+            ],
+            "title": "Web Content Accessibility Guidelines (WCAG) 2.2"
+          },
+          {
+            "url": "https://aws.amazon.com/blogs/security/introducing-iam-access-analyzer-custom-policy-checks/",
+            "excerpts": [
+              "by Mitch Beaumont and Matt Luttrell on 27 NOV 2023 in [Advanced (300)](https://aws.amazon.com/blogs/security/category/learning-levels/advanced-300/ \"View all posts in Advanced (300)\") , [Announcements](https://aws.amazon.com/blogs/security/category/post-types/announcements/ \"View all posts in Announcements\") , [AWS IAM Access Analyzer](https://aws.amazon.com/blogs/security/category/security-identity-compliance/aws-iam-access-analyzer/ \"View all posts in AWS IAM Access Analyzer\") , [Security, Identity, & Compliance](https://aws.amazon.com/blogs/security/category/security-identity-compliance/ \"View all posts in Security, Identity, & Compliance\") , [Technical How-to](https://aws.amazon.com/blogs/security/category/post-types/technical-how-to/ \"View all posts in Technical How-to\") [Permalink](https://aws.amazon.com/blogs/security/introducing-iam-access-analyzer-custom-policy-checks/) [Comments](https://aws.amazon.",
+              "You can find the full sample code used in this blog post [on GitHub](https://github.com/aws-samples/access-analyzer-automated-policy-analysis-blog.git) .",
+              "Use the following command to download and unzip the Cloud Development Kit (CDK) project associated with this blog post. ``` git clone https://github.com/aws-samples/access-analyzer-automated-policy-analysis-blog.git cd ./access-analyzer-automated-policy-analysis-blog ```",
+              "In this post, I introduced you to two new IAM Access Analyzer APIs: CheckNoNewAccess and CheckAccessNotGranted .",
+              "Step 2: Check the policies by using the AWS CLI Use the following command to call the CheckNoNewAccess API to check whether NewPolicyDocument grants more access than ExistingPolicyDocument . ``` aws accessanalyzer check-no-new-access \\ --new-policy-document file:// **new-policy-document.json** \\ --existing-policy-document file:// **existing-policy-document.json** \\ --policy-type IDENTITY_POLICY ``` After a moment, you will see a response from Access Analyzer. The response will look similar to the following. ``` { \"result\": \"FAIL\", \"message\": \"The modified permissions grant new access compared to your existing policy.\", \"reasons\": [ { \"description\": \"New access in the statement with index: 1.\", \"statementIndex\": 1 } ] } ``` In this example, the validation returned a result of _FAIL_ . This is because NewPolicyDocument is missing the condition key, potentially granting any principal with this identity policy attached more access than intended or needed. Example 2: Use custom policy checks to check that an IAM policy does not contain sensitive permissions",
+              "Example 2: Use custom policy checks to check that an IAM policy does not contain sensitive permissions In this example, you will create an IAM identity-based policy that contains a set of permissions. You will use the CheckAccessNotGranted API to check that the new policy does not give permissions to disable [AWS CloudTrail](https://aws.amazon.com/cloudtrail/) or delete any associated trails. Step 1: Create a new IAM identity policy document Use the following command to create IamPolicyDocument . ``` cat << EOF > iam-policy-document.json { \"Version\": \"2012-10-17\", \"Statement\": [ { \"Effect\": \"Allow\", \"Action\": [ \"cloudtrail:StopLogging\", \"cloudtrail:Delete*\" ], \"Resource\": [\"*\"] } ] } EOF ``` Step 2: Check the policy by using the AWS CLI Use the following command to call the CheckAccessNotGranted API to check if the new policy grants permission to the set of sensitive actions. In this example, you are asking Access Analyzer to check that IamPolicyDocument does not contain the actions cloudtrail:StopLogging or cloudtrail:DeleteTrail (passed as a list to the access parameter). ``` aws accessanalyzer check-access-not-granted \\ --policy-document file:// **iam-policy-document.json** \\ --access actions=cloudtrail:StopLogging,cloudtrail:DeleteTrail \\ --policy-type IDENTITY_POLICY ``` Because the policy that you created contains both cloudtrail:StopLogging and cloudtrail:DeleteTrail actions, Access Analyzer returns a FAIL. ``` { \"result\": \"FAIL\", \"message\": \"The policy document grants access to perform one or more of the listed actions.\", \"reasons\": [ { \"description\": \"One or more of the listed actions in the statement with index: 0.\", \"statementIndex\": 0 } ] } ``` Example 3: Integrate custom policy checks into the developer workflow",
+              "Example 3: Integrate custom policy checks into the developer workflow Building on the previous two examples, in this example, you will automate the analysis of the IAM policies defined in an [**AWS CloudFormation**](https://aws.amazon.com/cloudformation/) template. Figure 1 shows the workflow that will be used. The workflow will initiate each time a pull request is created against the main branch of an [**AWS CodeCommit**](https://aws.amazon.com/codecommit/) repository called my-iam-policy (the commit stage in Figure 1).",
+              "If you inspect the build logs for both the **check no new access** and **check access not granted** actions within the pipeline, you should see that there were no blocking or non-blocking findings, similar to what is shown in Figure 4. This indicates that the policy was validated successfully. In other words, the policy was not more permissive than the reference policy, and it did not include any of the critical permissions.",
+              "``` { \"result\": \"FAIL\", \"message\": \"The modified permissions grant new access compared to your existing policy.\", \"reasons\": [ { \"description\": \"New access in the statement with index: 1.\", \"statementIndex\": 1 } ] } ``` In this example, the validation returned a result of _FAIL_ . This is because NewPolicyDocument is missing the condition key, potentially granting any principal with this identity policy attached more access than intended or needed.",
+              "Because the policy that you created contains both cloudtrail:StopLogging and cloudtrail:DeleteTrail actions, Access Analyzer returns a FAIL. ``` { \"result\": \"FAIL\", \"message\": \"The policy document grants access to perform one or more of the listed actions.\", \"reasons\": [ { \"description\": \"One or more of the listed actions in the statement with index: 0.\", \"statementIndex\": 0 } ] } ```"
+            ],
+            "title": "Introducing IAM Access Analyzer custom policy checks | AWS Security Blog"
+          },
+          {
+            "url": "https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target",
+            "excerpts": [
+              "The `pull_request` event (along with `pull_request_review` and `pull_request_review_comment`) is unusual: it runs the workflow file from the **merge commit of the pull request**. For a pull request opened from a fork, that commit is controlled by someone without write access to the base repository. To run untrusted workflow code safely, GitHub restricts these events to a read-only `GITHUB_TOKEN`, withholds access to other secrets, and applies fork approval policies to prevent compute abuse. By default, `actions/checkout` in a `pull_request` workflow also checks out the pull request's merge commit, so the code checked out and the workflow that runs are consistent. `pull_request_target` makes one critical and subtle change: the workflow, and any subsequent `actions/checkout` call that does not specify a `ref`, is taken from the **base repository's default branch**, not from the pull request. Because only trusted code from the default branch runs, it is safe to grant secrets and a read/write token. No code from the fork is executed by default.",
+              "The vulnerability is completed by the *next* step that runs code checked out into the current working directory. Here, `make test` executes a `Makefile` taken from the pull request head. An attacker only needs to open a pull request from a fork whose `Makefile` (or build script, test command, dependency, or configuration file) contains malicious commands. Those commands then run with the base repository's secrets and token."
+            ],
+            "title": "Securely using pull_request_target"
+          }
+        ],
+        "confidence": "low"
+      }
+    ]
+  }
+}

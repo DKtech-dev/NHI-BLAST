@@ -1,5 +1,37 @@
 {
   "$defs": {
+    "AnalyzerIdentity": {
+      "additionalProperties": false,
+      "description": "What produced a report. Two reports are only comparable when this is equal.",
+      "properties": {
+        "data_digests": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Data Digests",
+          "type": "object"
+        },
+        "engine_semantics": {
+          "title": "Engine Semantics",
+          "type": "string"
+        },
+        "rules_digest": {
+          "title": "Rules Digest",
+          "type": "string"
+        },
+        "tool_version": {
+          "title": "Tool Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool_version",
+        "engine_semantics",
+        "rules_digest"
+      ],
+      "title": "AnalyzerIdentity",
+      "type": "object"
+    },
     "AssumptionUse": {
       "additionalProperties": false,
       "properties": {
@@ -31,6 +63,108 @@
       ],
       "title": "AssumptionUse",
       "type": "object"
+    },
+    "Completeness": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "default": "",
+          "title": "Digest",
+          "type": "string"
+        },
+        "items": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CompletenessItem"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "title": "Completeness",
+      "type": "object"
+    },
+    "CompletenessItem": {
+      "additionalProperties": false,
+      "description": "What one family of inputs contributed. Not a score and not a verdict.",
+      "properties": {
+        "assumptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "diagnostics": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Diagnostics",
+          "type": "array"
+        },
+        "explanation": {
+          "default": "",
+          "title": "Explanation",
+          "type": "string"
+        },
+        "family": {
+          "$ref": "#/$defs/InputFamily"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "sources": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CompletenessSource"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/CompletenessStatus"
+        }
+      },
+      "required": [
+        "id",
+        "family",
+        "status"
+      ],
+      "title": "CompletenessItem",
+      "type": "object"
+    },
+    "CompletenessSource": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "title": "CompletenessSource",
+      "type": "object"
+    },
+    "CompletenessStatus": {
+      "enum": [
+        "analysed",
+        "partially_analysed",
+        "not_provided",
+        "not_supported",
+        "not_applicable"
+      ],
+      "title": "CompletenessStatus",
+      "type": "string"
     },
     "CredentialKind": {
       "enum": [
@@ -440,6 +574,32 @@
       "title": "GraphData",
       "type": "object"
     },
+    "InputFamily": {
+      "enum": [
+        "gha_workflows",
+        "gha_local_composites",
+        "gha_remote_callees",
+        "gh_environment_protection",
+        "gh_branch_protection",
+        "oidc_subject_binding",
+        "tf_plan_state",
+        "tf_hcl",
+        "tf_local_modules",
+        "iam_identity_policies",
+        "iam_managed_policy_bodies",
+        "iam_permission_boundaries",
+        "iam_session_policies",
+        "aws_session_duration",
+        "aws_org_policies",
+        "aws_resource_policies",
+        "kms_key_policies",
+        "aws_role_chaining",
+        "live_cloud_state",
+        "analysis_budget"
+      ],
+      "title": "InputFamily",
+      "type": "string"
+    },
     "InputFile": {
       "additionalProperties": false,
       "properties": {
@@ -560,6 +720,57 @@
       "title": "NodeKind",
       "type": "string"
     },
+    "OidcSettings": {
+      "additionalProperties": false,
+      "description": "GitHub OIDC subject settings in effect for the scan (identifiers and integers only).",
+      "properties": {
+        "host": {
+          "default": "github.com",
+          "enum": [
+            "github.com",
+            "ghes"
+          ],
+          "title": "Host",
+          "type": "string"
+        },
+        "owner_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner Id"
+        },
+        "repo_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Repo Id"
+        },
+        "subject_format": {
+          "default": "unknown",
+          "enum": [
+            "classic",
+            "immutable",
+            "unknown"
+          ],
+          "title": "Subject Format",
+          "type": "string"
+        }
+      },
+      "title": "OidcSettings",
+      "type": "object"
+    },
     "Partition": {
       "additionalProperties": false,
       "description": "R/E/Z membership for one scenario (spec 4.4, 13.2).",
@@ -590,6 +801,153 @@
         }
       },
       "title": "Partition",
+      "type": "object"
+    },
+    "ReportContext": {
+      "additionalProperties": false,
+      "description": "Non-sensitive analysis parameters needed to reproduce the saved scenarios exactly.\n\nEvery field is required when the context is present: a replay that cannot be\nreproduced must abort rather than guess. Only identifiers, integers, relative paths\nand digests are recorded; no value from a scanned file and no host path.",
+      "properties": {
+        "analyzer": {
+          "$ref": "#/$defs/AnalyzerIdentity"
+        },
+        "aws_account": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aws Account"
+        },
+        "aws_region": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aws Region"
+        },
+        "config_digest": {
+          "title": "Config Digest",
+          "type": "string"
+        },
+        "context_digest": {
+          "title": "Context Digest",
+          "type": "string"
+        },
+        "credential_bindings": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Credential Bindings",
+          "type": "object"
+        },
+        "default_branch": {
+          "title": "Default Branch",
+          "type": "string"
+        },
+        "graph_digest": {
+          "title": "Graph Digest",
+          "type": "string"
+        },
+        "ignore_paths": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Ignore Paths",
+          "type": "array"
+        },
+        "ignore_rules": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Ignore Rules",
+          "type": "array"
+        },
+        "limits": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "title": "Limits",
+          "type": "object"
+        },
+        "max_depth": {
+          "title": "Max Depth",
+          "type": "integer"
+        },
+        "oidc": {
+          "$ref": "#/$defs/OidcSettings"
+        },
+        "role_bindings": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Role Bindings",
+          "type": "object"
+        },
+        "scenarios": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ScenarioContext"
+          },
+          "title": "Scenarios",
+          "type": "array"
+        },
+        "selectors": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Selectors",
+          "type": "array"
+        },
+        "strict": {
+          "title": "Strict",
+          "type": "boolean"
+        },
+        "sub_template": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sub Template"
+        }
+      },
+      "required": [
+        "analyzer",
+        "default_branch",
+        "limits",
+        "max_depth",
+        "strict",
+        "config_digest",
+        "graph_digest",
+        "context_digest"
+      ],
+      "title": "ReportContext",
       "type": "object"
     },
     "RotationPlan": {
@@ -701,6 +1059,38 @@
         "order"
       ],
       "title": "RotationStep",
+      "type": "object"
+    },
+    "ScenarioContext": {
+      "additionalProperties": false,
+      "properties": {
+        "selector": {
+          "title": "Selector",
+          "type": "string"
+        },
+        "selector_kind": {
+          "title": "Selector Kind",
+          "type": "string"
+        },
+        "start_nodes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Start Nodes",
+          "type": "array"
+        },
+        "time_budget_exhausted": {
+          "default": false,
+          "title": "Time Budget Exhausted",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "selector",
+        "selector_kind"
+      ],
+      "title": "ScenarioContext",
       "type": "object"
     },
     "ScenarioReport": {
@@ -849,10 +1239,10 @@
       "type": "object"
     }
   },
-  "$id": "urn:nhi-blast:report:1.0",
+  "$id": "urn:nhi-blast:report:1.1",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Schema for nhi-blast-report/1.0.",
+  "description": "Schema for nhi-blast-report/1.1.",
   "properties": {
     "assumptions": {
       "default": [],
@@ -861,6 +1251,28 @@
       },
       "title": "Assumptions",
       "type": "array"
+    },
+    "completeness": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Completeness"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "context": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReportContext"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "data_files": {
       "default": [],
@@ -913,7 +1325,7 @@
       "type": "array"
     },
     "schema": {
-      "default": "nhi-blast-report/1.0",
+      "default": "nhi-blast-report/1.1",
       "title": "Schema",
       "type": "string"
     },

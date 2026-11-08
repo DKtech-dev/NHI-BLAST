@@ -1,5 +1,5 @@
-NHI-Blast 0.2.0
-Report schema: nhi-blast-report/1.0
+NHI-Blast 0.3.0
+Report schema: nhi-blast-report/1.1
 
 Parse
   Repository: acme/shop [declared .git/config]
@@ -9,14 +9,27 @@ Parse
   Input: .github/workflows/release.yml (workflow, sha256 069825a7256cf1dc) [declared .github/workflows/release.yml]
   Input: tfstate.json (tf_json, sha256 c80bd3391ff8f524) [declared tfstate.json]
   Scope: 2 workflows, 2 jobs, 9 Terraform resources.
-  Not analysed: SCPs, environment protection, branch rules, live AWS state, job outputs and artifacts.
+  Not analysed: SCPs and RCPs, resource policies, role chaining, GitHub branch protection, remote actions and reusable workflows, permissions boundaries, live cloud state, Terraform HCL, job outputs and artifacts.
+  Completeness: 6 analysed, 2 partially analysed, 3 not provided, 5 not supported, 4 not applicable.
   Limits: closure depth 3, graph node budget 500000, scenario time budget 60 s.
+    [not_supported] SCPs and RCPs: not analysable offline by this version; the report says nothing about it
+    [not_supported] resource policies: not analysable offline by this version; the report says nothing about it
+    [not_supported] role chaining: not analysable offline by this version; the report says nothing about it
+    [partially_analysed] session duration: partially analysed; results are a lower bound
+    [not_provided] GitHub branch protection: not provided; the report says nothing about it
+    [not_supported] remote actions and reusable workflows: not analysable offline by this version; the report says nothing about it
+    [not_provided] permissions boundaries: not provided; the report says nothing about it
+    [not_supported] live cloud state: not analysable offline by this version; the report says nothing about it
+    [partially_analysed] OIDC subject format binding: partially analysed; results are a lower bound
+    [not_provided] Terraform HCL: not provided; the report says nothing about it
   Data: assumptions.yaml (verified 2026-10-25)
   Data: aws_github_condition_keys.yaml (verified 2026-10-25)
+  Data: configure_aws_credentials.yaml (verified 2026-11-02)
   Data: credential_heuristics.yaml (verified 2026-10-25)
   Data: permission_scopes.yaml (verified 2026-10-25)
   Data: rotation_hints.yaml (verified 2026-10-25)
   Data: rules.yaml (verified 2026-10-25)
+  Data: sensitive_fields.yaml (verified 2026-11-03)
   Data: sinks_catalog.yaml (verified 2026-10-25)
   Data: trigger_profiles.yaml (verified 2026-10-25)
 
@@ -111,10 +124,11 @@ Findings
     path: job:.github/workflows/release.yml#publish -> oidc:job:.github/workflows/release.yml#publish:sts.amazonaws.com -> aws:role:arn:aws:iam::111122223333:role/legacy-ci -> aws:ssm:/legacy/ci-token
 
 Assumptions and unknowns
+  [VERIFY] A-CAC-DEFAULT: role-duration-seconds is not set and the configure-aws-credentials default for this action ref is unverified; defaults are verified only for refs in configure_aws_credentials.yaml.
   [ASSUMED] A-NO-SCP: SCPs, RCPs, session policies and permission boundaries that were not supplied are not modelled; Allow results may over-approximate.
   [ASSUMED] A-OIDC-ENV: With id-token: write, any step can request an OIDC token through the runner URL and bearer environment variables.
-  [ASSUMED] A-REPO-AGE: Whether a repository mints classic or immutable subjects is unknown from files, so both are evaluated.
-  [ASSUMED] A-STS-TTL: An AssumeRoleWithWebIdentity session lasts at most the role max_session_duration (default 3600 s).
+  [ASSUMED] A-REPO-AGE: Whether a repository mints classic or immutable subjects is unknown from files, so both are evaluated; declare [github] subject_format to settle it.
+  [ASSUMED] A-STS-TTL: When the requested session duration is not declared or cannot be read, a session is assumed to last at most the role max_session_duration (1 h when unset, 12 h when the role maximum is unknown).
   [ASSUMED] H-ROT-WINDOW: A rotation resource means periodic rotation; the next rotation time is unknown, so survival is reported as up to N days.
   [ASSUMED] H-SECRET-NAME: Whether a secret or parameter holds a credential, and of what kind, is inferred from resource type and name patterns.
 

@@ -156,7 +156,8 @@ def test_layout_marks_entrypoints_and_keeps_full_labels_in_accessibility_metadat
     svg = render_graph_svg(build_layout(report), report)
 
     assert 'class="gnode kind-job stage-jobs is-entry"' in svg
-    assert 'aria-label="publish, job, id ' + _JOB + ', entrypoint"' in svg
+    # The accessible name starts with the drawn text (WCAG 2.5.3), then the kind and full id.
+    assert 'aria-label="publish Job · release.yml ENTRY, job, id ' + _JOB + ', entrypoint"' in svg
     assert "database password" in svg
     assert 'role="button"' in svg
     assert 'tabindex="-1"' in svg

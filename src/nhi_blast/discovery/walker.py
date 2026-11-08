@@ -13,6 +13,13 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 
+from nhi_blast.core.artifact_io import (
+    ArtifactReadError,
+    InputIdentity,
+    identify_input,
+    identify_open_input,
+    read_bounded_stream,
+)
 from nhi_blast.core.diagnostics import Diagnostic, error, warning
 from nhi_blast.core.ids import file_sha256
 from nhi_blast.core.limits import Limits
@@ -70,6 +77,7 @@ class Discovery:
     files: tuple[DiscoveredFile, ...] = ()
     diagnostics: tuple[Diagnostic, ...] = ()
     visited_files: int = 0
+    protected_inputs: tuple[InputIdentity, ...] = field(default=(), repr=False, compare=False)
 
 
 @dataclass(slots=True)
@@ -80,6 +88,7 @@ class InputLoader:
     limits: Limits
     loaded: dict[str, LoadedText] = field(default_factory=dict)
     diagnostics: list[Diagnostic] = field(default_factory=list)
+    _protected: dict[InputIdentity, None] = field(default_factory=dict, repr=False, compare=False)
 
     def _size_limit(self, kind: FileKind) -> int:
         if kind is FileKind.TF_JSON:
@@ -110,21 +119,27 @@ class InputLoader:
                 )
             )
             return None
+        # A selected candidate remains an input even when opening it is denied.
+        # Failure to establish its guard must abort rather than permit an unsafe output.
+        self._protected[identify_input(path)] = None
         limit = self._size_limit(kind)
         try:
             with resolved.open("rb") as handle:
-                data = handle.read(limit + 1)
-        except OSError:
+                identity = identify_open_input(path, handle)
+                self._protected[identity] = None
+                try:
+                    data = read_bounded_stream(
+                        handle, limit, chunk_bytes=limit + 1, stop_at_file_end=True
+                    )
+                except ArtifactReadError:
+                    self.diagnostics.append(
+                        error(
+                            "D-IO-LIMIT", f"file exceeds the {limit}-byte limit; skipped", file=rel
+                        )
+                    )
+                    return None
+        except (OSError, ArtifactReadError):
             self.diagnostics.append(error("D-IO-UNREADABLE", "cannot read file; skipped", file=rel))
-            return None
-        if len(data) > limit:
-            self.diagnostics.append(
-                error(
-                    "D-IO-LIMIT",
-                    f"file exceeds the {limit}-byte limit; skipped",
-                    file=rel,
-                )
-            )
             return None
         try:
             text = data.decode("utf-8-sig")
@@ -141,6 +156,15 @@ class InputLoader:
         self.loaded[rel] = loaded
         return loaded
 
+    def protected_inputs(self) -> tuple[InputIdentity, ...]:
+        """Return transient selected-name and actual-open guards, including rejected inputs."""
+        return tuple(
+            sorted(
+                self._protected,
+                key=lambda item: (str(item.path), str(item.resolved_path), item.device, item.inode),
+            )
+        )
+
     def loaded_inputs(self) -> tuple[LoadedText, ...]:
         return tuple(self.loaded[rel] for rel in sorted(self.loaded))
 
@@ -154,16 +178,46 @@ def _is_workflow(rel_parts: tuple[str, ...]) -> bool:
     )
 
 
-def _peek_is_tf_json(path: Path) -> bool:
-    # Let discovery distinguish unreadable candidates from readable non-Terraform JSON.
-    with path.open("rb") as handle:
-        head = handle.read(_JSON_SNIFF_BYTES)
-    if not any(marker in head for marker in _TF_JSON_MARKERS):
-        return False
-    return any(marker in head for marker in _TF_JSON_VALUE_MARKERS)
+def _peek_is_tf_json(
+    path: Path,
+    *,
+    sniff_bytes: int = _JSON_SNIFF_BYTES,
+    protected_inputs: dict[InputIdentity, None] | None = None,
+) -> bool:
+    identities = {identify_input(path): None}
+    chunks: list[bytes] = []
+    consumed = 0
+    try:
+        with path.open("rb") as handle:
+            identities[identify_open_input(path, handle)] = None
+            while consumed < sniff_bytes:
+                chunk = handle.read(sniff_bytes - consumed)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                consumed += len(chunk)
+    except OSError:
+        if protected_inputs is not None:
+            protected_inputs.update(identities)
+        raise
+    head = b"".join(chunks)
+    positive = any(marker in head for marker in _TF_JSON_MARKERS) and any(
+        marker in head for marker in _TF_JSON_VALUE_MARKERS
+    )
+    # Negative ordinary JSON sniffs do not protect prior output artifacts. Positive
+    # or failed sniffs retain both initial and opened identities before loader reads.
+    if positive and protected_inputs is not None:
+        protected_inputs.update(identities)
+    return positive
 
 
-def classify_path(path: Path, rel: str) -> FileKind | None:
+def classify_path(
+    path: Path,
+    rel: str,
+    *,
+    sniff_bytes: int = _JSON_SNIFF_BYTES,
+    protected_inputs: dict[InputIdentity, None] | None = None,
+) -> FileKind | None:
     parts = tuple(rel.split("/"))
     name = parts[-1]
     if _is_workflow(parts):
@@ -174,7 +228,9 @@ def classify_path(path: Path, rel: str) -> FileKind | None:
         return FileKind.TF_HCL
     if name.endswith(".tf.json"):
         return FileKind.TF_HCL
-    if name.endswith(".json") and _peek_is_tf_json(path):
+    if name.endswith(".json") and _peek_is_tf_json(
+        path, sniff_bytes=sniff_bytes, protected_inputs=protected_inputs
+    ):
         return FileKind.TF_JSON
     return None
 
@@ -217,6 +273,7 @@ def discover(
 ) -> Discovery:
     guard = PathGuard(root=root.resolve())
     diagnostics: list[Diagnostic] = []
+    protected_inputs: dict[InputIdentity, None] = {}
     visited, truncated, escaped_dirs = _walk(root, limits, guard)
     for rel in escaped_dirs:
         diagnostics.append(
@@ -273,7 +330,12 @@ def discover(
                 )
                 continue
             try:
-                kind = classify_path(candidate, rel)
+                kind = classify_path(
+                    candidate,
+                    rel,
+                    sniff_bytes=min(_JSON_SNIFF_BYTES, limits.max_tf_json_bytes),
+                    protected_inputs=protected_inputs,
+                )
             except OSError:
                 diagnostics.append(
                     error(
@@ -290,6 +352,12 @@ def discover(
         files=tuple(sorted(files, key=lambda f: (f.kind.value, f.rel))),
         diagnostics=tuple(diagnostics),
         visited_files=len(visited),
+        protected_inputs=tuple(
+            sorted(
+                protected_inputs,
+                key=lambda item: (str(item.path), str(item.resolved_path), item.device, item.inode),
+            )
+        ),
     )
 
 

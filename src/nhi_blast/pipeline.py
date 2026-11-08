@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 
 from nhi_blast import SCHEMA_VERSION, __version__
-from nhi_blast.analysis.findings import build_findings, filter_findings
+from nhi_blast.analysis.findings import SCENARIO_RULES, build_findings, filter_findings
 from nhi_blast.analysis.rank import rank_mutable_actions
 from nhi_blast.analysis.scenario import ScenarioAnalysis, analyze_scenario
 from nhi_blast.analysis.selectors import (
@@ -19,7 +20,17 @@ from nhi_blast.analysis.selectors import (
     parse_selector,
     resolve_starts,
 )
+from nhi_blast.core import artifact_io
+from nhi_blast.core.artifact_io import ArtifactOutputError, InputIdentity, write_artifacts
+from nhi_blast.core.completeness import (
+    WorkflowFacts,
+    derive_completeness,
+    not_analysed_summary,
+    path_collision_diagnostics,
+    status_counts,
+)
 from nhi_blast.core.config import CONFIG_FILENAME, Config, ConfigError
+from nhi_blast.core.context import build_context
 from nhi_blast.core.data import DataFileError, all_data_file_infos, assumptions
 from nhi_blast.core.diagnostics import Diagnostic, DiagnosticBag, DiagnosticLevel, warning
 from nhi_blast.core.ids import digest_pairs
@@ -27,6 +38,7 @@ from nhi_blast.core.limits import Limits
 from nhi_blast.core.models import (
     NODE_KIND_ORDER,
     AssumptionUse,
+    Completeness,
     DataFileInfo,
     Edge,
     Finding,
@@ -35,13 +47,16 @@ from nhi_blast.core.models import (
     Inputs,
     RankReport,
     Report,
+    ReportContext,
+    ScenarioContext,
     ScenarioReport,
     Severity,
     ToolInfo,
     severity_at_least,
 )
+from nhi_blast.discovery import repo as repository_identity
 from nhi_blast.discovery.paths import OutsideRootError, PathGuard
-from nhi_blast.discovery.repo import RepoIdentity, resolve_identity
+from nhi_blast.discovery.repo import RepoIdentity
 from nhi_blast.discovery.walker import (
     FileKind,
     InputLoader,
@@ -49,6 +64,7 @@ from nhi_blast.discovery.walker import (
     discover,
 )
 from nhi_blast.graph.builder import GraphBuild, GraphInputs, build_graph
+from nhi_blast.oidc.github_subject import format_is_declared
 from nhi_blast.parsers.gha.facts import CompositeActionFact, WorkflowFact
 from nhi_blast.parsers.gha.workflow import parse_composite_action, parse_workflow
 from nhi_blast.parsers.iam.policy_doc import parse_iam_document
@@ -58,10 +74,11 @@ from nhi_blast.parsers.terraform.tfjson import parse_tf_json
 from nhi_blast.report._text import safe_text
 from nhi_blast.report.console import render_console
 from nhi_blast.report.graph_export import graph_export_dot, graph_export_json
-from nhi_blast.report.html import write_html
-from nhi_blast.report.json_report import write_json
-from nhi_blast.report.rank import render_rank_console, write_rank_json
-from nhi_blast.report.sarif import write_sarif
+from nhi_blast.report.html import html_report
+from nhi_blast.report.json_report import report_json
+from nhi_blast.report.rank import rank_json, render_rank_console
+from nhi_blast.report.redaction import redact_model
+from nhi_blast.report.sarif import sarif_json
 from nhi_blast.resolvers.composite import ExpandedJob, expand_jobs
 from nhi_blast.resolvers.roles import CloudFacts, resolve_cloud_facts
 
@@ -150,6 +167,7 @@ class ParsedRepository:
     expanded_jobs: tuple[ExpandedJob, ...]
     cloud: CloudFacts
     diagnostics: tuple[Diagnostic, ...]
+    protected_inputs: tuple[InputIdentity, ...] = field(default=(), repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -259,16 +277,19 @@ def _require_inside_file(path: Path, guard: PathGuard, flag: str) -> Path:
     return resolved
 
 
-def _load_config(root: Path, guard: PathGuard, explicit: Path | None) -> tuple[Config, Path | None]:
+def _load_config(
+    root: Path, guard: PathGuard, explicit: Path | None
+) -> tuple[Config, Path | None, InputIdentity | None]:
     if explicit is not None:
         resolved = _require_inside_file(explicit, guard, "--config")
         try:
-            return Config.from_file(resolved), resolved
+            config, identity = Config.from_file_with_identity(explicit.expanduser())
+            return _with_relative_path(config, guard, resolved), resolved, identity
         except ConfigError as exc:
             raise UsageError(str(exc)) from None
     default = root / CONFIG_FILENAME
     if not default.exists():
-        return Config.empty(), None
+        return Config.empty(), None, None
     try:
         resolved_default = guard.require_inside(default)
     except (OSError, OutsideRootError):
@@ -278,9 +299,15 @@ def _load_config(root: Path, guard: PathGuard, explicit: Path | None) -> tuple[C
         msg = f"configuration path is not a file: {CONFIG_FILENAME}"
         raise UsageError(msg)
     try:
-        return Config.from_file(resolved_default), resolved_default
+        config, identity = Config.from_file_with_identity(default)
+        return _with_relative_path(config, guard, resolved_default), resolved_default, identity
     except ConfigError as exc:
         raise UsageError(str(exc)) from None
+
+
+def _with_relative_path(config: Config, guard: PathGuard, resolved: Path) -> Config:
+    """Evidence names the config file by its scan-root-relative POSIX path, never a host path."""
+    return replace(config, path=guard.relative(resolved))
 
 
 # ------------------------------------------------------------------- repository
@@ -334,14 +361,43 @@ def _parse_files(
     )
 
 
+def _explicit_input_names(
+    paths: Sequence[Path], guard: PathGuard, flag: str
+) -> tuple[tuple[Path, Path], ...]:
+    return tuple(
+        (Path(os.path.abspath(path.expanduser())), _require_inside_file(path, guard, flag))
+        for path in paths
+    )
+
+
+def _protected_input_names(
+    identities: Sequence[InputIdentity], explicit: Sequence[tuple[Path, Path]]
+) -> tuple[InputIdentity, ...]:
+    # Reuse the opened inode, not a later stat of an option spelling that may have changed.
+    aliases = (
+        replace(identity, path=original)
+        for original, resolved in explicit
+        for identity in identities
+        if identity.resolved_path == resolved
+    )
+    return tuple(dict.fromkeys((*identities, *aliases)))
+
+
 def load_repository(options: SourceOptions) -> ParsedRepository:
     """Discover, read and parse one repository without running scenarios."""
+    try:
+        return _load_repository(options)
+    except artifact_io.ArtifactReadError as exc:
+        raise UsageError(str(exc)) from None
+
+
+def _load_repository(options: SourceOptions) -> ParsedRepository:
     root = _resolve_root(options.root)
     try:
         guard = PathGuard.create(root)
     except OutsideRootError as exc:
         raise UsageError(str(exc)) from None
-    base_config, config_path = _load_config(root, guard, options.config_path)
+    base_config, config_path, config_identity = _load_config(root, guard, options.config_path)
     config = base_config.with_identity(
         repo_slug=options.repo_slug,
         default_branch=options.default_branch,
@@ -349,19 +405,17 @@ def load_repository(options: SourceOptions) -> ParsedRepository:
         aws_region=options.aws_region,
     )
     limits = config.limits()
-    identity = resolve_identity(
+    identity, git_identities = repository_identity.resolve_identity_with_inputs(
         root=root,
         cli_repo_slug=options.repo_slug,
         cli_default_branch=options.default_branch,
         config_repo_slug=base_config.repo_slug,
         config_default_branch=base_config.default_branch,
     )
-    extra_tf = tuple(
-        dict.fromkeys(_require_inside_file(item, guard, "--tf-json") for item in options.tf_json)
-    )
-    extra_iam = tuple(
-        dict.fromkeys(_require_inside_file(item, guard, "--iam-json") for item in options.iam_json)
-    )
+    tf_names = _explicit_input_names(options.tf_json, guard, "--tf-json")
+    iam_names = _explicit_input_names(options.iam_json, guard, "--iam-json")
+    extra_tf = tuple(dict.fromkeys(resolved for _, resolved in tf_names))
+    extra_iam = tuple(dict.fromkeys(resolved for _, resolved in iam_names))
     try:
         discovery = discover(
             root,
@@ -417,6 +471,15 @@ def load_repository(options: SourceOptions) -> ParsedRepository:
         expanded_jobs=expanded,
         cloud=cloud,
         diagnostics=diagnostics.sorted(),
+        protected_inputs=_protected_input_names(
+            (
+                *(() if config_identity is None else (config_identity,)),
+                *git_identities,
+                *discovery.protected_inputs,
+                *loader.protected_inputs(),
+            ),
+            (*tf_names, *iam_names),
+        ),
     )
 
 
@@ -497,13 +560,12 @@ def _merged_findings(
 ) -> tuple[tuple[Finding, ...], tuple[Diagnostic, ...]]:
     preliminary = tuple(analysis.to_report() for analysis in analyses)
     base = build_findings(graph, scenarios=preliminary)
-    scenario_rules = {"NHB-SURV-001", "NHB-ROT-001", "NHB-ROT-002"}
     merged: dict[str, Finding] = {
-        finding.id: finding for finding in base.findings if finding.rule not in scenario_rules
+        finding.id: finding for finding in base.findings if finding.rule not in SCENARIO_RULES
     }
     for analysis in analyses:
         for finding in analysis.findings:
-            if finding.rule in scenario_rules:
+            if finding.rule in SCENARIO_RULES:
                 merged[finding.id] = finding
     filtered = filter_findings(merged.values(), config=config, strict=strict)
     return filtered.findings, filtered.diagnostics
@@ -583,19 +645,67 @@ def _plural(count: int, singular: str, plural: str) -> str:
     return f"{count} {singular if count == 1 else plural}"
 
 
-def _scope_lines(parsed: ParsedRepository, depth: int) -> tuple[str, ...]:
+def _scope_lines(
+    parsed: ParsedRepository, depth: int, completeness: Completeness
+) -> tuple[str, ...]:
     resources = {address for model in parsed.tf_models for address in model.resources}
     budget = parsed.limits.scenario_time_budget_seconds
     budget_text = f"{budget:g}"
+    counts = status_counts(completeness)
     return (
         "Scope: "
         f"{_plural(len(parsed.workflows), 'workflow', 'workflows')}, "
         f"{_plural(len(parsed.expanded_jobs), 'job', 'jobs')}, "
         f"{_plural(len(resources), 'Terraform resource', 'Terraform resources')}.",
-        "Not analysed: SCPs, environment protection, branch rules, live AWS state, "
-        "job outputs and artifacts.",
+        f"Not analysed: {not_analysed_summary(completeness)}.",
+        "Completeness: "
+        f"{counts['analysed']} analysed, {counts['partially_analysed']} partially analysed, "
+        f"{counts['not_provided']} not provided, {counts['not_supported']} not supported, "
+        f"{counts['not_applicable']} not applicable.",
         f"Limits: closure depth {depth}, graph node budget {parsed.limits.max_graph_nodes}, "
         f"scenario time budget {budget_text} s.",
+    )
+
+
+def _workflow_facts(workflows: Sequence[WorkflowFact]) -> WorkflowFacts:
+    remote = False
+    environment = False
+    for workflow in workflows:
+        for job in workflow.jobs.values():
+            environment = environment or bool(job.environment) or job.environment_unresolved
+            if job.uses_workflow is not None and job.uses_workflow.kind == "REMOTE":
+                remote = True
+            remote = remote or any(
+                step.uses is not None and step.uses.kind == "REMOTE" for step in job.steps
+            )
+    return WorkflowFacts(remote_callees=remote, environment_jobs=environment)
+
+
+def _report_context(
+    parsed: ParsedRepository,
+    depth: int,
+    options: ScanOptions,
+    analyses: Sequence[ScenarioAnalysis],
+    graph: GraphData,
+) -> ReportContext:
+    return build_context(
+        config=parsed.config,
+        limits=parsed.limits,
+        max_depth=depth,
+        strict=options.strict,
+        selectors=options.selectors,
+        scenarios=tuple(
+            ScenarioContext(
+                selector=analysis.selector,
+                selector_kind=analysis.selector_kind,
+                start_nodes=analysis.start_nodes,
+                time_budget_exhausted=analysis.time_budget_exhausted,
+            )
+            for analysis in analyses
+        ),
+        graph=redact_model(graph),
+        oidc=parsed.config.oidc_settings(),
+        sanitize=redact_model,
     )
 
 
@@ -644,28 +754,44 @@ def _scan_exit_code(report: Report, *, strict: bool, fail_on: Severity | None) -
     return 0
 
 
-def _write_scan_artifacts(
-    report: Report, formats: Sequence[OutputFormat], out_dir: Path
+def _commit_artifacts(
+    artifacts: Sequence[tuple[Path, bytes]], inputs: Sequence[InputIdentity]
 ) -> tuple[Path, ...]:
-    writers = {
-        OutputFormat.JSON: ("report.json", write_json),
-        OutputFormat.SARIF: ("report.sarif", write_sarif),
-        OutputFormat.HTML: ("report.html", write_html),
+    try:
+        return write_artifacts(artifacts, inputs=inputs)
+    except artifact_io.ArtifactCleanupError as exc:
+        raise OutputError(str(exc)) from None
+    except ArtifactOutputError as exc:
+        names = ", ".join(path.name for path, _ in artifacts)
+        msg = f"cannot write {names}: {exc}"
+        raise OutputError(msg) from None
+
+
+def _write_scan_artifacts(
+    report: Report,
+    formats: Sequence[OutputFormat],
+    out_dir: Path,
+    *,
+    inputs: Sequence[InputIdentity] = (),
+) -> tuple[Path, ...]:
+    renderers = {
+        OutputFormat.JSON: ("report.json", report_json),
+        OutputFormat.SARIF: ("report.sarif", sarif_json),
+        OutputFormat.HTML: ("report.html", html_report),
     }
-    written: list[Path] = []
+    artifacts: list[tuple[Path, bytes]] = []
     for fmt in formats:
-        entry = writers.get(fmt)
+        entry = renderers.get(fmt)
         if entry is None:
             continue
-        filename, writer = entry
+        filename, renderer = entry
         target = out_dir.expanduser() / filename
         try:
-            writer(report, target)
-        except OSError as exc:
-            msg = f"cannot write {filename}: {exc.strerror or exc}"
+            artifacts.append((target, renderer(report).encode("utf-8")))
+        except (OSError, RuntimeError, ValueError):
+            msg = f"cannot render {filename}"
             raise OutputError(msg) from None
-        written.append(target)
-    return tuple(written)
+    return _commit_artifacts(artifacts, inputs)
 
 
 def run_scan(options: ScanOptions, *, color: bool = False) -> ScanOutcome:
@@ -699,17 +825,30 @@ def run_scan(options: ScanOptions, *, color: bool = False) -> ScanOutcome:
     diagnostics.extend(filter_diagnostics)
     diagnostics.extend(assumption_diagnostics)
     diagnostics.extend(_stale_data_diagnostics(data_files, generated_at))
+    diagnostics.extend(path_collision_diagnostics(parsed.inputs.files))
+    sorted_diagnostics = diagnostics.sorted()
+    completeness = derive_completeness(
+        inputs=parsed.inputs,
+        graph=graph,
+        scenarios=scenario_reports,
+        diagnostics=sorted_diagnostics,
+        used_assumptions=[item.id for item in assumptions_used],
+        workflow_facts=_workflow_facts(parsed.workflows),
+        format_declared=format_is_declared(parsed.config.oidc_settings()),
+    )
     report = Report(
         schema_id=SCHEMA_VERSION,
         tool=ToolInfo(version=__version__),
         inputs=parsed.inputs,
-        scope_and_limits=_scope_lines(parsed, depth),
+        scope_and_limits=_scope_lines(parsed, depth, completeness),
         assumptions=assumptions_used,
         data_files=data_files,
-        diagnostics=diagnostics.sorted(),
+        diagnostics=sorted_diagnostics,
         findings=findings,
         graph=graph,
         scenarios=scenario_reports,
+        context=_report_context(parsed, depth, options, analyses, graph),
+        completeness=completeness,
         generated_at=generated_at,
     )
     exit_code = _scan_exit_code(report, strict=options.strict, fail_on=options.fail_on)
@@ -717,7 +856,9 @@ def run_scan(options: ScanOptions, *, color: bool = False) -> ScanOutcome:
         report=report,
         exit_code=exit_code,
         console_text=render_console(report, color=color),
-        written=_write_scan_artifacts(report, formats, options.out_dir),
+        written=_write_scan_artifacts(
+            report, formats, options.out_dir, inputs=parsed.protected_inputs
+        ),
     )
 
 
@@ -734,19 +875,20 @@ def run_rank(options: RankOptions) -> RankOutcome:
         diagnostics=diagnostics,
     )
     exit_code = 3 if options.strict and _has_error(report.diagnostics) else 0
+    try:
+        console_text = render_rank_console(report)
+        data = rank_json(report).encode("utf-8") if fmt is RankFormat.JSON else None
+    except (OSError, RuntimeError, ValueError):
+        msg = "cannot render rank output"
+        raise OutputError(msg) from None
     written: tuple[Path, ...] = ()
-    if fmt is RankFormat.JSON:
+    if data is not None:
         target = options.out_dir.expanduser() / "rank.json"
-        try:
-            write_rank_json(report, target)
-        except OSError as exc:
-            msg = f"cannot write rank.json: {exc.strerror or exc}"
-            raise OutputError(msg) from None
-        written = (target,)
+        written = _commit_artifacts([(target, data)], parsed.protected_inputs)
     return RankOutcome(
         report=report,
         exit_code=exit_code,
-        console_text=render_rank_console(report),
+        console_text=console_text,
         written=written,
     )
 
@@ -780,11 +922,11 @@ def run_export(options: ExportOptions) -> ExportOutcome:
         filename = "graph.json"
     target = options.out_dir.expanduser() / filename
     try:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(text, encoding="utf-8", newline="\n")
-    except OSError as exc:
-        msg = f"cannot write {filename}: {exc.strerror or exc}"
+        data = text.encode("utf-8")
+    except UnicodeError:
+        msg = f"cannot render {filename}"
         raise OutputError(msg) from None
+    written = _commit_artifacts([(target, data)], parsed.protected_inputs)
     node_count = len(build.graph.nodes)
     edge_count = len(build.graph.edges)
     exit_code = 3 if options.strict and _has_error(diagnostics.sorted()) else 0
@@ -794,7 +936,7 @@ def run_export(options: ExportOptions) -> ExportOutcome:
             f"Exported {node_count} nodes and {edge_count} edges to "
             f"{safe_text(target.as_posix(), 500)}\n"
         ),
-        written=(target,),
+        written=written,
         node_count=node_count,
         edge_count=edge_count,
     )
