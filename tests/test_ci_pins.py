@@ -115,8 +115,13 @@ def test_audit_workflow_is_scheduled_and_scans_both_locks() -> None:
 
     for required in (
         "--require-hashes -r requirements-audit.lock",
-        "v2.7.0/osv-scanner_linux_amd64",
-        "v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
+        # API asset endpoints pin the exact bytes of osv-scanner v2.7.0
+        # linux_amd64 and gitleaks v8.30.1 linux_x64; the SHA-256 pins below
+        # are the authoritative check on the downloaded tools.
+        "releases/assets/632251666",
+        "releases/assets/378332058",
+        "160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b",
+        "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
         "requirements.lock",
         "requirements-dev.lock",
         ".gitleaks.toml",
