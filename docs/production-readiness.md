@@ -200,6 +200,18 @@ sdist, package-index upload or deployment is part of the 0.2.0 beta; the executa
 unsigned, and no production-readiness or independent-audit conclusion is made for
 0.2.0.
 
+Version 0.3.0 was published on 2026-11-08 as the GitHub pre-release `v0.3.0` at
+https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.3.0, targeting commit
+`70c6ba0`. The wheel and sdist were rebuilt from the tag by `release.yml`, attested
+with GitHub build provenance, and downloaded again after publication; they matched
+the published `SHA256SUMS`. The published executable is 20,450,734 bytes with SHA-256
+`7a6a201d0e1af6cfba2c7bf991452935e2f5e8abe0db0cbb06c687312e58c24c`; it was built
+locally from the tagged source with the locked toolchain, downloaded after
+publication, and matched both `SHA256SUMS` and its own `.sha256` record. The
+executable is unsigned and is not covered by a build attestation. No package-index
+upload or deployment is part of the 0.3.0 beta, and no production-readiness or
+independent-audit conclusion is made for it.
+
 Every statement must keep the distinction between internal verification and independent
 audit. The tool's own analysis is evidence-honest by
 design: it reports potential authority, conditional survival and rotation order. This
