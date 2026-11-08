@@ -281,3 +281,62 @@ exact results, failed/interim checks and limits. Native Linux/macOS, broader aut
 credential custody/replay, dependency-specific comparison, source receipts, completion
 manifests and release-owner gates remain open. No independent final audit, local release
 candidate, publication or overall authorization-correctness verdict is claimed.
+
+## 0.3.0: local gate record (GitHub pre-release)
+
+Version 0.3.0 ships as the GitHub pre-release `v0.3.0` (wheel, sdist, SHA-256 sums,
+CycloneDX SBOM and the unsigned Windows executable). There is no package-index publication.
+This section records what was executed for that release; the historical sections above do not
+apply to it. Digests live in the release's `SHA256SUMS` asset, not in this packaged document.
+
+Environment: Windows 11 x64 (10.0.26200), CPython 3.12.14 (`.venv`), branch
+`feature/v0.3.0-beta-consolidated`, tag `v0.3.0`, 2026-11-08.
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Lint | `python -m ruff check src tests scripts` | all checks passed |
+| Format | `python -m ruff format --check src tests scripts` | 196 files already formatted |
+| Types | `python -m mypy src` | no issues in 100 files |
+| Schema | `python scripts/gen_schema.py --check` | current |
+| Tests | `NHB_SKIP_UI_TESTS=1 NHI_BLAST_WINDOWS_EXE=dist/windows/nhi-blast-windows-x64.exe python -m pytest -q` | **1988 passed, 43 skipped** in 177 s |
+| Security marker | `python -m pytest -q -m security` | **539 passed, 31 skipped** |
+| Golden marker | `python -m pytest -q -m golden` | **7 passed** |
+| Slow marker | `python -m pytest -q -m slow` | **2 passed** |
+| Coverage | `NHB_SKIP_UI_TESTS=1 python scripts/check_coverage.py` | passed: 90.78% overall; every enforced module at or above 80% |
+| Browser | `npx playwright test --project=chromium --project=firefox --project=webkit` (tests/ui) | **414 passed** in 20.5 m, serial, one worker per engine; axe-core reports no automated violations (not a WCAG conformance claim) |
+| Build | `hatchling build -t wheel -t sdist` with `SOURCE_DATE_EPOCH` | local verification build: wheel 520,645 bytes, sdist 1,361,808 bytes; the published artifacts are rebuilt by `release.yml` from the tag commit |
+| Artifacts | `python scripts/check_artifacts.py dist` | passed (wheel 133 files, sdist 426 files; data files, fonts, icons and vendor assets present) |
+| Windows exe | `scripts/build_windows_exe.py` (PyInstaller 6.22.3, locked toolchain) | built: 20,450,734 bytes; `version` reports 0.3.0 / schema 1.1; scan output byte-identical to the wheel's |
+| Windows checks | `check_artifacts.py dist --windows-exe` + `NHI_BLAST_WINDOWS_EXE` suite | artifact check passed; suite result in the Tests row |
+| Clean install | fresh venv, wheel `[hcl]` with `-c requirements.lock`, `pip check`, CLI smoke | passed: `version`, `version --data`, `schema`, fx07 scan (R3/E2/Z5, 7 findings), `rank`, `explain`, `export` json+dot, `--fail-on high` exits 1; a second venv without the extra emits `D-TF-HCL-UNAVAILABLE`; sdist install in a third venv produces a byte-identical report; the exe scans outside the repository with identical output |
+
+Skips: 42 tests require the Windows file-symlink privilege that this environment does not
+grant (CI Windows runners create real symlinks and run them); one is the browser wrapper,
+which is run separately as the full Playwright suite above. The eight standalone executable
+tests ran with `NHI_BLAST_WINDOWS_EXE` set to the built executable, so no executable skips
+remain.
+
+The browser suite is run separately because the in-suite wrapper bounds its subprocess at
+900 s; on this machine the serial three-engine suite needs about 20 min. An initial combined
+attempt hit that wrapper timeout (the Python tests themselves all passed); the suite was then
+run directly to completion with the result above. No assertion, timeout or case was relaxed.
+
+Remote evidence: [ci run 42469339996](https://github.com/DKtech-dev/nhi-blast/actions/runs/42469339996)
+passed on the release content (Ubuntu and Windows × Python 3.12/3.13/3.14: lint, format, types,
+schema, full suite, coverage, slow; plus wheel/sdist build and clean-consumer CLI exercise).
+[Audit run 42470590605](https://github.com/DKtech-dev/nhi-blast/actions/runs/42470590605)
+passed (pip-audit on both locks, Bandit, OSV on both locks, gitleaks).
+
+Earlier remote attempts are recorded honestly: the first CI run failed one test whose setup
+computed `os.path.relpath` across the runner's C:/D: mounts (fixed by anchoring the test's
+relative path, commit 85289fe; no assertion changed); two audit attempts failed downloading the
+pinned osv-scanner from the release CDN (HTTP 504; fixed by downloading the same SHA-256-pinned
+bytes through the API asset endpoint, commit c50c045); the next audit run then reported nine
+gitleaks `generic-api-key` false positives on data-file digests in the new diff fixtures (fixed
+by a match-targeted allowlist, commit 20dd484, verified locally with injected AWS/GitHub token
+probes that detection still fires).
+
+Not run locally: Linux native gates (covered by the dispatched CI matrix); macOS native gates
+(not covered by the matrix); an independent human security audit; the public-corpus benchmark.
+Session policies are recorded, not evaluated. See `docs/release-notes-0.3.0.md` for the full
+not-included list.

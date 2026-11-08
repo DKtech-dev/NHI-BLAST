@@ -49,7 +49,8 @@ See "State of this release" below.
 - Role chaining, SCPs, RCPs, resource policies, KMS key policies, branch protection and environment
   protection settings are not analysed. The report says so per family.
 - `diff` and `whatif` have no HTML pages yet.
-- Only Windows was exercised locally. Linux and macOS are untested for this version.
+- Exercised locally on Windows 11 and by the CI matrix on Ubuntu and Windows runners
+  (Python 3.12, 3.13 and 3.14). macOS is untested.
 - No independent security audit has been performed.
 
 ## State of this release

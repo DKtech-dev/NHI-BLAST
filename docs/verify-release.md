@@ -37,5 +37,5 @@ python -m json.tool sbom.cdx.json | head
 - No independent security audit has been performed.
 - PyPI attestations (PEP 740) appear only once the owner has published through a trusted
   publisher.
-- Cross-platform behaviour (Linux, macOS) is established only by CI runs, which have to be
-  authorised by the owner before they exist.
+- Cross-platform behaviour is established by the CI matrix (Ubuntu and Windows runners,
+  Python 3.12, 3.13 and 3.14). macOS is not covered by CI and remains untested.
