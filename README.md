@@ -18,6 +18,8 @@
   <img src="https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-a8201a?style=flat-square&amp;labelColor=111010" alt="Python 3.12, 3.13 and 3.14">
   <img src="https://img.shields.io/badge/licence-MIT-a8201a?style=flat-square&amp;labelColor=111010" alt="MIT licence">
   <img src="https://img.shields.io/badge/release-v0.3.0%20beta-a8201a?style=flat-square&amp;labelColor=111010" alt="v0.3.0 public beta">
+  <a href="https://pypi.org/project/nhi-blast/"><img src="https://img.shields.io/pypi/v/nhi-blast?style=flat-square&amp;labelColor=111010&amp;color=a8201a" alt="PyPI version"></a>
+  <a href="https://www.bestpractices.dev/projects/17026"><img src="https://www.bestpractices.dev/projects/17026/badge" alt="OpenSSF Best Practices"></a>
 </p>
 
 <p align="center">
