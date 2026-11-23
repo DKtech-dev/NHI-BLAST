@@ -117,6 +117,6 @@ runs:
 
     - name: Upload SARIF (fork-safe)
       if: ${{ !cancelled() && inputs.upload-sarif == 'true' && github.event.pull_request.head.repo.fork != true }}
-      uses: github/codeql-action/upload-sarif@20b5a4d50410942703a400a3f573222a1d1f2e6d  # v3.28.11
+      uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea  # v4
       with:
         sarif_file: ${{ inputs.out-dir }}/report.sarif
