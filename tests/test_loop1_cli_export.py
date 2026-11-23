@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from types import SimpleNamespace
@@ -356,6 +357,33 @@ def test_sarif_code_flow_allows_file_without_line_and_prefers_line_when_present(
 # --------------------------------------------------------------------------- action/action.yml
 
 
+def _find_bash() -> str:
+    if os.name == "nt":
+        candidates = [
+            Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Git" / "bin" / "bash.exe",
+            Path(os.environ.get("PROGRAMFILES", r"C:\Program Files"))
+            / "Git"
+            / "usr"
+            / "bin"
+            / "bash.exe",
+            Path(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"))
+            / "Git"
+            / "bin"
+            / "bash.exe",
+        ]
+        git_exe = shutil.which("git")
+        if git_exe:
+            candidates.append(Path(git_exe).resolve().parent.parent / "bin" / "bash.exe")
+        for cand in candidates:
+            if cand.is_file():
+                return str(cand)
+        found = shutil.which("bash")
+        if not found or "system32" in found.lower():
+            pytest.skip("Git Bash not available on Windows runner")
+        return found
+    return shutil.which("bash") or "bash"
+
+
 def _run_action_script(tmp_path: Path, env_overrides: dict[str, str]) -> tuple[int, str, list[str]]:
     data = yaml.safe_load(ACTION_YML.read_text(encoding="utf-8"))
     run_step = next(step for step in data["runs"]["steps"] if step.get("name") == "Run nhi-blast")
@@ -365,21 +393,23 @@ def _run_action_script(tmp_path: Path, env_overrides: dict[str, str]) -> tuple[i
     log_file = tmp_path / "calls.log"
     summary_file = tmp_path / "summary.md"
     wrapper = 'nhi-blast() { printf "%s\\n" "$*" >> "$NHB_TEST_LOG"; }\n' + script
-    env = {
-        "PATH": os.environ.get("PATH", ""),
-        "NHB_TEST_LOG": str(log_file),
-        "GITHUB_STEP_SUMMARY": str(summary_file),
-        "NHB_MODE": "scan",
-        "NHB_PATH": ".",
-        "NHB_REPO": "acme/shop",
-        "NHB_OUT": str(tmp_path / "out"),
-        "NHB_FAIL_ON": "high",
-        "NHB_BASE": "",
-        "NHB_SIMULATE": "",
-        **env_overrides,
-    }
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("NHB_", "GITHUB_"))}
+    env.update(
+        {
+            "NHB_TEST_LOG": log_file.as_posix(),
+            "GITHUB_STEP_SUMMARY": summary_file.as_posix(),
+            "NHB_MODE": "scan",
+            "NHB_PATH": ".",
+            "NHB_REPO": "acme/shop",
+            "NHB_OUT": (tmp_path / "out").as_posix(),
+            "NHB_FAIL_ON": "high",
+            "NHB_BASE": "",
+            "NHB_SIMULATE": "",
+            **env_overrides,
+        }
+    )
     completed = subprocess.run(
-        ["bash", "-c", wrapper],
+        [_find_bash(), "-c", wrapper],
         env=env,
         capture_output=True,
         text=True,
