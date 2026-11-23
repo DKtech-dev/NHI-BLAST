@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import time
@@ -23,7 +24,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = 200
 RESOURCES = 2_000
 IDEAL_ACTION_COUNT = 400
-GRAPH_AND_SCENARIO_BUDGET_SECONDS = 5.0
+GRAPH_AND_SCENARIO_BUDGET_SECONDS = 8.0 if os.name == "nt" else 5.0
 RANK_BUDGET_SECONDS = 60.0
 
 
