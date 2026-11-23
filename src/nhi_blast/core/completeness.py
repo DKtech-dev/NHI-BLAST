@@ -120,6 +120,7 @@ CODE_TO_FAMILY: dict[str, tuple[InputFamily | str | None, bool]] = {
     "D-COND-POLICY-VARIABLE": (F.IAM_IDENTITY_POLICIES, True),
     "D-COND-AMBIGUOUS": (F.IAM_IDENTITY_POLICIES, True),
     "D-COND-UNKNOWN-KEY": (F.IAM_IDENTITY_POLICIES, True),
+    "D-COND-BUDGET": (F.IAM_IDENTITY_POLICIES, True),
     "D-GRAPH-LIMIT": (F.ANALYSIS_BUDGET, True),
     "D-ANALYSIS-TIME": (F.ANALYSIS_BUDGET, True),
     "D-DATA-ASSUMPTION": (None, False),
@@ -141,6 +142,7 @@ ASSUMPTION_TO_FAMILY: dict[str, InputFamily | None] = {
     "A-STS-TTL": F.AWS_SESSION_DURATION,
     "A-CAC-DEFAULT": F.AWS_SESSION_DURATION,
     "A-SESSION-POLICY": F.IAM_SESSION_POLICIES,
+    "A-NO-BOUNDARY": F.IAM_PERMISSION_BOUNDARIES,
     "A-NO-SCP": F.AWS_ORG_POLICIES,
     "A-SCOPE-INPUT": F.IAM_IDENTITY_POLICIES,
     "A-DEFAULT-BRANCH": None,
@@ -347,10 +349,18 @@ def derive_completeness(
     )
     aws_present = bool(roles)
     status[F.AWS_ORG_POLICIES] = S.NOT_SUPPORTED if aws_present else S.NOT_APPLICABLE
-    status[F.AWS_RESOURCE_POLICIES] = S.NOT_SUPPORTED if aws_present or sinks else S.NOT_APPLICABLE
+    status[F.AWS_RESOURCE_POLICIES] = (
+        S.PARTIALLY_ANALYSED
+        if any(node.attrs.get("has_resource_policy") for node in sinks)
+        else (S.NOT_SUPPORTED if aws_present or sinks else S.NOT_APPLICABLE)
+    )
     status[F.KMS_KEY_POLICIES] = S.NOT_SUPPORTED if "A-KMS-UNMODELLED" in used else S.NOT_APPLICABLE
     status[F.AWS_ROLE_CHAINING] = (
-        S.NOT_SUPPORTED if aws_present or F.AWS_ROLE_CHAINING in mentioned else S.NOT_APPLICABLE
+        S.PARTIALLY_ANALYSED
+        if any(edge.attrs.get("chained") is True for edge in graph.edges)
+        else (
+            S.NOT_SUPPORTED if aws_present or F.AWS_ROLE_CHAINING in mentioned else S.NOT_APPLICABLE
+        )
     )
     status[F.LIVE_CLOUD_STATE] = S.NOT_SUPPORTED
     status[F.ANALYSIS_BUDGET] = S.PARTIALLY_ANALYSED if has(F.ANALYSIS_BUDGET) else S.ANALYSED

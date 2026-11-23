@@ -45,6 +45,12 @@ def _expected_resources() -> set[str]:
             continue
         relative = path.relative_to(ASSETS_DIR).as_posix()
         expected.add(f"nhi_blast/report/assets/{relative}")
+    templates_dir = ASSETS_DIR.parent / "templates"
+    for path in templates_dir.rglob("*"):
+        if not path.is_file() or path.suffix == ".py" or "__pycache__" in path.parts:
+            continue
+        relative = path.relative_to(templates_dir).as_posix()
+        expected.add(f"nhi_blast/report/templates/{relative}")
     return expected
 
 

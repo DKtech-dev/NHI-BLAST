@@ -54,6 +54,8 @@ def test_push_tag_filter_emits_both_formats_with_claims() -> None:
         assert item.audience == "sts.amazonaws.com"
         assert item.claims == {
             "repository": "acme/shop",
+            "repository_owner": "acme",
+            "event_name": "push",
             "ref": "refs/tags/v*",
             "job_workflow_ref": ("acme/shop/.github/workflows/release.yml@refs/tags/v*"),
             "workflow": "Release",
@@ -96,11 +98,15 @@ def test_pull_request_target_uses_first_branch_filter() -> None:
         triggers=(Trigger(event="pull_request_target", branches=("release/**", "main")),)
     )
     classic = classic_subjects(candidates)
-    assert classic == {"repo:acme/shop:ref:refs/heads/release/**"}
-    item = next(c for c in candidates if c.format is SubFormat.CLASSIC)
-    assert item.claims["job_workflow_ref"] == (
-        "acme/shop/.github/workflows/release.yml@refs/heads/release/**"
-    )
+    assert classic == {
+        "repo:acme/shop:ref:refs/heads/release/**",
+        "repo:acme/shop:ref:refs/heads/main",
+    }
+    jwr = {c.claims["job_workflow_ref"] for c in candidates if c.format is SubFormat.CLASSIC}
+    assert jwr == {
+        "acme/shop/.github/workflows/release.yml@refs/heads/release/**",
+        "acme/shop/.github/workflows/release.yml@refs/heads/main",
+    }
 
 
 def test_pull_request_target_defaults_to_default_branch() -> None:
@@ -138,7 +144,10 @@ def test_environment_beats_ref() -> None:
     item = next(c for c in candidates if c.format is SubFormat.CLASSIC)
     assert item.claims == {
         "repository": "acme/shop",
+        "repository_owner": "acme",
+        "event_name": "push",
         "environment": "Production:V1",
+        "job_workflow_ref": "acme/shop/.github/workflows/release.yml@*",
         "workflow": "Release",
     }
     assert item.evidence_class is EvidenceClass.ASSUMED

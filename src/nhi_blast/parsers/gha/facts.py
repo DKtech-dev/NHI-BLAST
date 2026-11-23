@@ -121,6 +121,10 @@ class StepFact(BaseModel):
     literals: tuple[LiteralHit, ...] = ()
     aws_auth: AwsAuthUse | None = None
     has_run: bool = False
+    unsafe_pr_checkout: bool = False
+    write_cache_use: bool = False
+    ai_agent_use: bool = False
+    unconstrained_pkg_install: bool = False
 
 
 class JobFact(BaseModel):
@@ -141,6 +145,11 @@ class JobFact(BaseModel):
     untrusted_checkout: bool = False
     untrusted_checkout_line: int | None = None
     literals: tuple[LiteralHit, ...] = ()
+    ai_agent_workflow: bool = False
+    ai_agent_line: int | None = None
+    unconstrained_pkg_install: bool = False
+    unconstrained_pkg_line: int | None = None
+    compiled_lock_workflow: bool = False
 
 
 class WorkflowFact(BaseModel):

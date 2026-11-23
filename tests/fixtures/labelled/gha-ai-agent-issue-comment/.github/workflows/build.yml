@@ -1,0 +1,11 @@
+name: AI Triage
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@abcdef0123456789abcdef0123456789abcdef01
+        env:
+          API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

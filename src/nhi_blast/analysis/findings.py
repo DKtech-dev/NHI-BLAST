@@ -87,6 +87,7 @@ class _FindingsBuilder:
         self.paths = {
             scenario.selector: reach(graph, scenario.start_nodes) for scenario in self.scenarios
         }
+        self.job_reach: dict[str, dict[str, PathInfo]] = {}
         self.findings: dict[str, Finding] = {}
 
     def _add(
@@ -367,7 +368,7 @@ class _FindingsBuilder:
                     scenario=scenario,
                 )
             if job.attrs.get("untrusted_checkout") is True and privileges:
-                paths = reach(self.graph, (job.id,))
+                paths = self.job_reach.get(job.id) or reach(self.graph, (job.id,))
                 role_path = next(
                     (
                         path
@@ -389,6 +390,68 @@ class _FindingsBuilder:
                     ),
                     path=_path_nodes(role_path) if role_path else (job.id,),
                     path_edges=role_path.ids if role_path else (),
+                )
+            if (
+                job.attrs.get("ai_agent_workflow") is True
+                and privileges
+                and (
+                    set(job.attrs.get("trigger_events", ()))
+                    & {
+                        "pull_request",
+                        "pull_request_target",
+                        "issue_comment",
+                        "issues",
+                        "discussion",
+                        "discussion_comment",
+                        "pull_request_review_comment",
+                    }
+                )
+            ):
+                paths = self.job_reach.get(job.id) or reach(self.graph, (job.id,))
+                role_path = next(
+                    (
+                        path
+                        for node_id, path in sorted(paths.items())
+                        if self.nodes[node_id].kind is NodeKind.AWS_ROLE
+                    ),
+                    None,
+                )
+                wf_path = str(job.attrs.get("path", ""))
+                lock_note = ""
+                if job.attrs.get("compiled_lock_workflow") and wf_path.endswith(".lock.yml"):
+                    source_md = wf_path[: -len(".lock.yml")] + ".md"
+                    lock_note = f" Compiled from {source_md}; review source instructions."
+                self._add(
+                    "NHB-GHA-006",
+                    Severity.CRITICAL if role_path else Severity.HIGH,
+                    (
+                        f"Job {job.label} runs an AI coding agent on an untrusted PR or issue "
+                        f"trigger while holding secrets or OIDC authority.{lock_note}"
+                    ),
+                    nodes=(job.id, *((role_path.node,) if role_path else ())),
+                    evidence=(
+                        job.evidence,
+                        privileges[0].evidence,
+                        role_path.edges[-1].evidence if role_path else (),
+                    ),
+                    path=_path_nodes(role_path) if role_path else (job.id,),
+                    path_edges=role_path.ids if role_path else (),
+                )
+            if job.attrs.get("unconstrained_pkg_install") is True and privileges:
+                untrusted_pkg = bool(
+                    set(job.attrs.get("trigger_events", ()))
+                    & {"pull_request", "pull_request_target", "issue_comment"}
+                )
+                self._add(
+                    "NHB-GHA-007",
+                    Severity.HIGH if untrusted_pkg else Severity.MEDIUM,
+                    (
+                        f"Job {job.label} runs a package install without lifecycle-script "
+                        f"suppression while holding secrets or OIDC authority."
+                    ),
+                    nodes=(job.id,),
+                    evidence=(job.evidence, privileges[0].evidence),
+                    path=(job.id,),
                 )
             if job.attrs.get("self_hosted") is True:
                 self._add(
@@ -544,10 +607,93 @@ class _FindingsBuilder:
                     )
 
     def build(self) -> FindingBuild:
+        self.job_reach = {
+            job.id: reach(self.graph, (job.id,))
+            for job in self.graph.nodes
+            if job.kind is NodeKind.JOB
+        }
         self._trust_findings()
         self._job_findings()
+        self._persistence_and_chain_findings()
         self._scenario_findings()
         return FindingBuild(findings=tuple(sorted(self.findings.values(), key=Finding.sort_key)))
+
+    def _persistence_and_chain_findings(self) -> None:
+        untrusted_triggers = {
+            "pull_request_target",
+            "issue_comment",
+            "issues",
+            "discussion",
+            "discussion_comment",
+        }
+        for edge in self.graph.edges:
+            if edge.kind is EdgeKind.CAN_ASSUME and edge.attrs.get("chained") is True:
+                src = self.nodes.get(edge.src)
+                dst = self.nodes.get(edge.dst)
+                if src is None or dst is None:
+                    continue
+                if not any(src.id in paths for paths in self.job_reach.values()):
+                    continue
+                dst_paths = reach(self.graph, (dst.id,))
+                reaches_z = any(
+                    self.nodes[nid].kind is NodeKind.CREDENTIAL
+                    and self.nodes[nid].attrs.get("lifetime")
+                    in {"persistent", "persistent_rotating"}
+                    for nid in dst_paths
+                )
+                self._add(
+                    "NHB-CHAIN-001",
+                    Severity.CRITICAL if reaches_z else Severity.HIGH,
+                    (
+                        f"Role {src.label} can assume {dst.label} via sts:AssumeRole "
+                        f"(3600 s chained session cap)."
+                    ),
+                    nodes=(src.id, dst.id),
+                    evidence=(src.evidence, dst.evidence, edge.evidence),
+                    path=(src.id, dst.id),
+                    path_edges=(edge.id,),
+                )
+
+        for role in self.graph.nodes:
+            if role.kind is not NodeKind.AWS_ROLE:
+                continue
+            actions = role.attrs.get("persistence_actions")
+            if not actions:
+                continue
+            reaching_jobs: list[Node] = []
+            untrusted_entry = False
+            for job in self.graph.nodes:
+                if job.kind is not NodeKind.JOB:
+                    continue
+                if role.id not in self.job_reach[job.id]:
+                    continue
+                reaching_jobs.append(job)
+                if set(job.attrs.get("trigger_events", ())) & untrusted_triggers:
+                    untrusted_entry = True
+                for runs in self.outgoing.get(job.id, ()):
+                    if runs.kind is EdgeKind.RUNS_IN and self.nodes[runs.dst].attrs.get("mutable"):
+                        untrusted_entry = True
+            if not reaching_jobs:
+                continue
+            role_path = self.job_reach[reaching_jobs[0].id][role.id]
+            action_list = ", ".join(str(a) for a in actions)
+            self._add(
+                "NHB-PERSIST-001",
+                Severity.CRITICAL if untrusted_entry else Severity.HIGH,
+                (
+                    f"Reachable role {role.label} permits IAM persistence action(s): "
+                    f"{action_list}. Revoking STS sessions does not remove newly created "
+                    f"IAM access keys or modified trust policies."
+                ),
+                nodes=(reaching_jobs[0].id, role.id),
+                evidence=(
+                    reaching_jobs[0].evidence,
+                    role.evidence,
+                    *(edge.evidence for edge in role_path.edges),
+                ),
+                path=_path_nodes(role_path),
+                path_edges=role_path.ids,
+            )
 
 
 def build_findings(graph: GraphData, *, scenarios: Sequence[ScenarioReport] = ()) -> FindingBuild:
@@ -587,4 +733,4 @@ def filter_findings(
     return FindingBuild(findings=tuple(kept), diagnostics=tuple(diagnostics))
 
 
-__all__ = ["FindingBuild", "build_findings", "filter_findings"]
+__all__ = ["SCENARIO_RULES", "FindingBuild", "build_findings", "filter_findings"]

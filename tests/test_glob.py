@@ -10,8 +10,10 @@ from hypothesis import strategies as st
 
 from nhi_blast.aws.glob import (
     MAX_GLOB_LENGTH,
+    GlobRelation,
     glob_intersects,
     glob_match,
+    glob_relation,
     has_wildcard,
     is_exact,
     wildcard_count,
@@ -117,10 +119,10 @@ def test_witness_implies_intersection(a: str, b: str, witness: str) -> None:
 
 def test_oversize_patterns_fail_closed() -> None:
     oversized = "a" * (MAX_GLOB_LENGTH + 1)
-    assert glob_intersects(oversized, oversized)
-    assert not glob_intersects(oversized, oversized[:-1] + "b")
-    assert glob_intersects(oversized, "*")
-    assert glob_intersects(oversized, "a*")
+    assert glob_relation(oversized, oversized) is GlobRelation.BUDGET_EXCEEDED
+    assert glob_relation(oversized, oversized[:-1] + "b") is GlobRelation.BUDGET_EXCEEDED
+    assert glob_relation(oversized, "*") is GlobRelation.BUDGET_EXCEEDED
+    assert glob_relation(oversized, "a*") is GlobRelation.BUDGET_EXCEEDED
 
 
 def test_wildcard_helpers() -> None:
@@ -130,3 +132,9 @@ def test_wildcard_helpers() -> None:
     assert wildcard_count("a*b?c**") == 4
     assert is_exact("literal")
     assert not is_exact("*")
+
+
+def test_oversized_glob_relation_returns_budget_exceeded() -> None:
+    a = "a*" * (MAX_GLOB_LENGTH // 2 + 5)
+    b = "?*" * (MAX_GLOB_LENGTH // 2 + 5)
+    assert glob_relation(a, b) is GlobRelation.BUDGET_EXCEEDED

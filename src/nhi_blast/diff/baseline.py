@@ -26,7 +26,7 @@ from nhi_blast.core.artifact_io import (
     read_bounded_utf8,
     write_artifacts,
 )
-from nhi_blast.core.models import Severity, severity_at_least
+from nhi_blast.core.models import Severity, severity_at_least, severity_rank
 from nhi_blast.diff.compare import DIFF_SCHEMA
 from nhi_blast.report._text import safe_text
 
@@ -239,6 +239,17 @@ def prune_entries(
 # ---------------------------------------------------------------------------- gate
 
 
+def is_severity_escalation(record: Mapping[str, Any]) -> bool:
+    """Return True when a changed finding increased in severity from BASE to HEAD."""
+    if record.get("class") != "changed":
+        return False
+    base_raw = record.get("base_severity")
+    head_raw = record.get("head_severity") or record.get("severity")
+    if not isinstance(base_raw, str) or not isinstance(head_raw, str):
+        return False
+    return severity_rank(Severity(head_raw)) < severity_rank(Severity(base_raw))
+
+
 def apply_gate(
     payload: Mapping[str, Any],
     baseline: Baseline | None,
@@ -264,6 +275,12 @@ def apply_gate(
     blocking: list[str] = []
     for record in result["findings"]:
         record["suppressed_by_baseline"] = False
+        if record["class"] == "changed":
+            if fail_on is not None and is_severity_escalation(record):
+                head_raw = record.get("head_severity") or record["severity"]
+                if severity_at_least(Severity(head_raw), fail_on):
+                    blocking.append(record["lk"])
+            continue
         if record["class"] != "new":
             continue
         accepted = entries.get(record["lk"])

@@ -44,3 +44,14 @@ version is installed from an index only when you ask for it by exact version (PE
 pre-release).
 
 The tool runs offline and makes no network calls at run time.
+
+## Isolated CLI installation (uvx / pipx)
+
+Because `0.3.0` is not published on PyPI, pass a downloaded release wheel or a tagged Git URL
+to `uvx` or `pipx` (bare package names apply only if a package index is published later):
+
+```bash
+uvx --from ./nhi_blast-0.3.0-py3-none-any.whl nhi-blast --version
+# or from Git at tag v0.3.0
+pipx install "git+https://github.com/DKtech-dev/nhi-blast.git@v0.3.0"
+```

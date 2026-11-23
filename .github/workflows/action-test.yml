@@ -1,0 +1,40 @@
+name: Action Test
+
+"on":
+  push:
+    branches: [main, master]
+    paths:
+      - "action/**"
+      - ".github/workflows/action-test.yml"
+  pull_request:
+    paths:
+      - "action/**"
+      - ".github/workflows/action-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Smoke-test composite action
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run local composite action on fx07-incident
+        uses: ./action
+        with:
+          mode: scan
+          path: tests/fixtures/fx07-incident
+          repo: acme/shop
+          out-dir: action-smoke-out
+          install-spec: "."
+          upload-sarif: "false"
+      - name: Verify generated outputs
+        run: |
+          test -s action-smoke-out/report.json
+          test -s action-smoke-out/report.sarif
+          test -s action-smoke-out/report.html

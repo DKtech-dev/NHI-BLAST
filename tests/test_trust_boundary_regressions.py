@@ -143,8 +143,9 @@ def test_positive_binding_still_counts_alongside_presence_check(operator: str) -
 
 def test_deny_and_unrelated_statements_do_not_supply_or_remove_controls() -> None:
     complete = {"StringEquals": {"aud": ("sts.amazonaws.com",), "sub": (SUB_MAIN,)}}
+    other_sub = {"StringEquals": {"sub": ("repo:other/repo:ref:refs/heads/main",)}}
     irrelevant = (
-        statement(effect=PolicyEffect.DENY),
+        statement(effect=PolicyEffect.DENY, conditions=other_sub),
         statement(actions=("sts:AssumeRole",)),
         statement(principals={"Federated": ("arn:aws:iam::1:oidc-provider/other.example",)}),
     )
@@ -154,7 +155,7 @@ def test_deny_and_unrelated_statements_do_not_supply_or_remove_controls() -> Non
     assert not match.missing_audience
     assert not match.unconstrained
     unsafe = role(
-        statements=(statement(), statement(effect=PolicyEffect.DENY, conditions=complete))
+        statements=(statement(), statement(effect=PolicyEffect.DENY, conditions=other_sub))
     )
     match = evaluate_trust(unsafe, (candidate(SUB_MAIN),))
     assert match is not None
@@ -202,7 +203,10 @@ def test_solver_keeps_matched_statement_locations_once(cls: EvidenceClass) -> No
     excluded = evidence(EvidenceClass.DECLARED, rule="IAM.statement", file="trust.json", line=99)
     allow = statement(conditions={"StringEquals": {"aud": ("sts.amazonaws.com",)}})
     allow = allow.model_copy(update={"evidence": (location, location)})
-    deny = statement(effect=PolicyEffect.DENY).model_copy(update={"evidence": (excluded,)})
+    deny = statement(
+        effect=PolicyEffect.DENY,
+        conditions={"StringEquals": {"sub": ("repo:other/repo:ref:refs/heads/main",)}},
+    ).model_copy(update={"evidence": (excluded,)})
     trust = role(statements=(allow, deny))
     candidates = (
         candidate(SUB_MAIN),
@@ -351,10 +355,10 @@ def test_repo_writer_does_not_promote_unknown_trust_evidence() -> None:
 def test_repo_writer_reaches_feature_branch_without_broadening_jobs(
     binding: dict[str, tuple[str, ...]], *, oidc_enabled: bool
 ) -> None:
+    has_wildcard = any("*" in v or "?" in v for vals in binding.values() for v in vals)
+    op = "StringLike" if has_wildcard else "StringEquals"
     trust = role(
-        statements=(
-            statement(conditions={"StringEquals": {"aud": ("sts.amazonaws.com",), **binding}}),
-        )
+        statements=(statement(conditions={op: {"aud": ("sts.amazonaws.com",), **binding}}),)
     )
     text = WORKFLOW if oidc_enabled else WORKFLOW.replace("id-token: write", "contents: read")
     graph = _graph(text, trust)
@@ -387,10 +391,10 @@ def test_repo_writer_reaches_feature_branch_without_broadening_jobs(
 def test_repo_writer_does_not_accept_other_repositories_or_contexts(
     binding: dict[str, tuple[str, ...]], *, oidc_enabled: bool
 ) -> None:
+    has_wildcard = any("*" in v or "?" in v for vals in binding.values() for v in vals)
+    op = "StringLike" if has_wildcard else "StringEquals"
     trust = role(
-        statements=(
-            statement(conditions={"StringEquals": {"aud": ("sts.amazonaws.com",), **binding}}),
-        )
+        statements=(statement(conditions={op: {"aud": ("sts.amazonaws.com",), **binding}}),)
     )
     text = WORKFLOW if oidc_enabled else WORKFLOW.replace("id-token: write", "contents: read")
     graph = _graph(text, trust)

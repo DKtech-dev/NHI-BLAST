@@ -34,7 +34,7 @@ S = CompletenessStatus
 F = InputFamily
 # The completeness digest of fx07 must be identical on every operating system and
 # checkout location. A change here means the canonical form or the fixture changed.
-FX07_COMPLETENESS_DIGEST = "2e989be9da8113f65fcd668fdd79de0dc31ed34baa79ffeb7e97051364dc19fa"
+FX07_COMPLETENESS_DIGEST = "07cb5a1dddc1b785684903e3e58483c4e2d0c0f740ef45d1bea8a312c1eb15ed"
 
 
 def _report(root: Path = FX07, **kwargs: object) -> Report:

@@ -68,10 +68,37 @@ is no package-index publication.
 - Artifact IO records actual-open identities and rejects name/inode aliases that escape the selected
   inputs; host paths are excluded from serialized model and hash metadata.
 
+### Added (v0.3.0 RC hardening & adversarial audit remediation)
+
+- Pure-Python bounded shared-witness IAM condition solver (`nhi_blast.aws.solver`) with
+  minterm-compressed NFA-to-DFA intersection, shortest witness synthesis, deletion-based MUS,
+  cross-key OIDC projection, exact IPv4/IPv6 CIDR and `Decimal` Numeric/Date interval solving.
+- Late-2026 threat model rules: `NHB-PERSIST-001` (IAM persistence capabilities + Cloud Persistence
+  Audit), `NHB-CHAIN-001` (bounded intra-input `sts:AssumeRole` chaining with 3600 s cap),
+  `NHB-GHA-002` unsafe PR checkout / cache-write upgrade, `NHB-GHA-006` (AI coding agent workflows
+  on untrusted PR/issue triggers), and `NHB-GHA-007` (unconstrained package install hooks).
+- Engine soundness fixes: permissions boundaries enforced on conditional allows (`A-NO-BOUNDARY`),
+  Secrets Manager resource policies wired into read/modify, explicit `Deny` in OIDC trust policies,
+  tri-state `GlobRelation.BUDGET_EXCEEDED` -> `ConditionTruth.UNRESOLVED` (`D-COND-BUDGET`), dual
+  STS session TTL tracking, stepwise `whatif` custody with `--auto-plan` and copyable
+  `AWSRevokeOlderSessions` JSON snippets, and console diff crash fix (`delta['selector']`).
+- Companion zero-Motion offline HTML reports (`nhi-blast diff --format html` and
+  `nhi-blast whatif --format html`), modular UI templates under `nhi_blast.report.templates`,
+  accessible graph table fallback, interactive offline containment preview, deterministic
+  BloodHound CE OpenGraph JSON export (`nhi-blast export --format opengraph`), SHA-pinned
+  composite GitHub Action (`action/action.yml`), and Playwright + axe-core CI workflow (`ui.yml`).
+- Packaging, CI/CD, and release-hygiene fixes from six internal adversarial audits: bundled
+  `report/templates` assets into the Windows PyInstaller build (`scripts/build_windows_exe.py`),
+  added `nhi-blast-diff-out/` to forbidden artifact checks, fixed composite action exit-code
+  capture, fork-safe SARIF upload on failing scans, and `diff`-mode `--fail-on never` handling,
+  added CI timeouts, locked UI installs, Bandit `pyproject.toml` config, aligned
+  `actions/upload-artifact` SHA, scoped `.pre-commit-hooks.yaml`, and aligned `0.3.0` docs.
+  No contracted external human third-party security audit has been performed yet.
+
 ### Not included
 
-- Diff and what-if HTML pages, the GitHub Action, the GitHub environment context import, session
-  policy evaluation, the public-corpus benchmark, and Linux or macOS verification.
+- GitHub environment context import, session policy evaluation, and multi-cloud GCP/Azure
+  analyzers (planned for `0.4.0`).
 
 ## 0.2.0 — public beta
 

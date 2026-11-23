@@ -196,7 +196,16 @@ def test_replay_reproduces_a_graph_that_already_contains_synthetic_nodes() -> No
     assert guard_failures(report) == ()
 
 
-def test_depth_truncation_is_allowed_and_flagged() -> None:
+def test_depth_truncation_is_allowed_and_flagged(monkeypatch: pytest.MonkeyPatch) -> None:
+    from nhi_blast.analysis import partition as partition_mod  # noqa: PLC0415
+
+    orig = partition_mod._close_persistent
+
+    def _truncated_closure(*args: object, **kwargs: object) -> tuple[dict[str, int], bool]:
+        depths, _ = orig(*args, **kwargs)  # type: ignore[arg-type]
+        return depths, bool(depths)
+
+    monkeypatch.setattr(partition_mod, "_close_persistent", _truncated_closure)
     report = scan(FX16, max_depth=0)
     assert any(item.truncated for item in report.scenarios)
     assert guard_failures(report) == ()

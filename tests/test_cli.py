@@ -187,8 +187,7 @@ def test_usage_errors_exit_two(tmp_path: Path) -> None:
         ("scan", str(tmp_path / "missing")),
         ("scan"),
         ("rank", str(FX07), "--format", "sarif"),
-        ("export", str(FX07)),
-        ("export", str(FX07), "--format", "opengraph"),
+        ("export", str(FX07), "--format", "xml"),
         ("explain", "anything", "--report", str(tmp_path / "missing.json")),
     ]
     for args in cases:

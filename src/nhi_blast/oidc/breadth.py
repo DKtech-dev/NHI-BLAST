@@ -84,6 +84,9 @@ def classify_breadth(pattern: str) -> Breadth:
     if context in {"", "*"}:
         return Breadth.REPO_ANY_CONTEXT
     if context.startswith("environment:"):
+        env_name = context[len("environment:") :].strip()
+        if not env_name or _has_wildcard(env_name):
+            return Breadth.REPO_ANY_CONTEXT
         return Breadth.ENVIRONMENT
     if context == "pull_request":
         return Breadth.REPO_PULL_REQUEST

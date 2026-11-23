@@ -40,13 +40,18 @@ def console_summary(payload: dict[str, Any]) -> str:
         )
         for row in after["revoked_access"]:
             lines.append(
-                f"  session {safe_text(row['credential'], 120)}: {row['display_state']} "
-                f"(validity={row['validity']}, access={row['access']})"
+                f"  session {safe_text(row['credential'], 120)}: "
+                f"{safe_text(row['display_state'], 80)} "
+                f"(validity={safe_text(row['validity'], 80)}, "
+                f"access={safe_text(row['access'], 80)})"
             )
     for item in payload["rejected"]:
-        lines.append(f"Rejected step {item['index']} ({item['type']}): {item['reason']}")
+        lines.append(
+            f"Rejected step {safe_text(item['index'], 32)} "
+            f"({safe_text(item['type'], 80)}): {safe_text(item['reason'], 200)}"
+        )
     for item in payload["warnings"]:
-        lines.append(f"Warning {item['code']}: {safe_text(item['detail'], 200)}")
+        lines.append(f"Warning {safe_text(item['code'], 80)}: {safe_text(item['detail'], 200)}")
     return "\n".join(lines) + "\n"
 
 

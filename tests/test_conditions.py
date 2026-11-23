@@ -13,6 +13,7 @@ from nhi_blast.aws.conditions import (
     ConditionTruth,
     evaluate_conditions,
 )
+from nhi_blast.aws.glob import MAX_GLOB_LENGTH
 
 Context = Mapping[str, frozenset[str]]
 
@@ -194,3 +195,15 @@ def test_unresolved_and_false_combine_to_false() -> None:
     conditions = {"StringEquals": {"missing": ["x"], "a": ["2"]}}
     result = evaluate(conditions, context)
     assert result.truth is ConditionTruth.FALSE
+
+
+def test_oversized_glob_in_candidate_mode_fails_closed_to_unresolved_with_budget_code() -> None:
+    huge_a = "repo:org/" + ("a*" * (MAX_GLOB_LENGTH // 2 + 5))
+    huge_b = "repo:org/" + ("?*" * (MAX_GLOB_LENGTH // 2 + 5))
+    res = evaluate_conditions(
+        {"StringLike": {"sub": (huge_a,)}},
+        {"sub": frozenset({huge_b})},
+        mode=ConditionMode.CANDIDATE,
+    )
+    assert res.truth is ConditionTruth.UNRESOLVED
+    assert any("D-COND-BUDGET" in r for r in res.reasons)

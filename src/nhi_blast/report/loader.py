@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from nhi_blast import READABLE_SCHEMAS
 from nhi_blast.core.artifact_io import ArtifactReadError, InputIdentity, read_bounded_utf8
 from nhi_blast.core.models import Report
+from nhi_blast.parsers._json import MAX_JSON_DEPTH, _exceeds_depth
 from nhi_blast.report._text import safe_text
 
 _MAX_REPORT_BYTES = 512 * 1024 * 1024
@@ -30,6 +31,9 @@ def load_report_with_identity(path: Path) -> tuple[Report, InputIdentity]:
     except ArtifactReadError as exc:
         msg = f"cannot read report: {exc}"
         raise ReportLoadError(msg) from None
+    if _exceeds_depth(text, MAX_JSON_DEPTH):
+        msg = f"report JSON nesting exceeds {MAX_JSON_DEPTH} levels"
+        raise ReportLoadError(msg)
     try:
         report = Report.model_validate_json(text)
     except ValidationError as exc:
@@ -37,6 +41,9 @@ def load_report_with_identity(path: Path) -> tuple[Report, InputIdentity]:
         if exc.errors():
             location = ".".join(str(part) for part in exc.errors()[0]["loc"]) or location
         msg = f"report is not valid nhi-blast JSON at {location}"
+        raise ReportLoadError(msg) from None
+    except (ValueError, RecursionError):
+        msg = "report JSON is invalid or exceeds parser limits"
         raise ReportLoadError(msg) from None
     if report.schema_id not in READABLE_SCHEMAS:
         msg = f"unsupported report schema: {safe_text(report.schema_id, 80)}"

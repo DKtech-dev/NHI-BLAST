@@ -1,0 +1,9 @@
+- id: nhi-blast
+  name: NHI-Blast offline authority scan
+  description: Offline, deterministic GitHub Actions to AWS OIDC blast-radius and revocation-survival check.
+  entry: nhi-blast scan . --format console --fail-on high
+  language: python
+  additional_dependencies: ["python-hcl2"]
+  files: '(^\.github/workflows/.*\.ya?ml$|\.tf(\.json)?$|\.tfvars(\.json)?$|(^|/)[^/]*(iam|policy|trust|tfplan|tfstate)[^/]*\.json$)'
+  pass_filenames: false
+  stages: [pre-commit, pre-push]

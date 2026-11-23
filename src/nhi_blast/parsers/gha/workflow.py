@@ -7,6 +7,8 @@ resolver, not here.
 
 from __future__ import annotations
 
+import re
+
 from nhi_blast.core.diagnostics import Diagnostic, error, info, warning
 from nhi_blast.core.limits import Limits
 from nhi_blast.core.models import ParseResult
@@ -39,6 +41,72 @@ UNSUPPORTED_OIDC_CONSUMERS = (
     ("hashicorp", "vault-action"),
 )
 _EXPR_OPEN = "${{"
+_AI_AGENT_ACTIONS: frozenset[tuple[str, str]] = frozenset(
+    {
+        ("anthropics", "claude-code-action"),
+        ("openai", "codex-action"),
+        ("google-github-actions", "run-gemini-cli"),
+        ("github", "copilot-swe-agent"),
+    }
+)
+_JS_PKG_INSTALL_RE = re.compile(
+    r"^\s*(?:npm\s+(?:ci|install|i)\b|yarn\s+install\b|pnpm\s+(?:install|i)\b|bun\s+(?:install|i)\b)",
+    re.IGNORECASE,
+)
+_PY_PKG_INSTALL_RE = re.compile(
+    r"^\s*(?:pip\s+install\b|uv\s+(?:sync|pip\s+install)\b|poetry\s+install\b)",
+    re.IGNORECASE,
+)
+_POETRY_INSTALL_RE = re.compile(r"^\s*poetry\s+install\b", re.IGNORECASE)
+_SHELL_SEGMENT_RE = re.compile(r"(?:&&|\|\||[;|\n])")
+_JS_SAFE_FLAGS = ("--ignore-scripts", "--no-scripts")
+_PY_SAFE_FLAGS = (
+    "--only-binary=:all:",
+    "--only-binary :all:",
+    "--require-hashes",
+    "--no-build-isolation",
+    "--locked",
+)
+_GH_PR_CHECKOUT_RE = re.compile(r"\bgh\s+pr\s+checkout\b", re.IGNORECASE)
+PRIVILEGED_EVENTS = frozenset(
+    {
+        "pull_request_target",
+        "workflow_run",
+        "issue_comment",
+        "discussion_comment",
+        "pull_request_review",
+        "pull_request_review_comment",
+    }
+)
+
+
+def _strip_shell_comments(text: str) -> str:
+    return "\n".join(line.split("#", 1)[0] for line in text.splitlines())
+
+
+def _has_unconstrained_pkg_install(run_text: str | None) -> bool:
+    if run_text is None:
+        return False
+    cleaned = _strip_shell_comments(run_text).replace("\\\n", " ")
+    for segment in _SHELL_SEGMENT_RE.split(cleaned):
+        if _JS_PKG_INSTALL_RE.search(segment):
+            if not any(flag in segment for flag in _JS_SAFE_FLAGS):
+                return True
+        elif _PY_PKG_INSTALL_RE.search(segment):
+            safe_flags = (
+                (*_PY_SAFE_FLAGS, "--no-scripts")
+                if _POETRY_INSTALL_RE.search(segment)
+                else _PY_SAFE_FLAGS
+            )
+            if not any(flag in segment for flag in safe_flags):
+                return True
+    return False
+
+
+def _has_gh_pr_checkout(run_text: str | None) -> bool:
+    if run_text is None:
+        return False
+    return bool(_GH_PR_CHECKOUT_RE.search(_strip_shell_comments(run_text)))
 
 
 def _has_expression(text: str | None) -> bool:
@@ -170,7 +238,7 @@ def _parse_aws_auth(
     role_ref_name: str | None = None
     if role:
         stripped = role.strip()
-        if stripped.startswith("arn:aws:iam::") or stripped.startswith("arn:aws-us-gov:iam::"):
+        if stripped.startswith(("arn:aws:iam::", "arn:aws-us-gov:iam::", "arn:aws-cn:iam::")):
             ref_kind = "ARN"
             role_arn = stripped
         else:
@@ -321,6 +389,33 @@ def _parse_step(
         literals=literals,
         aws_auth=aws_auth,
         has_run=run_text is not None,
+        unsafe_pr_checkout=(
+            (
+                uses is not None
+                and is_action(uses, "actions", "checkout")
+                and str(with_values.get("allow-unsafe-pr-checkout", "")).strip().lower() == "true"
+            )
+            or _has_gh_pr_checkout(run_text)
+        ),
+        write_cache_use=(
+            uses is not None
+            and is_action(uses, "actions", "cache")
+            and (uses.subpath is None or uses.subpath.strip("/") in {"", "save"})
+        ),
+        ai_agent_use=(
+            (
+                uses is not None
+                and uses.owner is not None
+                and uses.repo is not None
+                and (
+                    (uses.owner.lower(), uses.repo.lower()) in _AI_AGENT_ACTIONS
+                    or (uses.owner.lower() == "github" and uses.repo.lower().startswith("copilot"))
+                )
+            )
+            or (run_text is not None and "GH_AW_TOKEN_BROKER_URL" in run_text)
+            or "GH_AW_TOKEN_BROKER_URL" in refs.env
+        ),
+        unconstrained_pkg_install=_has_unconstrained_pkg_install(run_text),
     )
 
 
@@ -332,10 +427,16 @@ def _checkout_line(steps: tuple[StepFact, ...]) -> int | None:
     return None
 
 
-def _detect_untrusted_checkout(steps: tuple[StepFact, ...]) -> tuple[bool, int | None]:
-    """Spec 7.8: a head-ref checkout followed by a run/uses step in a privileged trigger."""
+def _detect_untrusted_checkout(
+    steps: tuple[StepFact, ...], *, has_prt: bool = False
+) -> tuple[bool, int | None]:
+    """Spec 7.8 + 2026 GHA hardening: head-ref checkout, allow-unsafe-pr-checkout, or PRT cache."""
     checkout_index: int | None = None
     for position, step in enumerate(steps):
+        if step.unsafe_pr_checkout:
+            return True, step.line
+        if has_prt and step.write_cache_use:
+            return True, step.line
         if step.uses is None or not is_action(step.uses, "actions", "checkout"):
             continue
         if step.refs.head_ref_use:
@@ -391,6 +492,23 @@ def _parse_runs_on(
 ) -> tuple[tuple[str, ...], bool | None]:
     if node is None:
         return (), None
+    if isinstance(node.value, dict):
+        mapping = node.as_mapping()
+        group_vals = _scalar_strings(mapping.get("group"))
+        label_vals = _scalar_strings(mapping.get("labels"))
+        values = (*group_vals, *label_vals)
+        if any(_has_expression(value) for value in values):
+            diagnostics.append(
+                info(
+                    "D-EXPR-VALUE",
+                    "runs-on is set by an expression; runner type is unknown",
+                    file=rel_path,
+                    line=node.line,
+                )
+            )
+            return values, None
+        has_group = any(bool(v.strip()) for v in group_vals)
+        return values, has_group or any("self-hosted" in value for value in label_vals)
     values = _scalar_strings(node)
     if any(_has_expression(value) for value in values):
         diagnostics.append(
@@ -413,6 +531,8 @@ def _parse_job(
     rel_path: str,
     privileged_events: frozenset[str],
     diagnostics: list[Diagnostic],
+    workflow_env_refs: ExprRefs | None = None,
+    workflow_env_literals: tuple[LiteralHit, ...] = (),
 ) -> JobFact | None:
     if not isinstance(node.value, dict):
         diagnostics.append(
@@ -460,6 +580,8 @@ def _parse_job(
             )
     secrets_node = mapping.get("secrets")
     secrets_mode = "NONE"
+    secrets_refs = ExprRefs()
+    secrets_literals: tuple[LiteralHit, ...] = ()
     if secrets_node is not None:
         if isinstance(secrets_node.value, str) and secrets_node.value.strip().lower() == "inherit":
             secrets_mode = "INHERIT"
@@ -473,6 +595,7 @@ def _parse_job(
             )
         elif isinstance(secrets_node.value, dict):
             secrets_mode = "EXPLICIT"
+            secrets_refs, secrets_literals = _scan_values(secrets_node)
     _, job_with_refs, job_with_literals, job_with_diagnostics = _parse_with(
         mapping.get("with"), rel_path=rel_path
     )
@@ -507,11 +630,23 @@ def _parse_job(
                 )
             )
     step_refs = merge_all([step.refs for step in steps])
-    refs = merge_all([job_with_refs, env_refs, if_refs, name_refs, step_refs])
+    refs = merge_all(
+        [
+            *([] if workflow_env_refs is None else [workflow_env_refs]),
+            secrets_refs,
+            job_with_refs,
+            env_refs,
+            if_refs,
+            name_refs,
+            step_refs,
+        ]
+    )
     untrusted_checkout = False
     untrusted_line: int | None = None
     if privileged_events:
-        untrusted_checkout, untrusted_line = _detect_untrusted_checkout(tuple(steps))
+        untrusted_checkout, untrusted_line = _detect_untrusted_checkout(
+            tuple(steps), has_prt="pull_request_target" in privileged_events
+        )
         if untrusted_checkout:
             diagnostics.append(
                 warning(
@@ -545,7 +680,14 @@ def _parse_job(
         refs=refs,
         untrusted_checkout=untrusted_checkout,
         untrusted_checkout_line=untrusted_line,
-        literals=job_with_literals + env_literals,
+        literals=workflow_env_literals + secrets_literals + job_with_literals + env_literals,
+        ai_agent_workflow=(
+            rel_path.endswith((".lock.yml", ".lock.yaml")) or any(s.ai_agent_use for s in steps)
+        ),
+        ai_agent_line=next((s.line for s in steps if s.ai_agent_use), node.line),
+        unconstrained_pkg_install=any(s.unconstrained_pkg_install for s in steps),
+        unconstrained_pkg_line=next((s.line for s in steps if s.unconstrained_pkg_install), None),
+        compiled_lock_workflow=rel_path.endswith((".lock.yml", ".lock.yaml")),
     )
 
 
@@ -567,11 +709,9 @@ def parse_workflow(rel_path: str, text: str, *, limits: Limits) -> ParseResult[W
     )
     diags.extend(permission_diagnostics)
     privileged_events = frozenset(
-        trigger.event
-        for trigger in triggers
-        if trigger.event
-        in {"pull_request_target", "workflow_run", "issue_comment", "discussion_comment"}
+        trigger.event for trigger in triggers if trigger.event in PRIVILEGED_EVENTS
     )
+    workflow_env_refs, workflow_env_literals = _scan_values(mapping.get("env"))
     jobs_node = mapping.get("jobs")
     jobs: dict[str, JobFact] = {}
     if jobs_node is None:
@@ -588,6 +728,8 @@ def parse_workflow(rel_path: str, text: str, *, limits: Limits) -> ParseResult[W
                 rel_path=rel_path,
                 privileged_events=privileged_events,
                 diagnostics=diags,
+                workflow_env_refs=workflow_env_refs,
+                workflow_env_literals=workflow_env_literals,
             )
             if job is not None:
                 jobs[job_id] = job

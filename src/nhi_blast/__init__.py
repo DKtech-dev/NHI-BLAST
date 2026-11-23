@@ -8,4 +8,4 @@ READABLE_SCHEMAS = frozenset({"nhi-blast-report/1.0", SCHEMA_VERSION})
 RANK_SCHEMA_VERSION = "nhi-blast-report/1.0/rank"
 # Bump whenever evaluation semantics change (conditions, reachability, partitioning,
 # rotation, findings). tests/golden/engine-fingerprint.json must gain a matching entry.
-ENGINE_SEMANTICS = "5"
+ENGINE_SEMANTICS = "7"

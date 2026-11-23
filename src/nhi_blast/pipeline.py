@@ -73,7 +73,11 @@ from nhi_blast.parsers.terraform.tfhcl import parse_tf_hcl
 from nhi_blast.parsers.terraform.tfjson import parse_tf_json
 from nhi_blast.report._text import safe_text
 from nhi_blast.report.console import render_console
-from nhi_blast.report.graph_export import graph_export_dot, graph_export_json
+from nhi_blast.report.graph_export import (
+    graph_export_dot,
+    graph_export_json,
+    graph_export_opengraph,
+)
 from nhi_blast.report.html import html_report
 from nhi_blast.report.json_report import report_json
 from nhi_blast.report.rank import rank_json, render_rank_console
@@ -113,6 +117,7 @@ class RankFormat(StrEnum):
 class ExportFormat(StrEnum):
     JSON = "json"
     DOT = "dot"
+    OPENGRAPH = "opengraph"
 
 
 @dataclass(frozen=True, slots=True)
@@ -232,12 +237,11 @@ def _rank_format(raw: str) -> RankFormat:
 def _export_format(raw: str) -> ExportFormat:
     normalized = raw.strip().lower()
     if normalized == "opengraph":
-        msg = "opengraph export is Phase 2 and is not available in this build"
-        raise UsageError(msg)
+        return ExportFormat.OPENGRAPH
     try:
         return ExportFormat(normalized)
     except ValueError:
-        msg = f"unsupported export --format {raw!r}; choose json or dot"
+        msg = f"unsupported export --format {raw!r}; choose json, dot or opengraph"
         raise UsageError(msg) from None
 
 
@@ -910,6 +914,14 @@ def run_export(options: ExportOptions) -> ExportOutcome:
             generated_at=generated_at,
         )
         filename = "graph.dot"
+    elif fmt is ExportFormat.OPENGRAPH:
+        text = graph_export_opengraph(
+            tool=tool,
+            inputs=parsed.inputs,
+            graph=build.graph,
+            generated_at=generated_at,
+        )
+        filename = "graph.opengraph.json"
     else:
         text = graph_export_json(
             tool=tool,

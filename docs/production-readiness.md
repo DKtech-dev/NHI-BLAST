@@ -10,14 +10,17 @@ package-index upload, deployment or SaaS was performed. The independent human se
 audit has not been performed and is not claimed; it remains the one open assurance gate
 and is disclosed in `docs/security-audit.md` and `docs/external-audit-package.md`.
 
-The source line is version 0.2.0 under the MIT License and is a public beta. The 0.2.0
-beta was published on 2026-10-30 as a GitHub pre-release at
-https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.2.0 from commit `41d08a8`. This
-page's release verdict applies to `0.1.1` and the 0.2.0 pre-release distribution only;
-it is not a production-readiness claim for 0.2.0. Versions `0.1.0` and `0.1.1` remain
-the published GitHub Releases under the MIT License they were distributed with. The
-0.2.0 beta's verification results and published artifact are recorded below and in the
-release notes; no independent audit has been performed for any version.
+The current source line is version 0.3.0 under the MIT License and is a public beta.
+Earlier, the 0.2.0 beta was published on 2026-10-30 as a GitHub pre-release at
+https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.2.0 from commit `41d08a8`, and
+0.3.0 was published on 2026-11-08 as a GitHub pre-release at
+https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.3.0 from commit `70c6ba0`. This
+page's release verdict applies to `0.1.1` and the published pre-release distributions
+only; it is not a production-readiness claim for 0.2.0 or 0.3.0. Versions `0.1.0` and
+`0.1.1` remain the published GitHub Releases under the MIT License they were distributed
+with. Verification results and published artifacts are recorded below and in the release
+notes; no contracted external human third-party security audit has been performed for
+any version.
 
 This page is the release-gate record. It states what was actually executed on the
 recorded environments and what remains open. The audit is in
@@ -27,7 +30,7 @@ recorded environments and what remains open. The audit is in
 
 | Item | Value |
 | --- | --- |
-| Date of the recorded gates | 2026-10-27 for the published 0.1.1 gates; 2026-10-30 for the 0.2.0 beta gates, the Windows build and the `v0.2.0` pre-release |
+| Date of the recorded gates | 2026-10-27 for the published 0.1.1 gates; 2026-10-30 for the 0.2.0 beta gates, the Windows build and the `v0.2.0` pre-release; 2026-11-08 for the `v0.3.0` pre-release; 2026-11-23 for v0.3.0 RC hardening & internal adversarial audit remediation |
 | Local OS | Windows 11 (10.0.26200), x64 |
 | Remote OS and Python | GitHub Actions `ubuntu-latest` and `windows-latest`; CPython 3.12, 3.13 and 3.14 |
 | Local Python | CPython 3.12.14 primary; 3.13.17 and 3.14.7 in isolated environments |
@@ -149,9 +152,9 @@ release notes are `docs/release-notes-0.2.0.md`.
 
 ## Open gates and limitations
 
-1. **Independent audit.** No external human reviewer has assessed the project. This is
-   disclosed in every readiness claim and is the main residual assurance gap. The
-   external audit package defines the target, materials and focus areas.
+1. **Independent audit.** No contracted external human third-party reviewer has assessed
+   the project. This is disclosed in every readiness claim and is the main residual
+   assurance gap. The external audit package defines the target, materials and focus areas.
 2. **Platform security features.** The repository is public and now has GitHub secret
    scanning with push protection and CodeQL default setup. Validity checks and
    non-provider secret patterns remain disabled at the account level, so they are not
@@ -168,9 +171,10 @@ release notes are `docs/release-notes-0.2.0.md`.
    Windows SmartScreen or antivirus products may warn about an unknown publisher. No
    reputation, signing identity or absence of warnings is claimed, and the release notes
    and `docs/beta-testing.md` disclose this.
-7. **Beta assurance.** The 0.2.0 beta has local and remote automated verification but no
-   independent audit and no production-readiness conclusion. Testers must use synthetic
-   fixtures or repositories they are authorised to test.
+7. **Beta assurance.** The 0.3.0 beta has local and remote automated verification plus
+   internal adversarial audit remediation, but no contracted external human third-party
+   audit and no production-readiness conclusion. Testers must use synthetic fixtures or
+   repositories they are authorised to test.
 
 The browser/axe pass, three-build comparison, corpus and soak are single-environment
 observations. They are not external benchmarks and not an independent audit.
@@ -182,10 +186,10 @@ published on 2026-10-27 from commit `0269100`; version `0.1.1` was published the
 day from commit `c702d9d` with the annotated tag `v0.1.1`. The wheel, sdist and
 `SHA256SUMS` were downloaded again after publication and verified. Any later source or
 artifact change requires a fresh gate run before it can be described as released. The
-repository was made public on 2026-10-27. The current 0.2.0 source line is MIT and is a
-public beta; that does not alter the published 0.1.0 and 0.1.1 releases, which remain
-under the MIT License. No production-readiness or independent-audit conclusion is made
-for the 0.2.0 beta.
+repository was made public on 2026-10-27. The current 0.3.0 source line is MIT and is a
+public beta; that does not alter the published 0.1.0, 0.1.1 and 0.2.0 releases, which
+remain under the MIT License. No production-readiness or independent-audit conclusion is
+made for the 0.2.0 or 0.3.0 betas.
 
 Version 0.2.0 was published on 2026-10-30 as the GitHub pre-release `v0.2.0` at
 https://github.com/DKtech-dev/nhi-blast/releases/tag/v0.2.0, targeting commit
@@ -265,7 +269,7 @@ regressions, a fresh clean-installed wheel, and repeated scans of 14 external re
 snapshots plus one self-control. The verified public corpus is unlabelled, so it does not
 establish precision, recall or real-world accuracy.
 
-See the [follow-up verification record](<release/verification-2026-11-03.md>) for exact results,
+See the follow-up verification record for exact results,
 initial failures, reruns, sample limits, and the current screenshot/preview locations. This is
 not an independent security audit or production/publication approval. The intermittent
 Chromium preference-reload test failure remains recorded even when isolated reruns pass.
@@ -287,8 +291,8 @@ deselected, 90.78% overall and every enforced module at or above 80%. The comple
 browser rerun is running serially without competing validation jobs and must be
 collected before a completed stage-gate claim.
 
-See the [resumed denial-fix evidence](<release/io-denial-fix-2026-11-07.md>) and
-[historical IO continuation](<release/io-continuation-2026-11-05.md>) for root cause,
+See the resumed denial-fix evidence and
+historical IO continuation for root cause,
 exact results, failed/interim checks and limits. Native Linux/macOS, broader authorization,
 credential custody/replay, dependency-specific comparison, source receipts, completion
 manifests and release-owner gates remain open. No independent final audit, local release
@@ -352,3 +356,31 @@ Not run locally: Linux native gates (covered by the dispatched CI matrix); macOS
 (not covered by the matrix); an independent human security audit; the public-corpus benchmark.
 Session policies are recorded, not evaluated. See `docs/release-notes-0.3.0.md` for the full
 not-included list.
+
+## 0.3.0 RC hardening & internal adversarial audit remediation (2026-11-23)
+
+Following the initial `v0.3.0` pre-release, six iterative internal adversarial audits
+reviewed the solver, IAM/GHA threat rules, CLI/export paths, offline HTML templates,
+Windows executable packaging, composite GitHub Action, CI/CD workflows, and documentation.
+Key remediations applied on the `0.3.0` source line:
+
+- **Engine & solver soundness**: pure-Python bounded shared-witness IAM condition solver
+  (`nhi_blast.aws.solver`), attached permissions boundaries enforced on conditional allows,
+  Secrets Manager resource policies, explicit `Deny` in OIDC trust policies, bounded
+  intra-input `sts:AssumeRole` chaining (`NHB-CHAIN-001`), late-2026 threat rules
+  (`NHB-PERSIST-001`, `NHB-GHA-006`, `NHB-GHA-007`), and stepwise `whatif --auto-plan`.
+- **Packaging & Windows build**: bundled `src/nhi_blast/report/templates` assets into
+  `scripts/build_windows_exe.py` and added `nhi-blast-diff-out/` to forbidden artifact
+  patterns in `scripts/check_artifacts.py`.
+- **Composite Action & CI/CD**: `action/action.yml` now captures the CLI exit code so
+  `$GITHUB_STEP_SUMMARY` always writes and fork-safe SARIF upload runs even on failing
+  scans (`!cancelled()`), while `diff` mode passes `--fail-on never` on the initial scan;
+  added workflow timeouts (`ui.yml`, `action-test.yml`), locked installs (`-c requirements.lock`)
+  and full Playwright test execution in `ui.yml`, `-c pyproject.toml` for Bandit in
+  `audit.yml`, aligned `actions/upload-artifact` SHA in `build-windows.yml`, and expanded
+  `.github/dependabot.yml` and `.pre-commit-hooks.yaml`.
+- **Documentation alignment**: removed stale `0.2.0` and `AGENTS.md` references and aligned
+  CLI, GitHub Action, install, and limitation guides with `0.3.0`.
+
+No contracted external human third-party security audit has been performed yet; these
+remediations reflect internal engineering and automated/adversarial verification only.

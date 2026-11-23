@@ -36,3 +36,4 @@ tests/ui/playwright-report/
 %SystemDrive%/
 _doc*.txt
 docs/engineering-checkpoint.md
+nhi-blast-diff-out/

@@ -5,7 +5,7 @@ much as its findings, so defects that break them are treated as security bugs.
 
 ## Supported versions
 
-NHI-Blast `0.2.0` is the current public beta and is licensed under the MIT License. The
+NHI-Blast `0.3.0` is the current public beta and is licensed under the MIT License. The
 latest stable published release is `0.1.1`; `0.1.0` remains available. Both were
 distributed as GitHub Release assets under the MIT License. Security fixes are made on
 the current source line; there are no long-term support branches and no backports. A
@@ -30,8 +30,7 @@ discretion.
 
 ## Security properties in scope
 
-The following are hard requirements from `AGENTS.md` and `docs/SPEC.md`. A bypass is
-a security defect:
+The following are hard requirements from `docs/SPEC.md`. A bypass is a security defect:
 
 1. **No execution of scanned content.** Never run Terraform, OpenTofu, Git, shell
    commands or actions, never fetch providers or modules, and never evaluate

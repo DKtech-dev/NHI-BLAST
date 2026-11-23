@@ -1,0 +1,10 @@
+name: AI Review
+on: pull_request
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: openai/codex-action@abcdef0123456789abcdef0123456789abcdef01

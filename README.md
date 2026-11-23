@@ -106,7 +106,7 @@ a reputation-based SmartScreen warning; no code-signing certificate is used.
 From the repository root, scan the reference fixture and run its incident scenario:
 
 ```bash
-nhi-blast scan tests/fixtures/fx07-incident \
+.venv/bin/nhi-blast scan tests/fixtures/fx07-incident \
   --simulate-compromise action:tj-actions/changed-files@v45 \
   --format console \
   --format html \
@@ -114,6 +114,7 @@ nhi-blast scan tests/fixtures/fx07-incident \
   --out nhi-blast-out
 ```
 
+On Windows use `.venv\Scripts\nhi-blast.exe` (or activate the virtual environment first).
 `--format` is repeatable. The command prints the console summary and writes `report.html` to
 `--out`. It exits `1` because findings meet the `--fail-on high` threshold. Trimmed output:
 
@@ -136,21 +137,22 @@ Findings
 Each credential line names the credential, its graph id, evidence class and source location; the
 rotation plan orders survivors after containment. Severity orders findings; it is not a verdict.
 JSON and HTML carry the full graph, evidence and assumptions. SARIF carries findings and evidence
-but not the full graph; use `nhi-blast export` for JSON or DOT.
+but not the full graph; use `nhi-blast export` for JSON, DOT or BloodHound OpenGraph JSON.
 
 ## Commands
 
 | Command | Purpose | Artifacts |
 | --- | --- | --- |
+| `nhi-blast init [PATH]` | Scaffold a starter `nhi-blast.toml` configuration file | `nhi-blast.toml` |
 | `nhi-blast scan PATH` | Parse, audit trust, run scenarios and emit findings | `report.json`, `report.sarif` or `report.html` per `--format` |
 | `nhi-blast rank PATH` | Rank mutable third-party actions by potential blast radius | `rank.json` with `--format json` |
 | `nhi-blast explain ID --report FILE` | Print the evidence chain for a finding, node or edge | none |
-| `nhi-blast export PATH --format json\|dot` | Export the authority graph | `graph.json` or `graph.dot` |
+| `nhi-blast export PATH --format json\|dot\|opengraph` | Export the authority graph (JSON, Graphviz DOT, or BloodHound CE OpenGraph) | `graph.json`, `graph.dot` or `graph.opengraph.json` |
 | `nhi-blast schema` | Print the report JSON Schema to stdout | none |
 | `nhi-blast version [--data]` | Print tool, schema and data-file versions | none |
-| `nhi-blast diff BASE HEAD` | Compare two saved reports; findings are new, changed, unchanged, resolved or not observed | `diff.json` with `--format json`; optional reviewed `--baseline` |
+| `nhi-blast diff BASE HEAD` | Compare two saved reports; findings are new, changed, unchanged, resolved or not observed | `diff.json` (`--format json`), `diff.html` (`--format html`) or `diff.md` (`--format pr-comment`); optional reviewed `--baseline` |
 | `nhi-blast baseline accept\|prune` | Record or remove reviewed diff suppressions with a reason and reviewer | updates the baseline file |
-| `nhi-blast whatif REPORT --plan PLAN` | Model containment offline on a saved report; refuses non-replayable reports | `whatif.json` and `playbook.md` |
+| `nhi-blast whatif REPORT [--plan PLAN \| --auto-plan]` | Model containment offline on a saved report; refuses non-replayable reports | `whatif.json`, `playbook.md` and `whatif.html` (`--format html`) |
 
 | Exit code | Meaning |
 | --- | --- |
@@ -221,7 +223,7 @@ exact command, expected result, actual result and sanitised logs. The full proce
 - No execution of scanned content and no network access: no Terraform, Git or shell commands, no downloads, no `${{ ... }}` evaluation.
 - Reads stay inside the scan root; escaping symlinks and junctions are rejected. Credential values are never stored, printed, logged or embedded.
 - Evidence is ordered `DECLARED` > `DERIVED` > `ASSUMED` > `UNKNOWN`; UNKNOWN authority feeds only the `potential` set, never R, E or Z.
-- Not modelled: SCPs, session policies, permission boundaries, KMS key policies, role chaining, environment protection, branch rules and live AWS state.
+- Not modelled: SCPs, session policies, KMS key policies, cross-account or out-of-input role chaining, environment protection, branch rules and live AWS state (attached IAM permissions boundaries and bounded intra-input `sts:AssumeRole` chaining are modelled where declared in scanned inputs).
 
 > [!NOTE]
 > See [known limitations](docs/known-limitations.md) for the full boundary, including unsupported
@@ -239,6 +241,8 @@ exact command, expected result, actual result and sanitised logs. The full proce
 | [Known limitations](docs/known-limitations.md) | Unsupported inputs and result boundaries |
 | [Report diff](docs/diff.md) | Comparing reports and reviewed baselines |
 | [Containment what-if](docs/whatif.md) | Offline intervention modelling and playbooks |
+| [GitHub Action](docs/github-action.md) | Composite action setup, fork-safe SARIF upload and diff gating |
+| [Pre-commit hook](.pre-commit-hooks.yaml) | Local pre-commit and pre-push hook configuration |
 | [Install](docs/install.md) | Local build and post-publication installation |
 | [Verify a release](docs/verify-release.md) | Checksums, provenance and SBOM checks |
 | [Security audit](docs/security-audit.md) | Internal review and findings |
@@ -252,3 +256,7 @@ MIT License; see [LICENSE](LICENSE). The published `0.1.0` and `0.1.1` releases 
 MIT License. Third-party components keep their own licences: the embedded Host Grotesk, Instrument Sans
 and Geist Mono fonts are SIL Open Font License 1.1; see [NOTICE](NOTICE) and
 [third-party notices](THIRD_PARTY_NOTICES.md).
+
+## Author
+
+Created and maintained by **Dinesh Karthick B** ([@DKtech-dev](https://github.com/DKtech-dev)).

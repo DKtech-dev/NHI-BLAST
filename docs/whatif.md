@@ -9,11 +9,13 @@ files and writes two local files. It makes no network call, starts no subprocess
 AWS account and changes nothing. The source report is never modified.
 
 ```text
-nhi-blast whatif REPORT.json --plan PLAN.(json|yaml|yml) [--format json|md]... [--out DIR]
+nhi-blast whatif REPORT.json (--plan PLAN.(json|yaml|yml) | --auto-plan) [--format json|md|html]... [--out DIR]
 ```
 
-Defaults: both formats, output directory `nhi-blast-whatif-out` (`whatif.json`,
-`playbook.md`). HTML is not available in this version.
+Defaults: `json` and `md`, output directory `nhi-blast-whatif-out` (`whatif.json`,
+`playbook.md`). Pass `--format html` to also emit a standalone offline containment
+report (`whatif.html`), or pass `--auto-plan` instead of `--plan` to synthesize a
+conservative containment and rotation plan directly from the saved report.
 
 Exit codes: `0` success; `2` the replay guard refused the report, the plan or an option
 is invalid (one `D-WHATIF-*` code on stderr, nothing written); `4` the output cannot be
@@ -131,8 +133,8 @@ existing sessions active until expiry.
 ## Playbook
 
 `playbook.md` is deterministic Markdown that starts with the header line above. Order:
-1 revoke sessions, 2 remove trust or disable entrypoint, 3 rotate surviving credentials in
-the rotation plan's dependency (SCC) order, 4 verify. Each step has an owner placeholder,
+1. Remove trust or disable entrypoint, 2. Revoke role sessions, 3. Rotate surviving
+credentials in dependency order (the rotation plan's SCC order), 4. Verify. Each step has an owner placeholder,
 evidence references (file:line and evidence class), a human verification task and
 rollback / validation notes. Nothing in it was executed; owners, times and account
 details are placeholders for you to fill in.

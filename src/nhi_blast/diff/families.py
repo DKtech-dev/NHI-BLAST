@@ -45,6 +45,10 @@ RULE_FAMILIES: dict[str, tuple[InputFamily, ...]] = {
     "NHB-GHA-003": (*_WORKFLOW_SIDE, *_ALWAYS),
     "NHB-GHA-004": (*_WORKFLOW_SIDE, *_ALWAYS),
     "NHB-GHA-005": (*_WORKFLOW_SIDE, *_ALWAYS),
+    "NHB-GHA-006": (*_WORKFLOW_SIDE, *_ALWAYS),
+    "NHB-GHA-007": (*_WORKFLOW_SIDE, *_ALWAYS),
+    "NHB-PERSIST-001": (*_WORKFLOW_SIDE, *_TRUST_SIDE, *_ALWAYS),
+    "NHB-CHAIN-001": (*_WORKFLOW_SIDE, *_TRUST_SIDE, F.AWS_ROLE_CHAINING, *_ALWAYS),
     "NHB-CRED-001": (*_WORKFLOW_SIDE, *_ALWAYS),
     # Reachability and survival findings depend on every family the analysis reads.
     "NHB-SURV-001": tuple(InputFamily),

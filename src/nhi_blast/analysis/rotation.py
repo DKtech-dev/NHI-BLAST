@@ -6,6 +6,7 @@ from collections.abc import Iterable, Sequence
 
 import networkx as nx
 
+from nhi_blast.analysis.reach import reach
 from nhi_blast.analysis.selectors import SelectorKind
 from nhi_blast.core.data import rotation_hints
 from nhi_blast.core.evidence import (
@@ -34,6 +35,7 @@ from nhi_blast.core.models import (
 _CONTROL_EDGES = frozenset(
     {
         EdgeKind.AUTHENTICATES_AS,
+        EdgeKind.CAN_ASSUME,
         EdgeKind.CAN_READ_VALUE,
         EdgeKind.CAN_MODIFY,
         EdgeKind.STORES,
@@ -62,13 +64,19 @@ def _dependencies(
     dependencies: set[tuple[str, str]] = set()
     supporting: dict[tuple[str, str], list[Evidence]] = {}
     for credential in sorted(z_ids):
-        principals: list[tuple[str, tuple[Evidence, ...]]] = [(credential, ())]
-        principals.extend(
-            (edge.dst, edge.evidence)
-            for edge in outgoing.get(credential, ())
-            if edge.kind is EdgeKind.AUTHENTICATES_AS
-        )
-        for principal, auth_evidence in sorted(principals, key=lambda item: item[0]):
+        principals: dict[str, tuple[Evidence, ...]] = {credential: ()}
+        queue: list[str] = [credential]
+        while queue:
+            current = queue.pop(0)
+            current_evidence = principals[current]
+            for edge in outgoing.get(current, ()):
+                if (
+                    edge.kind in {EdgeKind.AUTHENTICATES_AS, EdgeKind.CAN_ASSUME}
+                    and edge.dst not in principals
+                ):
+                    principals[edge.dst] = (*current_evidence, *edge.evidence)
+                    queue.append(edge.dst)
+        for principal, auth_evidence in sorted(principals.items(), key=lambda item: item[0]):
             for control in outgoing.get(principal, ()):
                 if control.kind not in {EdgeKind.CAN_READ_VALUE, EdgeKind.CAN_MODIFY}:
                     continue
@@ -308,10 +316,50 @@ def plan_rotation(
         notes.append(rotation_hints().note("frozen"))
     if any(item.lifetime is Lifetime.PERSISTENT_ROTATING for item in partition.Z):
         notes.append(rotation_hints().note("rotating"))
+    nodes = {node.id: node for node in graph.nodes}
+    valid_starts = [node_id for node_id in start_nodes if node_id in nodes]
+    reachable_ids = set(reach(graph, valid_starts)) if valid_starts else set()
+    reachable_roles = {
+        node_id for node_id in reachable_ids if nodes[node_id].kind is NodeKind.AWS_ROLE
+    }
+    for item in partition.E:
+        cred_node = nodes.get(item.credential)
+        if cred_node is not None:
+            role_id = cred_node.attrs.get("role")
+            if isinstance(role_id, str) and role_id in nodes:
+                reachable_roles.add(role_id)
+    persist_roles = sorted(
+        (
+            node
+            for node in graph.nodes
+            if node.kind is NodeKind.AWS_ROLE
+            and node.id in reachable_roles
+            and node.attrs.get("persistence_actions")
+        ),
+        key=lambda n: n.id,
+    )
+    verify_steps: list[RotationStep] = [verification] if verification is not None else []
+    if persist_roles:
+        role_names = ", ".join(node.label for node in persist_roles)
+        persist_evidence = [item for node in persist_roles for item in node.evidence]
+        verify_steps.append(
+            _step(
+                phase=StepPhase.VERIFY,
+                order=len(rotation) + len(verify_steps) + 1,
+                actions=(
+                    "Cloud Persistence Audit: AWSRevokeOlderSessions and secret rotation do not "
+                    "revoke newly created IAM access keys or modified trust policies; "
+                    f"audit IAM mutations for {role_names}.",
+                ),
+                evidence=persist_evidence,
+                rule="VERIFY.persistence",
+                detail="IAM persistence audit in CloudTrail is required and is not executed",
+            )
+        )
     return RotationPlan(
         containment=(containment,),
         rotation=rotation,
-        verify=(verification,) if verification is not None else (),
+        verify=tuple(verify_steps),
         notes=tuple(notes),
     )
 

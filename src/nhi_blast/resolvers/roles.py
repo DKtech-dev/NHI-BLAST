@@ -111,6 +111,7 @@ class _RoleDraft:
     boundary_supplied: bool = False
     unresolved_refs: set[str] = field(default_factory=set)
     evidence: list[Evidence] = field(default_factory=list)
+    extra_aliases: set[str] = field(default_factory=set)
 
 
 @dataclass(slots=True)
@@ -346,8 +347,34 @@ def _role_aliases(draft: _RoleDraft) -> tuple[str, ...]:
         f"{draft.address}.arn",
         draft.name,
         draft.arn or "",
+        *draft.extra_aliases,
     }
     return tuple(sorted(alias for alias in aliases if alias))
+
+
+def _merge_role_draft(existing: _RoleDraft, incoming: _RoleDraft) -> None:
+    existing.trust.extend(incoming.trust)
+    existing.trust_unresolved = existing.trust_unresolved or incoming.trust_unresolved
+    existing.inline.extend(incoming.inline)
+    existing.managed_arns.extend(incoming.managed_arns)
+    existing.boundary.extend(incoming.boundary)
+    existing.boundary_supplied = existing.boundary_supplied or incoming.boundary_supplied
+    if existing.boundary_raw is None and incoming.boundary_raw is not None:
+        existing.boundary_raw = incoming.boundary_raw
+    elif (
+        existing.boundary_raw is not None
+        and incoming.boundary_raw is not None
+        and existing.boundary_raw != incoming.boundary_raw
+    ):
+        existing.unresolved_refs.add(incoming.boundary_raw)
+    existing.unresolved_refs.update(incoming.unresolved_refs)
+    existing.evidence.extend(incoming.evidence)
+    if existing.arn is None and incoming.arn is not None:
+        existing.arn = incoming.arn
+    if incoming.max_session_duration > existing.max_session_duration:
+        existing.max_session_duration = incoming.max_session_duration
+        existing.max_session_source = incoming.max_session_source
+    existing.extra_aliases.update(_role_aliases(incoming))
 
 
 def _create_role_draft(
@@ -1258,7 +1285,11 @@ def resolve_cloud_facts(
         if resource.type != "aws_iam_role":
             continue
         draft = _create_role_draft(resource, snapshot, by_alias, diagnostics)
-        drafts[_draft_key(draft)] = draft
+        key = _draft_key(draft)
+        if key in drafts:
+            _merge_role_draft(drafts[key], draft)
+        else:
+            drafts[key] = draft
     role_aliases = _role_alias_map(drafts)
     _apply_role_attachments(snapshot.resources, role_aliases, snapshot, by_alias, diagnostics)
     _report_missing_policy_bodies(drafts.values(), by_arn, diagnostics)

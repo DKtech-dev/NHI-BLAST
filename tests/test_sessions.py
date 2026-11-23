@@ -231,3 +231,29 @@ def test_session_policy_is_recorded_but_never_treated_as_evaluated(tmp_path: Pat
     assert attrs["session_policy_managed"] == ["arn:aws:iam::111122223333:policy/narrow"]
     assert attrs["session_policy_evaluated"] is False
     assert "A-SESSION-POLICY" in _assumption_ids(report)
+
+
+def test_dual_session_ttl_preserves_configured_and_attacker_upper_bound() -> None:
+    result = _ttl("declared", 900, role_max=43_200, role_max_source="declared", chained=False)
+    assert result.seconds == 900
+    assert result.configured_ttl_seconds == 900
+    assert result.attacker_max_ttl_seconds == 43_200
+
+    over = _ttl("declared", 50_000, role_max=43_200, role_max_source="declared", chained=False)
+    assert over.outcome == "fails_as_declared"
+    assert over.configured_ttl_seconds == 50_000
+    assert over.attacker_max_ttl_seconds == 43_200
+
+
+def test_e_partition_reflects_attacker_max_ttl_when_workflow_sets_short_duration(
+    tmp_path: Path,
+) -> None:
+    report = _scan(tmp_path, "role-duration-seconds: 900")
+    session = _session(report)
+    assert session.attrs["configured_ttl_seconds"] == 900
+    assert session.attrs["attacker_max_ttl_seconds"] == 3600
+    scenario = report.scenarios[0]
+    e_entry = next(item for item in scenario.partition.E if item.credential == session.id)
+    assert e_entry.configured_ttl_seconds == 900
+    assert e_entry.attacker_max_ttl_seconds == 3600
+    assert e_entry.ttl_seconds == 3600

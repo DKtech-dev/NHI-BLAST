@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
-authors = [{ name = "NHI-Blast Maintainers" }]
+authors = [{ name = "Dinesh Karthick B" }]
 keywords = ["security", "github-actions", "aws", "oidc", "iam", "incident-response"]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -46,6 +46,13 @@ dev = [
   "hatchling>=1.27",
 ]
 
+[project.urls]
+Homepage = "https://github.com/DKtech-dev/nhi-blast"
+Repository = "https://github.com/DKtech-dev/nhi-blast"
+Documentation = "https://github.com/DKtech-dev/nhi-blast/tree/main/docs"
+Issues = "https://github.com/DKtech-dev/nhi-blast/issues"
+Changelog = "https://github.com/DKtech-dev/nhi-blast/blob/main/CHANGELOG.md"
+
 [project.scripts]
 nhi-blast = "nhi_blast.cli.app:main"
 
@@ -65,6 +72,8 @@ include = [
   "/SECURITY.md",
   "/CONTRIBUTING.md",
   "/CHANGELOG.md",
+  "/CITATION.cff",
+  "/.pre-commit-hooks.yaml",
   "/requirements.lock",
   "/requirements-dev.lock",
   "/requirements-windows-build.lock",
@@ -155,4 +164,3 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "raise NotImplementedE
 # B105 flags credential-kind names, selector aliases and dictionary keys; this
 # project records credential kinds and lengths, never credential values.
 skips = ["B105"]
-exclude_dirs = ["tests", ".venv", "dist", ".taste-skill", "docs/research/_cache"]

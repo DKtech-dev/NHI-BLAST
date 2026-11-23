@@ -460,3 +460,39 @@ def test_analyzer_regression_through_the_cli_is_not_a_resolved_finding(tmp_path:
     assert "No longer observed" not in result.stdout
     assert "analyzer_changed" in result.stdout
     assert "resolved=0" in result.stdout
+
+
+def test_console_diff_renders_scenario_changes_without_keyerror(tmp_path: Path) -> None:
+    base_rep = base_report()
+    assert base_rep.scenarios
+    scenario = base_rep.scenarios[0]
+    part = scenario.partition
+    modified_e = tuple(
+        item.model_copy(update={"ttl_seconds": (item.ttl_seconds or 3600) + 600})
+        if idx == 0
+        else item
+        for idx, item in enumerate(part.E)
+    )
+    modified_z = tuple(
+        item.model_copy(update={"reason": "modified reason"}) if idx == 0 else item
+        for idx, item in enumerate(part.Z)
+    )
+    modified_part = part.model_copy(
+        update={
+            "R": (*part.R, "node:extra-r"),
+            "E": modified_e,
+            "Z": modified_z,
+        }
+    )
+    modified_scenario = scenario.model_copy(update={"partition": modified_part})
+    head_rep = base_rep.model_copy(
+        update={"scenarios": (modified_scenario, *base_rep.scenarios[1:])}
+    )
+    base_file = save_report(base_rep, tmp_path / "base.json")
+    head_file = save_report(head_rep, tmp_path / "head.json")
+
+    result = runner.invoke(app, _args(base_file, head_file, "--format", "console"))
+    assert result.exit_code == 0, result.stderr
+    assert "Scenario changes:" in result.stdout
+    assert f"scenario {scenario.selector}:" in result.stdout
+    assert "R +1/-0" in result.stdout

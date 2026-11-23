@@ -134,7 +134,9 @@ class Config:
             msg = f"unknown config key(s): {', '.join(sorted(unknown))}"
             raise ConfigError(msg)
 
-        bindings = data.get("bindings", {}) or {}
+        bindings = data.get("bindings")
+        if bindings is None:
+            bindings = {}
         if not isinstance(bindings, dict):
             msg = "config: [bindings] must be a table"
             raise ConfigError(msg)
@@ -143,7 +145,9 @@ class Config:
             msg = f"unknown config binding(s): {', '.join(sorted(unknown_bindings))}"
             raise ConfigError(msg)
 
-        oidc = data.get("oidc", {}) or {}
+        oidc = data.get("oidc")
+        if oidc is None:
+            oidc = {}
         if not isinstance(oidc, dict):
             msg = "config: [oidc] must be a table"
             raise ConfigError(msg)
@@ -155,7 +159,9 @@ class Config:
 
         github = cls._parse_github(data.get("github"))
 
-        ignore = data.get("ignore", {}) or {}
+        ignore = data.get("ignore")
+        if ignore is None:
+            ignore = {}
         if not isinstance(ignore, dict):
             msg = "config: [ignore] must be a table"
             raise ConfigError(msg)
@@ -164,7 +170,9 @@ class Config:
             msg = f"unknown config key(s) under [ignore]: {', '.join(sorted(unknown_ignore))}"
             raise ConfigError(msg)
 
-        limits_raw = data.get("limits", {}) or {}
+        limits_raw = data.get("limits")
+        if limits_raw is None:
+            limits_raw = {}
         if not isinstance(limits_raw, dict):
             msg = "config: [limits] must be a table"
             raise ConfigError(msg)
@@ -208,10 +216,10 @@ class Config:
     ) -> Config:
         return replace(
             self,
-            repo_slug=repo_slug or self.repo_slug,
-            default_branch=default_branch or self.default_branch,
-            aws_account=aws_account or self.aws_account,
-            aws_region=aws_region or self.aws_region,
+            repo_slug=self.repo_slug if repo_slug is None else repo_slug,
+            default_branch=self.default_branch if default_branch is None else default_branch,
+            aws_account=self.aws_account if aws_account is None else aws_account,
+            aws_region=self.aws_region if aws_region is None else aws_region,
         )
 
     def oidc_settings(self) -> OidcSettings:

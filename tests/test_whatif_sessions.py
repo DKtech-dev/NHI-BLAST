@@ -45,12 +45,12 @@ TABLE: list[tuple[str, tuple[object, ...], tuple[object, ...]]] = [
     (
         "assessed inside the propagation window",
         ("09:30:00", "10:00:00", None, "10:00:10", 3600),
-        ("unknown", "revocation_propagating", "unknown", False),
+        ("unknown", "revocation_propagating", "unknown", True),
     ),
     (
         "assessed exactly at revoked_at",
         ("09:30:00", "10:00:00", None, "10:00:00", 3600),
-        ("unknown", "revocation_propagating", "unknown", False),
+        ("unknown", "revocation_propagating", "unknown", True),
     ),
     (
         "assessed before revoked_at",

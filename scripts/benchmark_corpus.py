@@ -1,7 +1,8 @@
 """Read-only corpus verification and sequential, installed-CLI benchmarking.
 
-Run this file with a Python environment containing jsonschema. No project package
-is imported, no corpus content is executed, and schema references stay offline.
+Run this file with a Python environment containing jsonschema and nhi_blast
+(imports SCENARIO_RULES from nhi_blast.analysis.findings). No corpus content
+is executed, and schema references stay offline.
 """
 
 from __future__ import annotations
@@ -23,6 +24,8 @@ from typing import Any
 
 from jsonschema import validators
 from referencing import Registry
+
+from nhi_blast.analysis.findings import SCENARIO_RULES
 
 PROJECT = Path(__file__).resolve().parents[1]
 SCHEMAS = {
@@ -352,9 +355,10 @@ def finding_signature(finding: dict[str, Any]) -> tuple[Any, ...]:
         ),
     )
     primary: dict[str, Any] = next((item for item in evidence if item.get("file")), {})
-    payload = "|".join(
-        (finding["rule"], ",".join(sorted(finding.get("path", []))), primary.get("file", ""))
-    )
+    parts = [finding["rule"], ",".join(sorted(finding.get("path", []))), primary.get("file", "")]
+    if finding["rule"] in SCENARIO_RULES and finding.get("scenario"):
+        parts.append(str(finding["scenario"]))
+    payload = "|".join(parts)
     fingerprint = hashlib.sha256(payload.encode("utf-8")).hexdigest()
     levels = {
         "CRITICAL": "error",

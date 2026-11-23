@@ -273,6 +273,7 @@ def test_scan_fx07_reference_partition_findings_and_scope(tmp_path: Path) -> Non
     )
     assert {item.id for item in report.assumptions} == {
         "A-CAC-DEFAULT",
+        "A-NO-BOUNDARY",
         "A-NO-SCP",
         "A-OIDC-ENV",
         "A-REPO-AGE",
@@ -555,7 +556,7 @@ def test_export_json_and_dot_are_deterministic(tmp_path: Path) -> None:
     stamped_text = stamped.written[0].read_text(encoding="utf-8")
     assert "// generated_at: " in stamped_text
     with pytest.raises(UsageError):
-        run_export(ExportOptions(root=FX07, fmt="opengraph"))
+        run_export(ExportOptions(root=FX07, fmt="xml"))
     with pytest.raises(UsageError):
         run_export(ExportOptions(root=FX07, fmt="yaml"))
 

@@ -12,13 +12,14 @@ _ANSI_OR_OSC = re.compile(
     (?:
         \[[0-?]*[ -/]*[@-~]
       | \][^\x07\x1b]*(?:\x07|\x1b\\)
+      | [PX^_][^\x07\x1b]*(?:\x07|\x1b\\)
       | [@-Z\\-_]
     )
     """,
     re.VERBOSE,
 )
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
-_BIDI = re.compile(r"[\u202a-\u202e\u2066-\u2069]")
+_BIDI = re.compile(r"[\u00ad\u061c\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]")
 _SPACES = re.compile(r"[ \t\f\v]+")
 _NEWLINES = re.compile(r"\s*\n\s*")
 

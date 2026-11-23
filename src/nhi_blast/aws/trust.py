@@ -13,15 +13,19 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 
 from nhi_blast.aws.conditions import (
+    _OPERATORS,
     ConditionMode,
     ConditionTruth,
+    _split_operator,
+    _values,
     evaluate_conditions,
     is_request_context_key,
     required_positive_patterns,
 )
-from nhi_blast.aws.glob import glob_intersects, glob_match, has_wildcard, literal_prefix
+from nhi_blast.aws.glob import GlobRelation, glob_match, glob_relation, has_wildcard, literal_prefix
+from nhi_blast.aws.solver import SolverStatus, StringPredicate, solve_string_predicates
 from nhi_blast.core.data import ConditionKeyRegistry
-from nhi_blast.core.evidence import EvidenceClass, weakest
+from nhi_blast.core.evidence import EvidenceClass, rank, weakest
 from nhi_blast.core.models import (
     PolicyEffect,
     RoleFact,
@@ -67,14 +71,49 @@ class TrustEvaluation:
     audit_alternatives: tuple[TrustAuditAlternative, ...] = ()
 
 
+def _action_matches_assume(statement: Statement) -> bool:
+    if statement.actions and not any(
+        glob_match(pattern, ASSUME_ACTION, fold=True) for pattern in statement.actions
+    ):
+        return False
+    if statement.not_actions and any(
+        glob_match(pattern, ASSUME_ACTION, fold=True) for pattern in statement.not_actions
+    ):
+        return False
+    return bool(statement.actions or statement.not_actions)
+
+
+def _principal_matches_github_oidc(
+    statement: Statement,
+    provider_host: str,
+    *,
+    wildcard_keys: tuple[str, ...] = ("*", "Federated"),
+) -> bool:
+    federated = statement.principals.get("Federated", ())
+    suffix = f"oidc-provider/{provider_host}".lower()
+    if any(principal.lower().endswith(suffix) for principal in federated):
+        return True
+    return any("*" in statement.principals.get(key, ()) for key in wildcard_keys)
+
+
 def is_github_oidc_statement(statement: Statement, provider_host: str) -> bool:
     if statement.effect is not PolicyEffect.ALLOW:
         return False
-    if not any(glob_match(pattern, ASSUME_ACTION, fold=True) for pattern in statement.actions):
+    if not _action_matches_assume(statement):
         return False
-    federated = statement.principals.get("Federated", ())
-    suffix = f"oidc-provider/{provider_host}"
-    return any(principal.endswith(suffix) for principal in federated)
+    return _principal_matches_github_oidc(
+        statement, provider_host, wildcard_keys=("*", "Federated")
+    )
+
+
+def is_github_oidc_deny_statement(statement: Statement, provider_host: str) -> bool:
+    if statement.effect is not PolicyEffect.DENY:
+        return False
+    if not _action_matches_assume(statement):
+        return False
+    return _principal_matches_github_oidc(
+        statement, provider_host, wildcard_keys=("*", "Federated", "AWS")
+    )
 
 
 def _condition_key_maps(statement: Statement) -> tuple[Mapping[str, Sequence[str]], ...]:
@@ -117,11 +156,12 @@ def _normalise_statement(statement: Statement, provider_host: str) -> Statement:
     while the candidate context uses the short claim names ``sub``/``aud``. The
     prefix is provider metadata, not part of the claim.
     """
-    prefix = f"{provider_host}:"
+    prefix_lower = f"{provider_host.lower()}:"
+    prefix_len = len(prefix_lower)
     normalized: dict[str, dict[str, tuple[str, ...]]] = {}
     for operator, key_map in statement.conditions.items():
         normalized[operator] = {
-            (key[len(prefix) :] if key.startswith(prefix) else key): values
+            (key[prefix_len:] if key.lower().startswith(prefix_lower) else key): values
             for key, values in key_map.items()
         }
     return statement.model_copy(update={"conditions": normalized})
@@ -132,6 +172,14 @@ def _relevant_statements(role: RoleFact, registry: ConditionKeyRegistry) -> list
         _normalise_statement(statement, registry.provider_host)
         for statement in role.trust_statements
         if is_github_oidc_statement(statement, registry.provider_host)
+    ]
+
+
+def _relevant_deny_statements(role: RoleFact, registry: ConditionKeyRegistry) -> list[Statement]:
+    return [
+        _normalise_statement(statement, registry.provider_host)
+        for statement in role.trust_statements
+        if is_github_oidc_deny_statement(statement, registry.provider_host)
     ]
 
 
@@ -163,7 +211,7 @@ class TrustSubjectFilter:
                 if any(glob_match(subject, pattern) for pattern in self.exact_patterns):
                     return True
                 if any(
-                    glob_intersects(pattern, subject, fold=True)
+                    glob_relation(pattern, subject, fold=True) is not GlobRelation.DISJOINT
                     for pattern in self.wildcard_patterns
                 ):
                     return True
@@ -215,13 +263,14 @@ def no_match_evaluation(role: RoleFact, registry: ConditionKeyRegistry) -> Trust
 
 
 def _statement_dead_keys(statement: Statement, registry: ConditionKeyRegistry) -> tuple[str, ...]:
+    supported_lower = {k.lower() for k in registry.supported}
     return tuple(
         sorted(
             {
                 str(key).strip()
                 for key_map in _condition_key_maps(statement)
                 for key in key_map
-                if str(key).strip() not in registry.supported
+                if str(key).strip().lower() not in supported_lower
                 and not is_request_context_key(str(key).strip())
             }
         )
@@ -266,6 +315,58 @@ def _audit_statements(
     )
 
 
+def _deny_covers_candidate(
+    deny_stmt: Statement,
+    context: Mapping[str, frozenset[str]],
+) -> bool:
+    """True only when every concrete instance of a candidate is provably denied."""
+    if not deny_stmt.conditions:
+        return True
+    if not any(has_wildcard(val) for vals in context.values() for val in vals):
+        return True
+    lower_context = {k.lower(): v for k, v in context.items()}
+    for operator_raw, key_map in deny_stmt.conditions.items():
+        qualifier, operator, _ = _split_operator(str(operator_raw))
+        spec = _OPERATORS.get(operator)
+        for raw_key, expected in key_map.items():
+            key_lower = str(raw_key).strip().lower()
+            cand_values = lower_context.get(key_lower, frozenset())
+            if not any(has_wildcard(val) for val in cand_values):
+                continue
+            if (
+                qualifier is not None
+                or spec is None
+                or spec.negated
+                or spec.family not in {"string", "arn"}
+            ):
+                return False
+            raw_vals = _values(expected)
+            for cand_val in cand_values:
+                if not has_wildcard(cand_val):
+                    continue
+                res = solve_string_predicates(
+                    (
+                        StringPredicate(
+                            label="candidate",
+                            patterns=(cand_val,),
+                            negated=False,
+                            fold=False,
+                            is_glob=True,
+                        ),
+                        StringPredicate(
+                            label="not_deny",
+                            patterns=raw_vals,
+                            negated=True,
+                            fold=spec.relation == "fold",
+                            is_glob=spec.relation == "like" or spec.family == "arn",
+                        ),
+                    )
+                )
+                if res.status is not SolverStatus.UNSAT:
+                    return False
+    return True
+
+
 def evaluate_trust_statements(
     role: RoleFact,
     candidates: Sequence[SubjectCandidate],
@@ -273,27 +374,56 @@ def evaluate_trust_statements(
     registry: ConditionKeyRegistry,
 ) -> TrustEvaluation:
     relevant = _relevant_statements(role, registry)
+    deny_statements = _relevant_deny_statements(role, registry)
     audit = _audit_statements(role.id, relevant, registry)
     matches: list[TrustCandidateMatch] = []
     for statement in relevant:
         for candidate in candidates:
+            context = _context_for(candidate)
             evaluation = evaluate_conditions(
                 statement.conditions,
-                _context_for(candidate),
+                context,
                 mode=ConditionMode.CANDIDATE,
                 supported_keys=registry.supported,
             )
             if evaluation.truth is ConditionTruth.FALSE:
                 continue
+            denied = False
+            deny_conditional = False
+            deny_reasons: list[str] = []
+            deny_unresolved: list[str] = []
+            for deny_stmt in deny_statements:
+                deny_eval = evaluate_conditions(
+                    deny_stmt.conditions,
+                    context,
+                    mode=ConditionMode.CANDIDATE,
+                    supported_keys=registry.supported,
+                )
+                if deny_eval.truth is ConditionTruth.TRUE:
+                    if _deny_covers_candidate(deny_stmt, context):
+                        denied = True
+                        break
+                    deny_conditional = True
+                    deny_reasons.append("deny statement only partially matches wildcard candidate")
+                    deny_reasons.extend(deny_eval.reasons)
+                    deny_unresolved.extend(deny_eval.unresolved_keys)
+                elif deny_eval.truth is ConditionTruth.UNRESOLVED:
+                    deny_conditional = True
+                    deny_reasons.extend(deny_eval.reasons)
+                    deny_unresolved.extend(deny_eval.unresolved_keys)
+            if denied:
+                continue
+            conditional = evaluation.truth is ConditionTruth.UNRESOLVED or deny_conditional
+            truth = ConditionTruth.UNRESOLVED if conditional else evaluation.truth
             matches.append(
                 TrustCandidateMatch(
                     statement=statement,
                     candidate=candidate,
-                    truth=evaluation.truth,
-                    conditional=evaluation.truth is ConditionTruth.UNRESOLVED,
-                    unresolved_keys=evaluation.unresolved_keys,
+                    truth=truth,
+                    conditional=conditional,
+                    unresolved_keys=tuple(sorted({*evaluation.unresolved_keys, *deny_unresolved})),
                     dead_keys=evaluation.dead_keys,
-                    reasons=evaluation.reasons,
+                    reasons=(*evaluation.reasons, *deny_reasons),
                 )
             )
     if not matches:
@@ -308,20 +438,31 @@ def evaluate_trust_statements(
         for key_map in _condition_key_maps(statement)
         for key in key_map
     }
-    additional = tuple(
-        sorted(claim for claim in constrained_claims if claim in registry.not_statically_fixable)
+    bound_claims = (
+        set.intersection(*(set(match.candidate.claims) for match in matches)) if matches else set()
     )
-    classes = [
-        EvidenceClass.DERIVED if not match.conditional else EvidenceClass.ASSUMED
+    additional = tuple(
+        sorted(
+            claim
+            for claim in constrained_claims
+            if claim in registry.not_statically_fixable and claim not in bound_claims
+        )
+    )
+    match_classes = [
+        weakest(
+            EvidenceClass.DERIVED if not match.conditional else EvidenceClass.ASSUMED,
+            match.candidate.evidence_class,
+        )
         for match in matches
-    ] + [match.candidate.evidence_class for match in matches]
+    ]
+    strongest_confidence = min(match_classes, key=rank) if match_classes else EvidenceClass.ASSUMED
     return replace(
         audit,
         matches=tuple(matches),
         additional_constraints=additional,
         sub_patterns=_policy_values_for(matched_statements, "sub"),
         job_workflow_ref_patterns=_policy_values_for(matched_statements, "job_workflow_ref"),
-        confidence=weakest(*classes) if classes else EvidenceClass.ASSUMED,
+        confidence=strongest_confidence,
         dead_keys=tuple(
             sorted(
                 {

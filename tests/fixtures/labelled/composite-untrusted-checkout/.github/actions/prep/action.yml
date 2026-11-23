@@ -1,0 +1,8 @@
+name: Prep
+description: Local composite action checking out untrusted pull request head
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}

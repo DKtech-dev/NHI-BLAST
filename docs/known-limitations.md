@@ -52,8 +52,11 @@ The following are not evaluated and appear as assumptions in the report:
   permission boundaries that were not supplied (`A-NO-SCP`).
 - KMS key policies and grants. A customer-managed-key read without an explicit grant
   is conditional (`A-KMS-UNMODELLED`).
-- AWS role chaining. Role-to-role chaining is outside the specification's scope and
-  is not followed.
+- Unbounded or external AWS role chaining. Bounded intra-input `sts:AssumeRole`
+  role chaining (between roles defined in the supplied inputs, capped at the 1-hour
+  AWS chained-session limit and the configured closure depth) is modelled, but
+  chaining to roles outside the supplied inputs or across unmodelled accounts is not
+  followed.
 - Managed policy contents whose ARN is attached but whose document was not supplied
   (`A-POLICY-UNMODELLED`). A missing body never becomes an automatic deny.
 - GitHub environment protection rules, required reviewers, deployment branch rules
@@ -77,12 +80,12 @@ registry. The registry is in `docs/assumptions.md`.
   fails the statement closed and is reported as a dead key (`NHB-OIDC-006`). AWS and
   GitHub documentation disagree about some custom claims; the data file follows AWS
   and records the disagreement.
-- Condition evaluation supports the positive string and ARN operators
+- Condition evaluation uses a pure-Python solver supporting string and ARN operators
   (`StringEquals`, `StringEqualsIgnoreCase`, `StringLike`, `ArnEquals`, `ArnLike`),
-  their negative forms in concrete mode, `Bool`, `Null`, `IfExists` and the
-  `ForAnyValue`/`ForAllValues` qualifiers. `Numeric*`, `Date*`, `IpAddress`, `Binary*`
-  and policy variables are not evaluated; a statement that depends on them is
-  conditional, never a confident allow.
+  their negative forms in concrete mode, `Numeric*`, `Date*`, `IpAddress`/`NotIpAddress`,
+  `Bool`, `Null`, `IfExists`, and the `ForAnyValue`/`ForAllValues` qualifiers against
+  available request context. `Binary*` operators, unresolved request keys, and
+  unexpanded policy variables remain conditional (`ASSUMED`), never a confident allow.
 - A negative operator compared with a candidate glob is unresolved rather than
   guessed. Unresolved conditions make a statement conditional (`ASSUMED`), not true.
 - A subject pattern is evaluated against candidate subjects derived from the trigger
@@ -168,7 +171,7 @@ registry. The registry is in `docs/assumptions.md`.
 
 ## 9. Deliberately out of scope
 
-Role chaining, IAM users and long-lived access keys as first-class entrypoints, S3 or
+External/cross-account role chaining beyond supplied inputs, IAM users and long-lived access keys as first-class entrypoints, S3 or
 KMS key-policy modelling, CloudFormation, GitLab, Azure, GCP, Kubernetes, MCP
 configuration, Cloudflare, live API collection, GitHub settings ingestion, and any
 SaaS, service, database or web application are out of scope. Requests to add them
@@ -181,8 +184,9 @@ fixes.
 - **Session policies** passed to an assumed role are recorded but not evaluated, so reachable access
   may be broader than the session allows. A resource policy that names the session ARN is not
   limited by a session policy in AWS either.
-- **Role chaining** is not modelled. Chained sessions are limited to one hour by AWS and the tool
-  applies that cap, but it does not follow the chain.
+- **Role chaining** is modelled only for bounded intra-input `sts:AssumeRole` chains between
+  roles present in the scanned inputs (with the 1-hour AWS chained-session cap applied).
+  Chaining to external or unmodelled roles is not followed.
 - **Revocation** in `whatif` models the documented `AWSRevokeOlderSessions` deny. The roughly 30 s
   propagation allowance is an assumption taken from AWS documentation, not a measured value.
 - **Diff comparability** needs both reports from the same analyzer. Re-scan the base revision with

@@ -40,7 +40,7 @@ jobs:
       - name: Audit development lock
         run: python -m pip_audit -r requirements-dev.lock
       - name: Static application security scan
-        run: python -m bandit -q -r src -ll
+        run: python -m bandit -c pyproject.toml -q -r src -ll
       - name: OSV dependency scan
         env:
           OSV_SHA256: "160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b"

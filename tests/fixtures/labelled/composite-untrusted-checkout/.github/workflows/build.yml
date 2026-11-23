@@ -1,0 +1,10 @@
+name: PR Composite
+on: pull_request_target
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/prep
+      - run: echo ok
+        env:
+          TOKEN: ${{ secrets.DEPLOY_TOKEN }}

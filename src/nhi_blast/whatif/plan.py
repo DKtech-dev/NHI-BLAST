@@ -12,9 +12,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from nhi_blast.analysis.reach import reach
 from nhi_blast.core.artifact_io import ArtifactReadError, InputIdentity, read_bounded_utf8
 from nhi_blast.core.canonical import CanonicalError, digest_of
+from nhi_blast.core.evidence import EvidenceClass
 from nhi_blast.core.limits import Limits
+from nhi_blast.core.models import EdgeKind, NodeKind, Report
 from nhi_blast.discovery.paths import OutsideRootError, PathGuard
 from nhi_blast.parsers._json import _exceeds_depth
 from nhi_blast.parsers.yaml_marked import load_marked_document, to_plain
@@ -337,6 +340,78 @@ def load_plan_with_identity(path: Path) -> tuple[Plan, InputIdentity]:
     return parse_plan_text(text, suffix=suffix), identity
 
 
+def synthesize_auto_plan(report: Report) -> Plan:
+    """Synthesize a deterministic containment and SCC-ordered rotation plan from a report."""
+    nodes = {node.id: node for node in report.graph.nodes}
+    raw_steps: list[dict[str, Any]] = []
+
+    reachable_nodes: set[str] = set()
+    for scenario in report.scenarios:
+        starts = [node_id for node_id in scenario.start_nodes if node_id in nodes]
+        if starts:
+            reachable_nodes.update(reach(report.graph, starts))
+        for ecred in scenario.partition.E:
+            cred_node = nodes.get(ecred.credential)
+            if cred_node is not None:
+                role_id = cred_node.attrs.get("role")
+                if isinstance(role_id, str) and role_id in nodes:
+                    reachable_nodes.add(role_id)
+
+    start_jobs = sorted(
+        {
+            node_id
+            for scenario in report.scenarios
+            for node_id in scenario.start_nodes
+            if node_id in nodes and nodes[node_id].kind in {NodeKind.JOB, NodeKind.WORKFLOW}
+        }
+    )
+    for job_id in start_jobs:
+        raw_steps.append({"type": "disable_entrypoint", "node": job_id})
+
+    trust_edges = sorted(
+        (
+            edge
+            for edge in report.graph.edges
+            if edge.kind is EdgeKind.CAN_ASSUME
+            and edge.confidence is not EvidenceClass.UNKNOWN
+            and edge.src in reachable_nodes
+            and edge.dst in reachable_nodes
+            and edge.src in nodes
+            and nodes[edge.src].kind in {NodeKind.OIDC_IDENTITY, NodeKind.AWS_ROLE}
+            and edge.dst in nodes
+            and nodes[edge.dst].kind is NodeKind.AWS_ROLE
+        ),
+        key=lambda e: (e.dst, e.src, e.id),
+    )
+    for edge in trust_edges:
+        raw_steps.append({"type": "remove_trust", "role": edge.dst, "edge": edge.id})
+
+    e_roles = sorted(
+        {
+            str(nodes[ecred.credential].attrs["role"])
+            for scenario in report.scenarios
+            for ecred in scenario.partition.E
+            if ecred.credential in nodes and nodes[ecred.credential].attrs.get("role")
+        }
+    )
+    for role_id in e_roles:
+        raw_steps.append({"type": "revoke_role_sessions", "role": role_id})
+
+    seen_creds: set[str] = set()
+    for scenario in report.scenarios:
+        for step in scenario.rotation_plan.rotation:
+            for ref in step.credentials:
+                if ref.id in seen_creds:
+                    continue
+                seen_creds.add(ref.id)
+                raw_steps.append({"type": "rotate_credential", "credential": ref.id})
+
+    if len(raw_steps) > MAX_INTERVENTIONS:
+        raw_steps = raw_steps[:MAX_INTERVENTIONS]
+
+    return parse_plan({"schema": PLAN_SCHEMA, "interventions": raw_steps})
+
+
 __all__ = [
     "MAX_INTERVENTIONS",
     "PLAN_INVALID",
@@ -354,4 +429,5 @@ __all__ = [
     "load_plan_with_identity",
     "parse_plan",
     "parse_plan_text",
+    "synthesize_auto_plan",
 ]

@@ -7,8 +7,10 @@ and reads bytes once.
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import os
+import stat
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
@@ -45,6 +47,16 @@ PRUNED_DIRECTORIES = frozenset(
 _TF_JSON_MARKERS = (b'"format_version"',)
 _TF_JSON_VALUE_MARKERS = (b'"planned_values"', b'"values"', b'"resource_changes"')
 _JSON_SNIFF_BYTES = 65_536
+
+
+def _require_regular_file(path: Path) -> None:
+    """Reject FIFOs, sockets, device nodes, and directories before opening."""
+    st = os.lstat(path)
+    if stat.S_ISLNK(st.st_mode):
+        st = os.stat(path)
+    if not stat.S_ISREG(st.st_mode):
+        msg = f"refusing to open non-regular file: {path.name}"
+        raise OSError(errno.EINVAL, msg)
 
 
 class FileKind(StrEnum):
@@ -124,6 +136,7 @@ class InputLoader:
         self._protected[identify_input(path)] = None
         limit = self._size_limit(kind)
         try:
+            _require_regular_file(resolved)
             with resolved.open("rb") as handle:
                 identity = identify_open_input(path, handle)
                 self._protected[identity] = None
@@ -188,6 +201,7 @@ def _peek_is_tf_json(
     chunks: list[bytes] = []
     consumed = 0
     try:
+        _require_regular_file(path)
         with path.open("rb") as handle:
             identities[identify_open_input(path, handle)] = None
             while consumed < sniff_bytes:
@@ -240,7 +254,12 @@ def _walk(
 ) -> tuple[tuple[tuple[Path, str], ...], bool, tuple[str, ...]]:
     found: list[tuple[Path, str]] = []
     escaped: list[str] = []
+    max_dirs = max(limits.max_files * 4, 10_000)
+    visited_dirs = 0
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        visited_dirs += 1
+        if visited_dirs > max_dirs:
+            return tuple(found), True, tuple(escaped)
         current = Path(dirpath)
         kept: list[str] = []
         for name in sorted(dirnames):

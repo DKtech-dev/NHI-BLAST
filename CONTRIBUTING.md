@@ -1,8 +1,7 @@
 # Contributing to NHI-Blast
 
-Read `docs/SPEC.md` and `AGENTS.md` before changing behaviour. `docs/SPEC.md` is the
-normative requirements source; `AGENTS.md` is the engineering and security contract.
-Where they disagree, the specification wins.
+Read `docs/SPEC.md` before changing behaviour. `docs/SPEC.md` is the normative
+requirements source and security contract.
 
 ## Set up
 
@@ -45,7 +44,7 @@ exit codes and artifacts, adversarial security tests for every output boundary, 
 reviewed golden files. The markers above select the security, golden and performance
 subsets; run them separately as well as within the full suite.
 
-- **Fixtures.** `tests/fixtures/fx01`–`fx15` are deterministic repositories; the
+- **Fixtures.** `tests/fixtures/fx01`–`fx16` are deterministic repositories; the
   inventory of verified counts, R/E/Z sizes, findings and diagnostics is
   `tests/fixtures/README.md`. The scale fixture is generated reproducibly by
   `scripts/gen_fixtures.py`. No fixture contains a real credential; placeholder
@@ -53,7 +52,7 @@ subsets; run them separately as well as within the full suite.
 - **Goldens.** `tests/golden/fx07-console.txt` and `fx07-summary.json` are exact
   reviewed output checked against the specification. A failing golden is a behaviour
   change first and a file update second; never regenerate and accept it blindly.
-- **Labelled evaluation.** `scripts/evaluate_labelled.py` replays 14 labelled synthetic
+- **Labelled evaluation.** `scripts/evaluate_labelled.py` replays 46+ labelled synthetic
   cases and exits non-zero on any mismatch. It is regression coverage for those
   labels, not real-world detection accuracy, and its counts must not be cited as such.
 - **Determinism and offline behaviour.** Repeated scans must produce byte-identical
@@ -145,8 +144,8 @@ detail.
 4. Treat every string from a scanned file as hostile. The HTML reporter must keep its
    escaped JSON block, its text-only DOM construction and its restrictive CSP with
    inline-script hashes.
-5. Do not add scope from the prohibited list in `AGENTS.md` (GCP, Azure, Kubernetes,
-   MCP, GitLab, live API collection, SaaS, database-backed web applications).
+5. Do not add out-of-scope platforms or runtime modes (GCP, Azure, Kubernetes, MCP,
+   GitLab, live API collection, SaaS, database-backed web applications).
 
 If you believe a security property is wrong, write an adversarial test first and open
 a private report as described in `SECURITY.md` rather than a public issue.

@@ -7,7 +7,8 @@ import re
 from nhi_blast.core.models import PinKind
 from nhi_blast.parsers.gha.facts import UsesRef
 
-_SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
+_SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
+_DOCKER_DIGEST_RE = re.compile(r"^sha256:[0-9a-fA-F]{64}$")
 _TAG_RE = re.compile(r"^v?\d+(?:\.\d+)*$")
 _BRANCHES = frozenset({"main", "master", "develop", "dev", "trunk"})
 _FIRST_PARTY = frozenset({"actions", "github"})
@@ -16,7 +17,7 @@ _REUSABLE_SUFFIXES = (".yml", ".yaml")
 
 def classify_pin(ref: str | None, *, is_docker: bool = False) -> PinKind:
     if is_docker:
-        return PinKind.SHA if ref else PinKind.DOCKER
+        return PinKind.SHA if (ref is not None and _DOCKER_DIGEST_RE.match(ref)) else PinKind.DOCKER
     if ref is None:
         return PinKind.AMBIGUOUS
     if _SHA_RE.match(ref):
@@ -32,16 +33,16 @@ def parse_uses(raw: str, line: int) -> UsesRef:
     value = raw.strip()
     if value.startswith("docker://"):
         reference = value[len("docker://") :]
-        digest = reference.split("@", 1)[1] if "@" in reference else None
-        pinned = digest is not None and digest.startswith("sha256:")
+        digest = reference.split("@", 1)[1].strip() if "@" in reference else None
+        pin_kind = classify_pin(digest, is_docker=True)
         return UsesRef(
             raw=value,
             kind="DOCKER",
-            pin_kind=PinKind.SHA if pinned else PinKind.DOCKER,
-            mutable=not pinned,
+            pin_kind=pin_kind,
+            mutable=pin_kind is not PinKind.SHA,
             line=line,
         )
-    if value.startswith("./") or value == ".":
+    if value.startswith(("./", "$/")) or value == ".":
         return UsesRef(
             raw=value,
             kind="LOCAL",
@@ -55,8 +56,8 @@ def parse_uses(raw: str, line: int) -> UsesRef:
     if "@" in value:
         path, ref = value.rsplit("@", 1)
         ref = ref.strip() or None
-    parts = path.split("/")
-    owner = parts[0] if parts and parts[0] else None
+    parts = [p for p in path.split("/") if p and p != "."]
+    owner = parts[0] if parts else None
     repo = parts[1] if len(parts) > 1 else None
     subpath = "/".join(parts[2:]) if len(parts) > 2 else None
     pin_kind = classify_pin(ref)
@@ -92,7 +93,7 @@ def local_action_dir(uses: UsesRef) -> str | None:
     value = uses.raw.strip()
     if value == ".":
         return "."
-    if not value.startswith("./"):
+    if not value.startswith(("./", "$/")):
         return None
     return value[2:].rstrip("/") or "."
 

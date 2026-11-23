@@ -30,6 +30,8 @@ remediation.
 | [NHB-GHA-003](NHB-GHA-003.md) | INFO | A job targets a self-hosted runner, where state may persist between jobs. |
 | [NHB-GHA-004](NHB-GHA-004.md) | MEDIUM | `secrets: inherit`, the bare `secrets` context, `toJSON(secrets)` or a dynamic index exposes an unknown set of secrets. |
 | [NHB-GHA-005](NHB-GHA-005.md) | HIGH | A workflow scalar matches a literal credential heuristic. Only kind and length are reported. |
+| [NHB-GHA-006](NHB-GHA-006.md) | HIGH | An AI coding agent action runs on a PR or issue trigger in a job that holds secrets or OIDC authority. |
+| [NHB-GHA-007](NHB-GHA-007.md) | MEDIUM | A package install command runs without lifecycle-script suppression in a job that holds secrets or OIDC authority. |
 
 ## Credentials and incident response
 
@@ -39,6 +41,8 @@ remediation.
 | [NHB-SURV-001](NHB-SURV-001.md) | HIGH | At least one persistent credential survives revocation of the entrypoint. |
 | [NHB-ROT-001](NHB-ROT-001.md) | LOW | A reachable credential sink has no configured rotation. |
 | [NHB-ROT-002](NHB-ROT-002.md) | MEDIUM | A reachable role can modify a credential sink and can therefore defeat a later rotation. |
+| [NHB-PERSIST-001](NHB-PERSIST-001.md) | HIGH | A reachable role can mint new IAM credentials or alter trust policies to establish persistence beyond revocation. |
+| [NHB-CHAIN-001](NHB-CHAIN-001.md) | HIGH | A reachable role can assume another IAM role via `sts:AssumeRole`, extending effective blast radius across a role chain. |
 
 ## Reading a finding
 

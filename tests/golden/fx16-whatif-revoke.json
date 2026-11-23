@@ -43,6 +43,8 @@
       "after": {
         "E": [
           {
+            "attacker_max_ttl_seconds": 3600,
+            "configured_ttl_seconds": 3600,
             "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
             "ttl_seconds": 3600
           }
@@ -127,6 +129,8 @@
       "before": {
         "E": [
           {
+            "attacker_max_ttl_seconds": 3600,
+            "configured_ttl_seconds": 3600,
             "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
             "ttl_seconds": 3600
           }
@@ -162,6 +166,8 @@
       "future_reach": {
         "E": [
           {
+            "attacker_max_ttl_seconds": 3600,
+            "configured_ttl_seconds": 3600,
             "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
             "ttl_seconds": 3600
           }
@@ -312,6 +318,8 @@
       "after": {
         "E": [
           {
+            "attacker_max_ttl_seconds": 3600,
+            "configured_ttl_seconds": 3600,
             "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
             "ttl_seconds": 3600
           }
@@ -395,6 +403,8 @@
       "before": {
         "E": [
           {
+            "attacker_max_ttl_seconds": 3600,
+            "configured_ttl_seconds": 3600,
             "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
             "ttl_seconds": 3600
           }
@@ -430,6 +440,8 @@
       "future_reach": {
         "E": [
           {
+            "attacker_max_ttl_seconds": 3600,
+            "configured_ttl_seconds": 3600,
             "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
             "ttl_seconds": 3600
           }
@@ -577,6 +589,8 @@
       "after": {
         "E": [
           {
+            "attacker_max_ttl_seconds": 3600,
+            "configured_ttl_seconds": 3600,
             "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
             "ttl_seconds": 3600
           }
@@ -656,6 +670,8 @@
       "before": {
         "E": [
           {
+            "attacker_max_ttl_seconds": 3600,
+            "configured_ttl_seconds": 3600,
             "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
             "ttl_seconds": 3600
           }
@@ -688,6 +704,8 @@
       "future_reach": {
         "E": [
           {
+            "attacker_max_ttl_seconds": 3600,
+            "configured_ttl_seconds": 3600,
             "credential": "cred:oidc:job:.github/workflows/deploy.yml#deploy:sts.amazonaws.com:sts-session:aws:role:arn:aws:iam::111122223333:role/ci-deploy",
             "ttl_seconds": 3600
           }

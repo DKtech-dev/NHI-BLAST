@@ -52,11 +52,13 @@ def _role(
     *statements: Statement,
     managed: tuple[str, ...] = (),
     boundary: tuple[Statement, ...] = (),
+    arn: str | None = None,
 ) -> RoleFact:
     return RoleFact(
         id=ROLE_ID,
         address="aws_iam_role.test",
         name="test",
+        arn=arn,
         inline_statements=statements,
         managed_policy_arns=managed,
         boundary_statements=boundary,
@@ -281,8 +283,9 @@ def test_can_read_with_customer_key_requires_kms_decrypt() -> None:
         account=ACCOUNT,
     )
 
-    assert missing.decision is Decision.NOT_APPLICABLE
-    assert "customer-managed key" in missing.reasons[0]
+    assert missing.decision is Decision.CONDITIONAL_ALLOW
+    assert missing.evidence_class is EvidenceClass.ASSUMED
+    assert "A-KMS-UNMODELLED" in missing.assumptions
     assert granted.decision is Decision.ALLOW
 
 
@@ -322,3 +325,147 @@ def test_can_modify_uses_modify_actions() -> None:
 
     assert read_only.decision is Decision.NOT_APPLICABLE
     assert writable.decision is Decision.ALLOW
+
+
+def test_permissions_boundary_blocks_conditional_identity_allow() -> None:
+    conditional_allow = _statement(conditions={"StringEquals": {"aws:SourceAccount": (ACCOUNT,)}})
+    restrictive_boundary = _statement(actions=("s3:GetObject",), resources=("*",))
+    role = _role(conditional_allow, boundary=(restrictive_boundary,))
+
+    result = evaluate_action(role, ACTION, RESOURCE, _ctx())
+
+    assert result.decision is Decision.DENY
+    assert result.evidence_class is EvidenceClass.DERIVED
+    assert "boundary" in result.reasons[0]
+
+
+def test_permissions_boundary_explicit_deny_blocks_conditional_identity_allow() -> None:
+    conditional_allow = _statement(conditions={"StringEquals": {"aws:SourceAccount": (ACCOUNT,)}})
+    boundary = (_statement(), _statement(PolicyEffect.DENY))
+    role = _role(conditional_allow, boundary=boundary)
+
+    result = evaluate_action(role, ACTION, RESOURCE, _ctx())
+
+    assert result.decision is Decision.DENY
+    assert result.evidence_class is EvidenceClass.DERIVED
+
+
+def test_conditional_identity_and_conditional_boundary_merge_reasons() -> None:
+    cond_id = _statement(conditions={"StringEquals": {"aws:SourceAccount": (ACCOUNT,)}})
+    cond_bd = _statement(conditions={"StringEquals": {"aws:RequestedRegion": (REGION,)}})
+    role = _role(cond_id, boundary=(cond_bd,))
+
+    result = evaluate_action(role, ACTION, RESOURCE, _ctx())
+
+    assert result.decision is Decision.CONDITIONAL_ALLOW
+    assert result.evidence_class is EvidenceClass.ASSUMED
+    assert any("boundary" in r for r in result.conditional_reasons)
+    assert any("SourceAccount" in r for r in result.conditional_reasons)
+
+
+def test_missing_boundary_emits_a_no_boundary_assumption() -> None:
+    result = evaluate_action(_role(_statement()), ACTION, RESOURCE, _ctx())
+    assert "A-NO-BOUNDARY" in result.assumptions
+    assert "A-NO-SCP" in result.assumptions
+
+
+def test_secret_resource_policy_allows_and_respects_boundary_for_role_arn() -> None:
+    secret_arn = f"arn:aws:secretsmanager:{REGION}:{ACCOUNT}:secret:prod/db-AbCdEf"
+    role_arn = f"arn:aws:iam::{ACCOUNT}:role/deploy"
+    rp_allow = Statement(
+        effect=PolicyEffect.ALLOW,
+        actions=("secretsmanager:GetSecretValue",),
+        resources=("*",),
+        principals={"AWS": (role_arn,)},
+    )
+    sink = SinkFact(
+        id="aws:secret:prod/db",
+        name="prod/db",
+        sink_type=SinkType.SECRETSMANAGER_SECRET,
+        arn=secret_arn,
+        resource_policy_statements=(rp_allow,),
+    )
+    # Without boundary, resource policy alone grants same-account access.
+    role_no_bd = _role(arn=role_arn)
+    assert (
+        can_read(role_no_bd, sink, _ctx(), region=REGION, account=ACCOUNT).decision
+        is Decision.ALLOW
+    )
+
+    # With restrictive boundary, role ARN principal in resource policy is still bounded.
+    role_with_bd = _role(
+        arn=role_arn,
+        boundary=(_statement(actions=("s3:GetObject",), resources=("*",)),),
+    )
+    assert (
+        can_read(role_with_bd, sink, _ctx(), region=REGION, account=ACCOUNT).decision
+        is Decision.DENY
+    )
+
+
+def test_secret_resource_policy_assumed_role_session_arn_bypasses_boundary_implicit_deny() -> None:
+    secret_arn = f"arn:aws:secretsmanager:{REGION}:{ACCOUNT}:secret:prod/db-AbCdEf"
+    role_arn = f"arn:aws:iam::{ACCOUNT}:role/deploy"
+    session_arn = f"arn:aws:sts::{ACCOUNT}:assumed-role/deploy/ci-session"
+    rp_allow = Statement(
+        effect=PolicyEffect.ALLOW,
+        actions=("secretsmanager:GetSecretValue",),
+        resources=("*",),
+        principals={"AWS": (session_arn,)},
+    )
+    sink = SinkFact(
+        id="aws:secret:prod/db",
+        name="prod/db",
+        sink_type=SinkType.SECRETSMANAGER_SECRET,
+        arn=secret_arn,
+        resource_policy_statements=(rp_allow,),
+    )
+    # Session ARN resource policy bypasses boundary implicit deny.
+    role_implicit_bd = _role(
+        arn=role_arn,
+        boundary=(_statement(actions=("s3:GetObject",), resources=("*",)),),
+    )
+    assert (
+        can_read(role_implicit_bd, sink, _ctx(), region=REGION, account=ACCOUNT).decision
+        is Decision.ALLOW
+    )
+
+    # Explicit Deny in boundary still overrides session ARN resource policy.
+    role_explicit_deny_bd = _role(
+        arn=role_arn,
+        boundary=(
+            _statement(actions=("secretsmanager:GetSecretValue",), resources=("*",)),
+            _statement(
+                PolicyEffect.DENY,
+                actions=("secretsmanager:GetSecretValue",),
+                resources=("*",),
+            ),
+        ),
+    )
+    assert (
+        can_read(role_explicit_deny_bd, sink, _ctx(), region=REGION, account=ACCOUNT).decision
+        is Decision.DENY
+    )
+
+
+def test_secret_resource_policy_explicit_deny_overrides_identity_allow() -> None:
+    secret_arn = f"arn:aws:secretsmanager:{REGION}:{ACCOUNT}:secret:prod/db-AbCdEf"
+    role_arn = f"arn:aws:iam::{ACCOUNT}:role/deploy"
+    rp_deny = Statement(
+        effect=PolicyEffect.DENY,
+        actions=("secretsmanager:GetSecretValue",),
+        resources=("*",),
+        principals={"AWS": (role_arn,)},
+    )
+    sink = SinkFact(
+        id="aws:secret:prod/db",
+        name="prod/db",
+        sink_type=SinkType.SECRETSMANAGER_SECRET,
+        arn=secret_arn,
+        resource_policy_statements=(rp_deny,),
+    )
+    role = _role(
+        _statement(actions=("secretsmanager:GetSecretValue",), resources=("*",)),
+        arn=role_arn,
+    )
+    assert can_read(role, sink, _ctx(), region=REGION, account=ACCOUNT).decision is Decision.DENY

@@ -14,15 +14,21 @@ from nhi_blast.parsers.gha.facts import ExprRefs
 EXPR_OPEN = "${{"
 EXPR_CLOSE = "}}"
 
-_SECRET_DOT = re.compile(r"secrets\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)")
-_SECRET_INDEX = re.compile(r"secrets\s*\[\s*(['\"])([^'\"]+)\1\s*\]")
-_VAR_DOT = re.compile(r"vars\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)")
-_ENV_DOT = re.compile(r"env\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)")
+_SECRET_DOT = re.compile(r"(?<![A-Za-z0-9_.])secrets\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)")
+_SECRET_INDEX = re.compile(r"(?<![A-Za-z0-9_.])secrets\s*\[\s*(['\"])([^'\"]+)\1\s*\]")
+_VAR_DOT = re.compile(r"(?<![A-Za-z0-9_.])vars\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)")
+_VAR_INDEX = re.compile(r"(?<![A-Za-z0-9_.])vars\s*\[\s*(['\"])([^'\"]+)\1\s*\]")
+_ENV_DOT = re.compile(r"(?<![A-Za-z0-9_.])env\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)")
+_ENV_INDEX = re.compile(r"(?<![A-Za-z0-9_.])env\s*\[\s*(['\"])([^'\"]+)\1\s*\]")
 _HEAD_REF_PATTERNS = (
     re.compile(r"github\s*\.\s*head_ref"),
     re.compile(r"pull_request\s*\.\s*head\s*\.\s*sha"),
     re.compile(r"pull_request\s*\.\s*head\s*\.\s*ref"),
     re.compile(r"pull_request\s*\.\s*head\s*\.\s*repo\s*\.\s*full_name"),
+    re.compile(r"pull_request\s*\.\s*merge_commit_sha"),
+    re.compile(r"workflow_run\s*\.\s*head_sha"),
+    re.compile(r"workflow_run\s*\.\s*head_branch"),
+    re.compile(r"workflow_run\s*\.\s*head_repository\s*\.\s*full_name"),
 )
 _HEAD_MARKER = "refs/pull/"
 _BARE_SECRETS = re.compile(r"(?<![A-Za-z0-9_.])secrets(?![A-Za-z0-9_])")
@@ -78,7 +84,9 @@ def scan_text(text: str) -> ExprRefs:
         secrets.update(_SECRET_DOT.findall(expression))
         secrets.update(name for _quote, name in _SECRET_INDEX.findall(expression))
         vars_used.update(_VAR_DOT.findall(expression))
+        vars_used.update(name for _quote, name in _VAR_INDEX.findall(expression))
         env_used.update(_ENV_DOT.findall(expression))
+        env_used.update(name for _quote, name in _ENV_INDEX.findall(expression))
         if _bare_secrets_referenced(expression):
             secrets_all = True
         if any(pattern.search(expression) for pattern in _HEAD_REF_PATTERNS):

@@ -6,9 +6,13 @@ Offline model. Not executed. Verify in your account.
 - Plan digest: `b5c82bdf2d9fc2fc35f86b9c2725622c19a03e81893682c4fa2ba7f83a6e3b42`
 - Every item is a human task. Owners, times and account details are placeholders.
 
-## 1. Revoke role sessions
+## 1. Remove trust or disable entrypoint
 
-### Step 1.1: revoke sessions of role `aws:role:arn:aws:iam::111122223333:role/ci-deploy` (plan step 0)
+No remove_trust or disable_entrypoint step is in the plan.
+
+## 2. Revoke role sessions
+
+### Step 2.1: revoke sessions of role `aws:role:arn:aws:iam::111122223333:role/ci-deploy` (plan step 0)
 
 - Owner: `<owner: assign a person or team>`
 - Evidence (role): tfstate.json:23 [DECLARED IAM.inline]; tfstate.json:23 [DECLARED TF.role]
@@ -20,6 +24,23 @@ Offline model. Not executed. Verify in your account.
 - Human verification task: In the IAM console confirm that the role carries the AWSRevokeOlderSessions inline policy, that its condition compares aws:TokenIssueTime with the cutoff above, and review CloudTrail for sessions of this role issued after the cutoff.
 - Rollback / validation: Removing the inline policy undoes the deny for every user of the role. Try the change on a non-production role first and record the role's current inline policies before editing.
 
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AWSRevokeOlderSessions",
+      "Effect": "Deny",
+      "Action": "*",
+      "Resource": "*",
+      "Condition": {
+        "DateLessThan": {"aws:TokenIssueTime": "2026-03-01T10:00:30Z"}
+      }
+    }
+  ]
+}
+```
+
 Caveats that apply to every revoke step:
 - Sessions issued inside the propagation window (the assumed 30 s before the cutoff) are covered by the deny.
 - Sessions issued after the cutoff are not covered; a role that can still be assumed yields new sessions.
@@ -27,10 +48,6 @@ Caveats that apply to every revoke step:
 - Service-linked roles cannot be revoked this way.
 - Derived credentials (chained role sessions, access keys created by the session, secrets already read) are not affected by the deny; role chaining is not modelled, so they are listed as residual_unknown.
 - The 30 s propagation window is ASSUMED from https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_revoke-sessions.html ("approximately 30 seconds into the future") and is not a guarantee.
-
-## 2. Remove trust or disable entrypoint
-
-No remove_trust or disable_entrypoint step is in the plan.
 
 ## 3. Rotate surviving credentials in dependency order
 

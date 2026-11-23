@@ -1,0 +1,48 @@
+name: UI & Accessibility
+
+"on":
+  push:
+    branches: [main, master]
+    paths:
+      - "src/nhi_blast/report/**"
+      - "tests/ui/**"
+      - ".github/workflows/ui.yml"
+  pull_request:
+    paths:
+      - "src/nhi_blast/report/**"
+      - "tests/ui/**"
+      - ".github/workflows/ui.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playwright:
+    name: Playwright + axe-core (Chromium, Firefox, WebKit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "tests/ui/package-lock.json"
+      - name: Install nhi-blast
+        run: python -m pip install -c requirements.lock -e .
+      - name: Install Playwright browsers
+        working-directory: tests/ui
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium firefox webkit
+      - name: Run browser and accessibility suite
+        working-directory: tests/ui
+        env:
+          NHB_PYTHON: python
+        run: npx playwright test

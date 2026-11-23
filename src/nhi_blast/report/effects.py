@@ -238,11 +238,11 @@ cl.setAttribute("aria-hidden","true");
 kids.forEach(function(k){sr.appendChild(k)});
 cl.appendChild(right?b:a);cl.appendChild(right?a:b);el.appendChild(sr);el.appendChild(cl);
 function show(v){var s=String(v);a.textContent=s;b.textContent=s.length<n?new Array(n-s.length+1).join("0"):""}
-job.fin=function(){if(job.raf)W.cancelAnimationFrame(job.raf);job.raf=0;S.counts.delete(job);
+job.fin=function(){if(job.raf)W.cancelAnimationFrame(job.raf);job.raf=0;if(job.tm){W.clearTimeout(job.tm);job.tm=0}S.counts.delete(job);
 if(!sr.parentNode)return;kids.forEach(function(k){el.insertBefore(k,sr)});el.removeChild(sr);if(cl.parentNode)el.removeChild(cl)};
 function step(now){if(!t0)t0=now;var p=Math.min(1,(now-t0)/900);show(Math.round(to*easeOut(p)));
 if(p<1)job.raf=W.requestAnimationFrame(step);else job.fin()}
-show(0);S.counts.add(job);job.raf=W.requestAnimationFrame(step)}
+show(0);S.counts.add(job);job.tm=W.setTimeout(job.fin,950);job.raf=W.requestAnimationFrame(step)}
 function drawPrep(el){if(!S.motion||S.dp.has(el))return;var len;
 try{len=el.getTotalLength();if(W.getComputedStyle(el).vectorEffect==="non-scaling-stroke"){var cm=el.getScreenCTM();if(cm)len*=Math.sqrt(Math.abs(cm.a*cm.d-cm.b*cm.c))}var r=el.getBoundingClientRect(),vh=W.innerHeight,vis=Math.min(r.bottom,vh)-Math.max(r.top,0);
 if(!(len>0)||(r.height>0&&vis>=r.height*.6))return}catch(e){return}
@@ -331,10 +331,12 @@ l[i<0?(e.shiftKey?l.length-1:0):(i+(e.shiftKey?l.length-1:1))%l.length].focus()}
 /* ---------- orchestration ---------- */
 function progress(){
 if(S&&S.bar&&S.motion){var m=H.scrollHeight-W.innerHeight;S.bar.style.setProperty("--fx-progress",(m>0?clamp(W.scrollY/m,0,1):0).toFixed(4))}}
-function onScroll(){progress();sched()}
+function syncScroll(){if(!S)return;S.lastY=W.scrollY;progress();S.journeys.forEach(function(j){j.update()});S.navs.forEach(function(n){n.spy()})}
+function watchScroll(){if(!S)return;if(S.st){W.clearInterval(S.st);S.st=0}
+if(S.motion)S.st=W.setInterval(function(){if(S&&S.motion&&W.scrollY!==S.lastY)syncScroll()},50)}
+function onScroll(){syncScroll();sched()}
 function frame(){
-progress();
-S.journeys.forEach(function(j){j.update()});S.navs.forEach(function(n){n.spy()});S.pills.forEach(function(p){p.sync()})}
+syncScroll();S.pills.forEach(function(p){p.sync()})}
 function sched(){if(S.tick)return;S.tick=true;W.requestAnimationFrame(function(){S.tick=false;if(S)frame()})}
 function scan(){var r=S.root;
 S.hosts=S.hosts.filter(function(h){if(h.host.isConnected)return true;dropHost(h);return false});
@@ -359,14 +361,14 @@ qa(S.root,"[data-fx-draw]").forEach(function(e){if(S.dp.has(e))drawClear(e)});
 S.dr.forEach(function(a){a.cancel()});
 S.anim.forEach(function(v,d){v.a.finish()});onLeave()}
 else qa(S.root,"[data-fx-draw]").forEach(drawPrep);
-sched();frame()}
+watchScroll();sched();frame()}
 function setMotion(v){v=!!v;H.setAttribute("data-motion",v?"on":"off");
 if(!S)return;if(S.motion===v)return;S.motion=v;safe(motionChanged)}
 function init(root,opts){
 if(S){safe(refresh);return}
 var want=opts&&typeof opts.motion==="boolean"?opts.motion:(PRE!==null?PRE:null),rm=mq("(prefers-reduced-motion: reduce)");
 S={root:root&&root.querySelectorAll?root:D,motion:false,off:[],seen:{},hosts:[],byEl:new Map(),journeys:[],navs:[],pills:[],counts:new Set(),
-dp:new Map(),dr:new Set(),anim:new Map(),hot:{mag:null,tilt:null},tick:false,bar:null};
+dp:new Map(),dr:new Set(),anim:new Map(),hot:{mag:null,tilt:null},tick:false,bar:null,lastY:-1,st:0};
 S.motion=want===null?!(rm&&rm.matches):want;H.setAttribute("data-motion",S.motion?"on":"off");
 if(want===null&&rm&&rm.addEventListener){var f=function(e){setMotion(!e.matches)};rm.addEventListener("change",f);S.off.push(function(){rm.removeEventListener("change",f)})}
 safe(function(){S.ro=obs(W.ResizeObserver,function(es){es.forEach(function(e){var h=S.byEl.get(e.target);if(h)fit(h)})})});
@@ -383,7 +385,7 @@ var vh=(e.rootBounds&&e.rootBounds.height)||W.innerHeight;
 if(e.intersectionRatio>=.6||e.intersectionRect.height>=vh*.5){S.dio.unobserve(e.target);drawGo(e.target)}})},{threshold:[0,.6]})});
 safe(function(){var m=obs(W.MutationObserver,function(){S.hosts.forEach(function(h){palette(h);sync(h)})});if(m)m.observe(H,{attributes:true,attributeFilter:["data-theme"]})});
 if(D.body){S.bar=mk("div","fx-progress");S.bar.setAttribute("aria-hidden","true");D.body.appendChild(S.bar);S.off.push(function(){if(S.bar.parentNode)S.bar.parentNode.removeChild(S.bar)})}
-on(W,"scroll",onScroll,{passive:true});on(W,"resize",sched,{passive:true});
+on(W,"scroll",onScroll,{passive:true});on(D,"scroll",onScroll,{passive:true});on(W,"resize",sched,{passive:true});watchScroll();
 on(D,"visibilitychange",function(){S.hosts.forEach(function(h){if(live(h))start(h);else stop(h)})});
 on(W,"pointermove",onMove,{passive:true});on(W,"pointerdown",onDown,{passive:true});
 on(D,"keydown",onKey);on(H,"pointerleave",onLeave);on(H,"mouseleave",onLeave);on(W,"blur",onLeave);on(D,"click",onClick);
@@ -414,7 +416,7 @@ unwords(s.root);
 qa(s.root,"[data-fx-draw]").forEach(function(e){if(s.dp.has(e))drawClear(e)});
 s.dr.forEach(function(a){a.cancel()});s.anim.forEach(function(v,d){v.a.finish()});
 qa(s.root,"[data-fx-reveal]").forEach(function(e){e.classList.remove("fx-in");e.style.removeProperty("--fx-delay")});
-onLeave();s.off.forEach(function(f){safe(f)});S=null;H.removeAttribute("data-motion")}
+if(s.st){W.clearInterval(s.st);s.st=0}onLeave();s.off.forEach(function(f){safe(f)});S=null;H.removeAttribute("data-motion")}
 W.NHBEffects={init:function(r,o){safe(function(){init(r,o)})},refresh:function(){safe(refresh)},
 setMotion:function(v){safe(function(){if(!S)PRE=!!v;setMotion(v)})},
 motionEnabled:function(){return H.getAttribute("data-motion")==="on"},

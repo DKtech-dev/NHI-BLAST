@@ -24,6 +24,7 @@ _OBTAINING_EDGES = frozenset({EdgeKind.HOLDS, EdgeKind.STORES, EdgeKind.CAN_ASSU
 _CLOSURE_EDGES = frozenset(
     {
         EdgeKind.AUTHENTICATES_AS,
+        EdgeKind.CAN_ASSUME,
         EdgeKind.CAN_READ_VALUE,
         EdgeKind.STORES,
     }
@@ -73,6 +74,47 @@ def _closure_outgoing(graph: GraphData) -> dict[str, list[Edge]]:
     return outgoing
 
 
+def _closure_principals(credential: str, outgoing: Mapping[str, list[Edge]]) -> set[str]:
+    """Return `credential` and principals reachable via AUTHENTICATES_AS / CAN_ASSUME."""
+    principals: set[str] = {credential}
+    queue: list[str] = [credential]
+    while queue:
+        current = queue.pop()
+        for edge in outgoing.get(current, ()):
+            if (
+                edge.kind in {EdgeKind.AUTHENTICATES_AS, EdgeKind.CAN_ASSUME}
+                and edge.dst not in principals
+            ):
+                principals.add(edge.dst)
+                queue.append(edge.dst)
+    return principals
+
+
+def _next_persistent_credentials(
+    credential: str,
+    outgoing: Mapping[str, list[Edge]],
+    nodes: Mapping[str, Node],
+    seen: Mapping[str, int],
+) -> set[str]:
+    found: set[str] = set()
+    for principal in sorted(_closure_principals(credential, outgoing)):
+        for read in outgoing.get(principal, ()):
+            if read.kind is not EdgeKind.CAN_READ_VALUE:
+                continue
+            for stores in outgoing.get(read.dst, ()):
+                if stores.kind is not EdgeKind.STORES:
+                    continue
+                candidate = nodes.get(stores.dst)
+                if (
+                    candidate is not None
+                    and candidate.kind is NodeKind.CREDENTIAL
+                    and _lifetime(candidate) in PERSISTENT_LIFETIMES
+                    and candidate.id not in seen
+                ):
+                    found.add(candidate.id)
+    return found
+
+
 def _close_persistent(
     graph: GraphData,
     nodes: Mapping[str, Node],
@@ -90,25 +132,16 @@ def _close_persistent(
         depth += 1
         following: set[str] = set()
         for credential in frontier:
-            for auth in outgoing.get(credential, ()):
-                if auth.kind is not EdgeKind.AUTHENTICATES_AS:
-                    continue
-                for read in outgoing.get(auth.dst, ()):
-                    if read.kind is not EdgeKind.CAN_READ_VALUE:
-                        continue
-                    for stores in outgoing.get(read.dst, ()):
-                        if stores.kind is not EdgeKind.STORES:
-                            continue
-                        candidate = nodes[stores.dst]
-                        if (
-                            candidate.kind is NodeKind.CREDENTIAL
-                            and _lifetime(candidate) in PERSISTENT_LIFETIMES
-                            and candidate.id not in depths
-                        ):
-                            depths[candidate.id] = depth
-                            following.add(candidate.id)
+            for candidate_id in sorted(
+                _next_persistent_credentials(credential, outgoing, nodes, depths)
+            ):
+                depths[candidate_id] = depth
+                following.add(candidate_id)
         frontier = sorted(following)
-    return depths, bool(frontier)
+    truncated = any(
+        _next_persistent_credentials(credential, outgoing, nodes, depths) for credential in frontier
+    )
+    return depths, truncated
 
 
 def partition_graph(
@@ -142,10 +175,23 @@ def partition_graph(
         if lifetime is Lifetime.JOB_BOUND:
             r.append(credential)
         elif lifetime is Lifetime.SESSION_TTL:
+            configured_ttl = node.attrs.get("configured_ttl_seconds")
+            attacker_max_ttl = node.attrs.get("attacker_max_ttl_seconds")
+            effective_e_ttl = int(
+                attacker_max_ttl
+                if attacker_max_ttl is not None
+                else node.attrs.get("ttl_seconds", 3600)
+            )
             e.append(
                 ECredential(
                     credential=credential,
-                    ttl_seconds=int(node.attrs.get("ttl_seconds", 3600)),
+                    ttl_seconds=effective_e_ttl,
+                    configured_ttl_seconds=(
+                        int(configured_ttl) if configured_ttl is not None else None
+                    ),
+                    attacker_max_ttl_seconds=(
+                        int(attacker_max_ttl) if attacker_max_ttl is not None else None
+                    ),
                 )
             )
         elif lifetime in PERSISTENT_LIFETIMES:

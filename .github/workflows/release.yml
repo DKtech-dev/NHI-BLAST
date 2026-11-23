@@ -52,6 +52,12 @@ jobs:
           python -m hatchling build -t wheel -t sdist -d dist
       - name: Inspect the distributions
         run: python scripts/check_artifacts.py dist
+      - name: Verify tag matches package version
+        if: github.ref_type == 'tag'
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          python -c 'import os, nhi_blast; v = f"v{nhi_blast.__version__}"; assert os.environ["REF_NAME"] == v, f"tag {os.environ[\"REF_NAME\"]} != {v}"'
       - name: Smoke-test the wheel in a clean environment
         run: |
           python -m venv "$RUNNER_TEMP/smoke"
@@ -63,6 +69,12 @@ jobs:
           test -s "$RUNNER_TEMP/smoke-out/report.json"
           test -s "$RUNNER_TEMP/smoke-out/report.sarif"
           test -s "$RUNNER_TEMP/smoke-out/report.html"
+          "$RUNNER_TEMP/smoke/bin/nhi-blast" whatif "$RUNNER_TEMP/smoke-out/report.json" \
+            --auto-plan --format json --format md --format html --out "$RUNNER_TEMP/smoke-whatif"
+          test -s "$RUNNER_TEMP/smoke-whatif/whatif.html"
+          "$RUNNER_TEMP/smoke/bin/nhi-blast" export tests/fixtures/fx07-incident \
+            --repo-slug acme/shop --format opengraph --out "$RUNNER_TEMP/smoke-og"
+          test -s "$RUNNER_TEMP/smoke-og/graph.opengraph.json"
       - name: Write checksums and the CycloneDX SBOM
         run: |
           mkdir release-meta

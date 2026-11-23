@@ -18,6 +18,7 @@ from typer.testing import CliRunner
 from nhi_blast.cli.whatif_cmd import whatif
 from nhi_blast.core.evidence import Evidence, EvidenceClass
 from nhi_blast.core.models import Node, NodeKind
+from nhi_blast.report.json_report import write_json
 from nhi_blast.whatif.plan import PlanError, load_plan, parse_plan_text
 from nhi_blast.whatif.playbook import _evidence_lines
 from tests.test_whatif_support import (
@@ -96,10 +97,13 @@ def test_cli_format_selection_and_validation(report_file: Path, tmp_path: Path) 
     only_md = tmp_path / "md"
     assert invoke(report_file, FULL_PLAN, only_md, "--format", "md").exit_code == 0
     assert sorted(path.name for path in only_md.iterdir()) == ["playbook.md"]
-    bad = invoke(report_file, FULL_PLAN, tmp_path / "html", "--format", "html")
+    only_html = tmp_path / "html"
+    assert invoke(report_file, FULL_PLAN, only_html, "--format", "html").exit_code == 0
+    assert sorted(path.name for path in only_html.iterdir()) == ["whatif.html"]
+    bad = invoke(report_file, FULL_PLAN, tmp_path / "xml", "--format", "xml")
     assert bad.exit_code == 2
     assert "D-WHATIF-USAGE" in bad.stderr
-    assert not (tmp_path / "html").exists()
+    assert not (tmp_path / "xml").exists()
 
 
 def test_source_report_is_never_modified(report_file: Path, tmp_path: Path) -> None:
@@ -273,8 +277,8 @@ def test_playbook_structure_and_placeholders(report_file: Path, tmp_path: Path) 
     assert lines[0] == "Offline model. Not executed. Verify in your account."
     headings = [line for line in lines if line.startswith("## ")]
     assert headings[:4] == [
-        "## 1. Revoke role sessions",
-        "## 2. Remove trust or disable entrypoint",
+        "## 1. Remove trust or disable entrypoint",
+        "## 2. Revoke role sessions",
         "## 3. Rotate surviving credentials in dependency order",
         "## 4. Verify",
     ]
@@ -403,3 +407,20 @@ def test_timestamps_in_yaml_plans_stay_strings(tmp_path: Path) -> None:
     entry = load_plan(path).entries[0]
     assert entry.rejection is None
     assert entry.intervention is not None
+
+
+def test_whatif_auto_plan_synthesizes_deterministic_containment_and_playbook(
+    tmp_path: Path,
+) -> None:
+    report_file = tmp_path / "report.json"
+    write_json(fx16_report(), report_file)
+    out_a = tmp_path / "out-a"
+    out_b = tmp_path / "out-b"
+    res_a = runner.invoke(app, ["whatif", str(report_file), "--auto-plan", "--out", str(out_a)])
+    res_b = runner.invoke(app, ["whatif", str(report_file), "--auto-plan", "--out", str(out_b)])
+    assert res_a.exit_code == 0, res_a.stderr
+    assert res_b.exit_code == 0, res_b.stderr
+    assert (out_a / "whatif.json").read_bytes() == (out_b / "whatif.json").read_bytes()
+    assert (out_a / "playbook.md").read_bytes() == (out_b / "playbook.md").read_bytes()
+    playbook = (out_a / "playbook.md").read_text(encoding="utf-8")
+    assert "AWSRevokeOlderSessions" in playbook

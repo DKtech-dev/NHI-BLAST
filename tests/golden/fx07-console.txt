@@ -125,6 +125,7 @@ Findings
 
 Assumptions and unknowns
   [VERIFY] A-CAC-DEFAULT: role-duration-seconds is not set and the configure-aws-credentials default for this action ref is unverified; defaults are verified only for refs in configure_aws_credentials.yaml.
+  [ASSUMED] A-NO-BOUNDARY: No IAM permissions boundary was supplied for this role; effective access is not capped by a boundary.
   [ASSUMED] A-NO-SCP: SCPs, RCPs, session policies and permission boundaries that were not supplied are not modelled; Allow results may over-approximate.
   [ASSUMED] A-OIDC-ENV: With id-token: write, any step can request an OIDC token through the runner URL and bearer environment variables.
   [ASSUMED] A-REPO-AGE: Whether a repository mints classic or immutable subjects is unknown from files, so both are evaluated; declare [github] subject_format to settle it.

@@ -1,12 +1,14 @@
-"""Graph exports: canonical JSON and escaped Graphviz DOT (spec 13.6)."""
+"""Graph exports: canonical JSON, escaped Graphviz DOT, and BloodHound OpenGraph (spec 13.6)."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Sequence
 from typing import Any
 
 from nhi_blast.core.diagnostics import Diagnostic
+from nhi_blast.core.evidence import weakest
 from nhi_blast.core.models import (
     NODE_KIND_ORDER,
     DataFileInfo,
@@ -20,6 +22,8 @@ from nhi_blast.report._text import safe_text
 from nhi_blast.report.redaction import redact_model, redact_payload
 
 GRAPH_SCHEMA = "nhi-blast-graph/1.0"
+_OPENGRAPH_RESERVED_KEYS = frozenset({"objectid", "lastseen", "reconcile"})
+_OPENGRAPH_CORE_NODE_KEYS = frozenset({"name", "nhi_id", "nhi_kind", "confidence"})
 
 
 def _sorted_nodes(graph: GraphData) -> tuple[Node, ...]:
@@ -159,4 +163,140 @@ def graph_export_dot(
     return "\n".join(lines) + "\n"
 
 
-__all__ = ["GRAPH_SCHEMA", "graph_export_dot", "graph_export_json", "graph_export_payload"]
+def _opengraph_kind(kind_value: str) -> str:
+    parts = [part.capitalize() for part in kind_value.replace("-", "_").split("_") if part]
+    return "NHI_" + "".join(parts)
+
+
+def _opengraph_prop_value(value: Any) -> Any | None:
+    if isinstance(value, (str, bool, int, float)):
+        return value
+    if isinstance(value, (list, tuple)):
+        if not value:
+            return []
+        if all(isinstance(item, bool) for item in value):
+            return list(value)
+        if all(isinstance(item, str) for item in value):
+            return list(value)
+        if all(isinstance(item, int) and not isinstance(item, bool) for item in value):
+            return list(value)
+        if all(isinstance(item, float) for item in value):
+            return list(value)
+        return None
+    return None
+
+
+def _opengraph_node_id_map(nodes: Sequence[Node], reserved_ids: set[str]) -> dict[str, str]:
+    used = set(reserved_ids)
+    mapping: dict[str, str] = {}
+    for node in nodes:
+        base = node.id.replace(":", "_")
+        candidate = base
+        if candidate in used:
+            suffix = hashlib.sha256(node.id.encode("utf-8")).hexdigest()[:8]
+            candidate = f"{base}_{suffix}"
+            counter = 1
+            while candidate in used:
+                candidate = f"{base}_{suffix}_{counter}"
+                counter += 1
+        used.add(candidate)
+        mapping[node.id] = candidate
+    return mapping
+
+
+def _opengraph_node_properties(node: Node) -> dict[str, Any]:
+    props: dict[str, Any] = {}
+    for raw_key, raw_value in sorted(node.attrs.items(), key=lambda pair: str(pair[0])):
+        key = str(raw_key).lower()
+        if key in _OPENGRAPH_RESERVED_KEYS or key in _OPENGRAPH_CORE_NODE_KEYS:
+            continue
+        coerced = _opengraph_prop_value(raw_value)
+        if coerced is not None:
+            props[key] = coerced
+    props["name"] = safe_text(node.label, 200)
+    props["nhi_id"] = node.id
+    props["nhi_kind"] = node.kind.value
+    props["confidence"] = (
+        weakest(*(e.cls for e in node.evidence)).value if node.evidence else "unknown"
+    )
+    return props
+
+
+def graph_export_opengraph(
+    *,
+    tool: ToolInfo,
+    inputs: Inputs,
+    graph: GraphData,
+    generated_at: str | None = None,
+) -> str:
+    """Emit deterministic, redacted BloodHound CE OpenGraph v9.0.0 JSON."""
+    graph = redact_model(graph)
+    nodes = _sorted_nodes(graph)
+    edges = _sorted_edges(graph)
+    env_id = f"nhi_env_{inputs.digest[:12]}".replace(":", "_")
+    env_props: dict[str, Any] = {
+        "name": safe_text(inputs.repo_slug, 200),
+        "tool_version": tool.version,
+        "repository": inputs.repo_slug,
+        "inputs_digest": inputs.digest,
+    }
+    if generated_at is not None:
+        env_props["generated_at"] = generated_at
+    env_node: dict[str, Any] = {
+        "id": env_id,
+        "kinds": ["NHI_Environment"],
+        "properties": env_props,
+    }
+    id_map = _opengraph_node_id_map(nodes, reserved_ids={env_id})
+    og_nodes: list[dict[str, Any]] = [
+        env_node,
+        *(
+            {
+                "id": id_map[node.id],
+                "kinds": [_opengraph_kind(node.kind.value)],
+                "properties": _opengraph_node_properties(node),
+            }
+            for node in nodes
+        ),
+    ]
+    og_edges = [
+        {
+            "kind": _opengraph_kind(edge.kind.value),
+            "start": {"match_by": "id", "value": id_map.get(edge.src, edge.src.replace(":", "_"))},
+            "end": {"match_by": "id", "value": id_map.get(edge.dst, edge.dst.replace(":", "_"))},
+            "properties": {
+                "edge_id": edge.id,
+                "confidence": edge.confidence.value,
+                "lifetime": edge.lifetime.value,
+            },
+        }
+        for edge in edges
+    ]
+    payload: dict[str, Any] = {
+        "metadata": {
+            "source_kind": "NHI_Blast",
+        },
+        "graph": {
+            "nodes": og_nodes,
+            "edges": og_edges,
+        },
+    }
+    return (
+        json.dumps(
+            redact_payload(payload),
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n"
+    )
+
+
+__all__ = [
+    "GRAPH_SCHEMA",
+    "graph_export_dot",
+    "graph_export_json",
+    "graph_export_opengraph",
+    "graph_export_payload",
+]

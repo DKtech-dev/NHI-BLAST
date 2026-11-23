@@ -103,10 +103,18 @@ def _contexts_for_trigger(
     if event == "pull_request":
         return (("pull_request", EvidenceClass.ASSUMED, "A-FORK-NO-OIDC"),)
     if event == "pull_request_target":
-        base = _strip_ref(trigger.branches[0]) if trigger.branches else default_branch
+        if trigger.branches:
+            return tuple(
+                (
+                    f"ref:refs/heads/{_strip_ref(branch)}",
+                    EvidenceClass.ASSUMED,
+                    "A-PRT-SUB",
+                )
+                for branch in trigger.branches
+            )
         return (
             (
-                f"ref:refs/heads/{base}",
+                f"ref:refs/heads/{default_branch}",
                 EvidenceClass.ASSUMED,
                 "A-PRT-SUB",
             ),
@@ -234,16 +242,29 @@ def _claims(
     base_repo: str,
     job: JobFact,
     suffix: str,
+    trigger: Trigger | None = None,
+    oidc: OidcSettings | None = None,
 ) -> dict[str, str]:
     claims = {"repository": base_repo}
+    if "/" in base_repo:
+        claims["repository_owner"] = base_repo.split("/", 1)[0]
+    if trigger is not None and trigger.event and trigger.event != "unknown":
+        claims["event_name"] = trigger.event
     if suffix.startswith("ref:"):
         claims["ref"] = suffix[len("ref:") :]
         if repo_slug is not None:
             claims["job_workflow_ref"] = f"{repo_slug}/{workflow.path}@{claims['ref']}"
     elif suffix.startswith("environment:"):
         claims["environment"] = job.environment or "*"
+        if repo_slug is not None:
+            claims["job_workflow_ref"] = f"{repo_slug}/{workflow.path}@*"
     if workflow.name and "${{" not in workflow.name:
         claims["workflow"] = workflow.name
+    if oidc is not None:
+        if oidc.owner_id is not None:
+            claims["repository_owner_id"] = str(oidc.owner_id)
+        if oidc.repo_id is not None:
+            claims["repository_id"] = str(oidc.repo_id)
     return claims
 
 
@@ -324,6 +345,8 @@ def subject_candidates(
                     base_repo=base_repo,
                     job=job,
                     suffix=suffix,
+                    trigger=trigger,
+                    oidc=oidc,
                 )
                 for fmt, repo_prefix in formats:
                     candidates.append(

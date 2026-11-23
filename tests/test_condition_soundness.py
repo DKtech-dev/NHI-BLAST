@@ -285,12 +285,18 @@ def test_legacy_frozenset_context_still_means_present() -> None:
 
 
 def test_candidate_mode_negated_operator_stays_unresolved_for_present_candidates() -> None:
-    result = evaluate_conditions(
+    partial = evaluate_conditions(
+        {"StringNotLike": {"sub": ["repo:acme/shop:ref:refs/heads/main"]}},
+        {"sub": Present(("repo:acme/shop:ref:refs/heads/*",))},
+        mode=ConditionMode.CANDIDATE,
+    )
+    assert partial.truth is ConditionTruth.UNRESOLVED
+    disjoint = evaluate_conditions(
         {"StringNotLike": {"sub": ["repo:acme/*"]}},
         {"sub": Present(("repo:acme/shop:ref:refs/heads/*",))},
         mode=ConditionMode.CANDIDATE,
     )
-    assert result.truth is ConditionTruth.UNRESOLVED
+    assert disjoint.truth is ConditionTruth.FALSE
 
 
 def test_candidate_mode_non_string_operator_on_a_glob_is_unresolved() -> None:

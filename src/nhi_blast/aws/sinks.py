@@ -38,4 +38,6 @@ def kms_key_arn(sink: SinkFact, *, region: str | None, account: str | None) -> s
     key = sink.kms_key_id
     if key.startswith("arn:"):
         return key
+    if key.startswith("alias/"):
+        return f"arn:aws:kms:{region or '*'}:{account or '*'}:{key}"
     return f"arn:aws:kms:{region or '*'}:{account or '*'}:key/{key}"

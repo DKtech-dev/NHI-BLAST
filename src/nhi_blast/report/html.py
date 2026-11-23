@@ -7,6 +7,7 @@ import hashlib
 import json
 import re
 from functools import cache
+from html import escape as _html_escape
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -16,7 +17,7 @@ from nhi_blast.report.effects import EFFECTS_JS
 from nhi_blast.report.graph_layout import build_layout, render_graph_svg
 from nhi_blast.report.model_json import report_dict
 from nhi_blast.report.redaction import redact_model
-from nhi_blast.report.ui import APP_JS, TEMPLATE, THEME_JS
+from nhi_blast.report.ui import APP_JS, TEMPLATE, THEME_JS, THEME_SWITCH_CSS, THEME_TOKENS_CSS
 
 _FONT_ASSETS = (
     "host-grotesk-latin.woff2",
@@ -280,4 +281,45 @@ def write_html(report: Report, path: Path) -> None:
     path.write_text(html_report(report), encoding="utf-8", newline="\n")
 
 
-__all__ = ["html_report", "write_html"]
+@cache
+def _companion_css() -> str:
+    return (
+        resources.files("nhi_blast.report.templates")
+        .joinpath("companion.css")
+        .read_text(encoding="utf-8")
+    )
+
+
+def render_document(*, title: str, body_html: str, extra_css: str = "") -> str:
+    """Render a zero-Motion offline companion HTML document with strict SHA-256 CSP."""
+    theme_hash = _script_hash(THEME_JS)
+    csp = (
+        "default-src 'none'; style-src 'unsafe-inline'; font-src data:; "
+        f"script-src 'sha256-{theme_hash}'; base-uri 'none'; form-action 'none'"
+    )
+    safe_title = _html_escape(title, quote=True)
+    style_body = "\n".join(
+        (_font_css(), THEME_TOKENS_CSS, THEME_SWITCH_CSS, _companion_css(), extra_css)
+    )
+    lines = [
+        "<!DOCTYPE html>",
+        '<html lang="en">',
+        "<head>",
+        '<meta charset="utf-8">',
+        '<meta name="viewport" content="width=device-width, initial-scale=1">',
+        f'<meta http-equiv="Content-Security-Policy" content="{csp}">',
+        f"<title>{safe_title}</title>",
+        _head_script(),
+        "<style>",
+        style_body,
+        "</style>",
+        "</head>",
+        "<body>",
+        f'<main class="wrap">{body_html}</main>',
+        "</body>",
+        "</html>",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+__all__ = ["html_report", "render_document", "write_html"]

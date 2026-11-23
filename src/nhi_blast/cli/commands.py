@@ -13,6 +13,7 @@ import typer
 
 from nhi_blast import SCHEMA_VERSION, __version__
 from nhi_blast.core.data import all_data_file_infos
+from nhi_blast.discovery.repo import read_git_origin_slug
 from nhi_blast.pipeline import (
     ExportOptions,
     OutputError,
@@ -220,7 +221,9 @@ def explain(
 
 def export(
     path: PathArgument,
-    output_format: Annotated[str, typer.Option("--format", help="json or dot.")],
+    output_format: Annotated[
+        str, typer.Option("--format", help="json, dot, or opengraph.")
+    ] = "json",
     tf_json: TfJsonOption = None,
     tf_hcl: TfHclOption = None,
     iam_json: IamJsonOption = None,
@@ -235,7 +238,7 @@ def export(
         bool, typer.Option("--timestamp", help="Add wall-clock time to the export.")
     ] = False,
 ) -> None:
-    """Export the authority graph as JSON or Graphviz DOT."""
+    """Export the authority graph as JSON, Graphviz DOT, or BloodHound OpenGraph."""
 
     def action() -> int:
         options = ExportOptions(
@@ -299,9 +302,55 @@ def version(
         )
 
 
+def init_config(
+    path: Annotated[
+        Path,
+        typer.Argument(help="Repository root where nhi-blast.toml will be written."),
+    ] = Path("."),
+    force: Annotated[
+        bool,
+        typer.Option("--force", help="Overwrite an existing nhi-blast.toml."),
+    ] = False,
+) -> None:
+    """Scaffold a validated nhi-blast.toml configuration file."""
+    target_dir = path.expanduser()
+    if not target_dir.is_dir():
+        typer.echo(f"error: directory does not exist: {target_dir}", err=True)
+        raise typer.Exit(2)
+    target = target_dir / "nhi-blast.toml"
+    if target.is_symlink():
+        typer.echo(f"error: refusing to write through symlink: {target}", err=True)
+        raise typer.Exit(2)
+    if target.exists() and not force:
+        typer.echo(
+            f"error: {target} already exists (use --force to overwrite)",
+            err=True,
+        )
+        raise typer.Exit(2)
+    raw_slug = read_git_origin_slug(target_dir) or "OWNER/REPO"
+    slug = raw_slug if all(c.isalnum() or c in "._-/" for c in raw_slug) else "OWNER/REPO"
+    content = (
+        "# NHI-Blast repository configuration\n"
+        "# Docs: https://github.com/DKtech-dev/nhi-blast#configuration\n\n"
+        f'repo_slug = "{slug}"\n'
+        'default_branch = "main"\n\n'
+        "[github]\n"
+        '# Set to "immutable" for repos created after 2026-07-15 or opted in.\n'
+        'subject_format = "unknown"\n'
+        "# owner_id = 123456\n"
+        "# repo_id = 789012\n\n"
+        "[ignore]\n"
+        "rules = []\n"
+        "paths = []\n"
+    )
+    target.write_text(content, encoding="utf-8", newline="\n")
+    typer.echo(f"Wrote {target.as_posix()} (repo={slug})")
+
+
 __all__ = [
     "explain",
     "export",
+    "init_config",
     "rank",
     "scan",
     "schema",

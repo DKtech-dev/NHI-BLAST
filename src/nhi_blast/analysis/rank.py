@@ -20,6 +20,17 @@ from nhi_blast.core.models import (
 )
 
 
+def rank_sort_key(row: RankRow) -> tuple[int, int, int, int, str]:
+    """Order actions by highest persistent criticality, then surviving/ephemeral/use counts."""
+    return (
+        -row.highest_criticality,
+        -row.z_count,
+        -row.e_count,
+        -row.use_sites,
+        row.action,
+    )
+
+
 def rank_mutable_actions(
     graph: GraphData,
     *,
@@ -59,9 +70,9 @@ def rank_mutable_actions(
     return RankReport(
         tool=ToolInfo(version=__version__),
         inputs=inputs,
-        rows=tuple(sorted(rows, key=RankRow.sort_key)),
+        rows=tuple(sorted(rows, key=rank_sort_key)),
         diagnostics=DiagnosticBag(diagnostics).sorted(),
     )
 
 
-__all__ = ["rank_mutable_actions"]
+__all__ = ["rank_mutable_actions", "rank_sort_key"]

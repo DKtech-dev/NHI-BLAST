@@ -13,6 +13,7 @@ syntactic levels) while rejecting the 5000-level hostile shapes.
 from __future__ import annotations
 
 import json
+import math
 from typing import Any
 
 MAX_JSON_DEPTH = 2500
@@ -42,12 +43,31 @@ def _exceeds_depth(text: str, max_depth: int) -> bool:
                 return True
         elif char in "]}":
             depth -= 1
+            if depth < 0:
+                return True
     return False
 
 
+def _reject_constant(token: str) -> Any:
+    msg = f"non-standard JSON constant is not allowed: {token}"
+    raise ValueError(msg)
+
+
+def _parse_finite_float(token: str) -> float:
+    value = float(token)
+    if not math.isfinite(value):
+        msg = f"non-finite JSON float is not allowed: {token}"
+        raise ValueError(msg)
+    return value
+
+
 def decode_json(text: str, *, max_depth: int = MAX_JSON_DEPTH) -> Any:
-    """Decode JSON text, rejecting nesting deeper than ``max_depth``."""
+    """Decode JSON text, rejecting nesting deeper than ``max_depth`` and non-finite numbers."""
     if _exceeds_depth(text, max_depth):
         msg = f"JSON nesting exceeds {max_depth} levels"
         raise JsonDepthError(msg)
-    return json.loads(text)
+    return json.loads(
+        text,
+        parse_constant=_reject_constant,
+        parse_float=_parse_finite_float,
+    )

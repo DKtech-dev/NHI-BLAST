@@ -14,6 +14,7 @@ from typing import Any
 
 from nhi_blast.analysis.scenario import ScenarioAnalysis, analyze_scenario
 from nhi_blast.core.canonical import digest_of
+from nhi_blast.core.evidence import EvidenceClass
 from nhi_blast.core.limits import Limits
 from nhi_blast.core.models import (
     AUTHORITY_EDGE_KINDS,
@@ -211,17 +212,27 @@ def _apply_remove_trust(index: _Index, state: _State, step: RemoveTrust) -> _Out
             "rejected", rejection=Rejection("no_matching_trust_edge", step.role), state=state
         )
     removed: set[str] = set()
-    clears = False
+    explicit_repo_write = False
+    removed_oidc = False
     for edge in matched:
         if edge.attrs.get("repo_write") is True:
-            clears = True
+            explicit_repo_write = True
         elif edge.id in index.base_edge_ids:
             removed.add(edge.id)
             if (
                 edge.kind is EdgeKind.CAN_ASSUME
                 and index.nodes[edge.src].kind is NodeKind.OIDC_IDENTITY
             ):
-                clears = True
+                removed_oidc = True
+    remaining_oidc = [
+        edge
+        for edge in trust
+        if edge.id in index.base_edge_ids
+        and edge.id not in (state.removed_edges | removed)
+        and edge.kind is EdgeKind.CAN_ASSUME
+        and index.nodes[edge.src].kind is NodeKind.OIDC_IDENTITY
+    ]
+    clears = explicit_repo_write or (removed_oidc and not remaining_oidc)
     new_removed = removed - state.removed_edges
     new_block = clears and role.id not in state.blocked_roles
     updated = replace(
@@ -279,8 +290,12 @@ def _apply_rotate(index: _Index, state: _State, step: RotateCredential, report: 
     node = index.resolve(step.credential, frozenset({NodeKind.CREDENTIAL}))
     if isinstance(node, Rejection):
         return _Outcome("rejected", rejection=node, state=state)
-    lifetime = str(node.attrs.get("lifetime", Lifetime.NA.value))
-    if Lifetime(lifetime) not in PERSISTENT_LIFETIMES:
+    lifetime_raw = str(node.attrs.get("lifetime", Lifetime.NA.value))
+    try:
+        lifetime = Lifetime(lifetime_raw)
+    except ValueError:
+        lifetime = Lifetime.NA
+    if lifetime not in PERSISTENT_LIFETIMES:
         return _Outcome(
             "rejected", rejection=Rejection("not_persistent_credential", node.id), state=state
         )
@@ -466,22 +481,45 @@ def _rejected(executed: list[_Executed]) -> list[dict[str, Any]]:
     return rows
 
 
+def _role_still_assumable(
+    run: _Run,
+    final: _State,
+    future: ScenarioAnalysis,
+    role_id: str,
+) -> bool:
+    """Return True if `role_id` can still be assumed in `final` state."""
+    final_graph = _working_graph(run.index, final)
+    for edge in final_graph.edges:
+        if (
+            edge.dst == role_id
+            and edge.kind in _TRUST_EDGES
+            and edge.confidence is not EvidenceClass.UNKNOWN
+        ):
+            return True
+    for ecred in future.partition.E:
+        cred_node = run.index.nodes.get(ecred.credential)
+        if cred_node is None or cred_node.attrs.get("role") != role_id:
+            continue
+        path = future.reach.get(ecred.credential)
+        if path is not None and path.edges:
+            return True
+    return False
+
+
 def _revoked_access(
     run: _Run,
     executed: list[_Executed],
     scenario: ScenarioReport,
+    final: _State,
+    future: ScenarioAnalysis,
 ) -> list[dict[str, Any]]:
-    trust_roles = {
-        item.outcome.role
-        for item in executed
-        if item.entry.type == "remove_trust" and item.outcome.status == "applied"
-    }
     rows: list[dict[str, Any]] = []
     for item in executed:
         step = item.entry.intervention
         if not isinstance(step, RevokeRoleSessions) or item.outcome.role is None:
             continue
         role_id = item.outcome.role
+        re_issue = _role_still_assumable(run, final, future, role_id)
         cutoff, source = resolve_cutoff(step.revoked_at, step.cutoff)
         issued_map = dict(step.issued_no_later_than)
         for ecred in sorted(scenario.partition.E, key=lambda value: value.credential):
@@ -516,7 +554,7 @@ def _revoked_access(
                     "display_state": result.display_state,
                     "conditional_on_propagation": result.conditional_on_propagation,
                     "issue_time_basis": "upper_bound",
-                    "re_issue_possible": role_id not in trust_roles,
+                    "re_issue_possible": re_issue,
                     "residual_unknown": [
                         {"kind": "derived_credentials", "detail": _RESIDUAL_UNKNOWN}
                     ],
@@ -544,7 +582,9 @@ def _issued_before_containment(
     trust_roles = {
         item.outcome.role
         for item in executed
-        if item.entry.type == "remove_trust" and item.outcome.role is not None
+        if item.entry.type == "remove_trust"
+        and item.outcome.status == "applied"
+        and item.outcome.role is not None
     }
     obtainable = {item.credential for item in future.partition.E}
     rows: list[dict[str, Any]] = []
@@ -600,16 +640,35 @@ def _scenario_record(
 ) -> dict[str, Any]:
     future = run.analyses(final)[item.selector]
     future_z = {entry.credential for entry in future.partition.Z}
-    rotated = [
-        step.outcome.credential
-        for step in executed
-        if step.entry.type == "rotate_credential" and step.outcome.credential is not None
-    ]
     before_z = {entry.credential for entry in saved.partition.Z}
-    planned = {credential for credential in rotated if credential in before_z}
-    risk = sorted(credential for credential in planned if credential in future_z)
-    clean = sorted(planned - set(risk))
-    after_z = [entry for entry in saved.partition.Z if entry.credential not in clean]
+    planned: set[str] = set()
+    clean_set: set[str] = set()
+    risk_reasons: dict[str, str] = {}
+    for step in executed:
+        if step.entry.type != "rotate_credential" or step.outcome.credential is None:
+            continue
+        cred = step.outcome.credential
+        if cred not in before_z:
+            continue
+        planned.add(cred)
+        step_z = {
+            entry.credential
+            for entry in run.analyses(step.outcome.state)[item.selector].partition.Z
+        }
+        if cred in step_z:
+            clean_set.discard(cred)
+            risk_reasons[cred] = (
+                "surviving_path" if cred in future_z else "rotated_before_containment"
+            )
+        elif cred in future_z:
+            clean_set.discard(cred)
+            risk_reasons[cred] = "surviving_path"
+        else:
+            clean_set.add(cred)
+            risk_reasons.pop(cred, None)
+    risk = sorted(risk_reasons)
+    clean = sorted(clean_set)
+    after_z = [entry for entry in saved.partition.Z if entry.credential not in clean_set]
     residual: list[dict[str, Any]] = []
     for entry in future.partition.E:
         residual.append({**_path_record(future, entry.credential), "class": "E"})
@@ -628,9 +687,9 @@ def _scenario_record(
             "Z": [entry.model_dump(mode="json") for entry in after_z],
             "rotated": clean,
             "issued_before_containment": _issued_before_containment(run, executed, saved, future),
-            "revoked_access": _revoked_access(run, executed, saved),
+            "revoked_access": _revoked_access(run, executed, saved, final, future),
             "re_exposure_risk": [
-                {**_path_record(future, credential), "reason": "surviving_path"}
+                {**_path_record(future, credential), "reason": risk_reasons[credential]}
                 for credential in risk
             ],
         },

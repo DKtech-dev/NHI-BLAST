@@ -20,6 +20,7 @@ from nhi_blast.parsers.gha.facts import (
     StepFact,
     WorkflowFact,
 )
+from nhi_blast.parsers.gha.workflow import PRIVILEGED_EVENTS, _detect_untrusted_checkout
 
 _COMPOSITE_FILES = ("action.yml", "action.yaml")
 
@@ -50,12 +51,12 @@ def _safe_local_path(raw: str) -> str | None:
     """Resolve a repository-relative local path, rejecting escapes.
 
     The empty string denotes the repository root, which GitHub accepts as the
-    local action reference ``./``.
+    local action reference ``./`` or ``$/``.
     """
     value = raw.strip()
     if value == ".":
         return ""
-    if not value.startswith("./") or "\\" in value:
+    if not value.startswith(("./", "$/")) or "\\" in value:
         return None
     body = value[2:].rstrip("/")
     if not body:
@@ -153,7 +154,7 @@ def _expand_step(
             )
         )
         return expanded
-    if fact.using != "composite":
+    if fact.using is None or fact.using.strip().lower() != "composite":
         state.diagnostics.append(
             info(
                 "D-GHA-COMPOSITE-OPAQUE",
@@ -203,9 +204,51 @@ def _expand_job(
     refs = job.refs
     for path in sorted(state.used):
         refs = refs.merge(composites[path].refs)
+
+    all_steps = tuple(item.step for item in steps)
+    has_privileged_trigger = any(
+        trigger.event in PRIVILEGED_EVENTS for trigger in workflow.triggers
+    )
+    untrusted_checkout = job.untrusted_checkout
+    untrusted_line = job.untrusted_checkout_line
+    if has_privileged_trigger and not untrusted_checkout:
+        detected, detected_line = _detect_untrusted_checkout(
+            all_steps, has_prt=any(t.event == "pull_request_target" for t in workflow.triggers)
+        )
+        if detected:
+            untrusted_checkout = True
+            untrusted_line = detected_line
+
+    ai_agent_workflow = job.ai_agent_workflow or any(s.ai_agent_use for s in all_steps)
+    ai_agent_line = (
+        job.ai_agent_line
+        if job.ai_agent_workflow
+        else next((s.line for s in all_steps if s.ai_agent_use), job.ai_agent_line)
+    )
+
+    unconstrained_pkg_install = job.unconstrained_pkg_install or any(
+        s.unconstrained_pkg_install for s in all_steps
+    )
+    unconstrained_pkg_line = (
+        job.unconstrained_pkg_line
+        if job.unconstrained_pkg_install
+        else next((s.line for s in all_steps if s.unconstrained_pkg_install), None)
+    )
+
+    updated_job = job.model_copy(
+        update={
+            "untrusted_checkout": untrusted_checkout,
+            "untrusted_checkout_line": untrusted_line,
+            "ai_agent_workflow": ai_agent_workflow,
+            "ai_agent_line": ai_agent_line,
+            "unconstrained_pkg_install": unconstrained_pkg_install,
+            "unconstrained_pkg_line": unconstrained_pkg_line,
+        }
+    )
+
     return ExpandedJob(
         workflow=workflow,
-        job=job,
+        job=updated_job,
         refs=refs,
         steps=tuple(steps),
         diagnostics=DiagnosticBag(state.diagnostics).sorted(),

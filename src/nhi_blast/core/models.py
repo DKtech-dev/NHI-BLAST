@@ -359,6 +359,8 @@ class ECredential(BaseModel):
 
     credential: str
     ttl_seconds: int
+    configured_ttl_seconds: int | None = None
+    attacker_max_ttl_seconds: int | None = None
 
 
 class ZCredential(BaseModel):

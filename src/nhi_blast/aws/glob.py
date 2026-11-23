@@ -8,7 +8,15 @@ time on hostile input, which is why the specification forbids regex translation.
 
 from __future__ import annotations
 
+from enum import StrEnum
+
 MAX_GLOB_LENGTH = 4096
+
+
+class GlobRelation(StrEnum):
+    INTERSECTS = "INTERSECTS"
+    DISJOINT = "DISJOINT"
+    BUDGET_EXCEEDED = "BUDGET_EXCEEDED"
 
 
 def glob_match(pattern: str, text: str, *, fold: bool = False) -> bool:
@@ -77,33 +85,27 @@ def _strip_common_literals(a: str, b: str) -> tuple[str, str]:
     return a, b
 
 
-def glob_intersects(a: str, b: str, *, fold: bool = False) -> bool:
-    """True when some string matches both globs.
-
-    Iterative DP over the two suffix positions; equivalent to the memoised
-    recurrence in the specification but without recursion-depth risk. Two rows are
-    enough because each cell depends only on the cell to its right and the row below.
-    Oversized patterns fail closed rather than guessing: an unsound "true" here would
-    fabricate authority.
-    """
+def glob_relation(a: str, b: str, *, fold: bool = False) -> GlobRelation:
+    """Tri-state glob intersection returning BUDGET_EXCEEDED on oversized patterns."""
+    if len(a) > MAX_GLOB_LENGTH or len(b) > MAX_GLOB_LENGTH:
+        return GlobRelation.BUDGET_EXCEEDED
     if fold:
         a = a.lower()
         b = b.lower()
     if a == b:
-        return True
+        return GlobRelation.INTERSECTS
     if not has_wildcard(a):
-        return glob_match(b, a)
+        return GlobRelation.INTERSECTS if glob_match(b, a) else GlobRelation.DISJOINT
     if not has_wildcard(b):
-        return glob_match(a, b)
+        return GlobRelation.INTERSECTS if glob_match(a, b) else GlobRelation.DISJOINT
     a = _collapse_stars(a)
     b = _collapse_stars(b)
     if a == "*" or b == "*":
-        return True
-    if len(a) > MAX_GLOB_LENGTH or len(b) > MAX_GLOB_LENGTH:
-        return False
+        return GlobRelation.INTERSECTS
     a, b = _strip_common_literals(a, b)
     if not a or not b:
-        return glob_match(b, a) if not a else glob_match(a, b)
+        matched = glob_match(b, a) if not a else glob_match(a, b)
+        return GlobRelation.INTERSECTS if matched else GlobRelation.DISJOINT
     len_a = len(a)
     len_b = len(b)
     below = [False] * (len_b + 1)
@@ -121,7 +123,12 @@ def glob_intersects(a: str, b: str, *, fold: bool = False) -> bool:
             elif a[i] == b[j] or a[i] == "?" or b[j] == "?":
                 row[j] = below[j + 1]
         below = row
-    return below[0]
+    return GlobRelation.INTERSECTS if below[0] else GlobRelation.DISJOINT
+
+
+def glob_intersects(a: str, b: str, *, fold: bool = False) -> bool:
+    """True when some string provably matches both globs within budget."""
+    return glob_relation(a, b, fold=fold) is GlobRelation.INTERSECTS
 
 
 def has_wildcard(pattern: str) -> bool:

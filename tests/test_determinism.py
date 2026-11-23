@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+import os
 import socket
+import subprocess
 from pathlib import Path
 
 import pytest
 
+from nhi_blast.diff.run import DiffOptions, run_diff
 from nhi_blast.pipeline import (
     ExportOptions,
     RankOptions,
@@ -17,6 +20,7 @@ from nhi_blast.pipeline import (
     run_rank,
     run_scan,
 )
+from nhi_blast.whatif.run import execute as execute_whatif
 
 ALL_FORMATS = ("console", "json", "sarif", "html")
 
@@ -129,3 +133,38 @@ def test_scan_makes_no_network_calls(
 
     assert outcome.exit_code == 0
     assert len(outcome.report.graph.nodes) > 0
+
+
+def test_core_pipelines_make_no_subprocess_calls(
+    fixtures_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def blocked(*_args: object, **_kwargs: object) -> None:
+        msg = "runtime attempted to spawn a subprocess"
+        raise AssertionError(msg)
+
+    monkeypatch.setattr(subprocess, "Popen", blocked)
+    monkeypatch.setattr(os, "system", blocked)
+    monkeypatch.setattr(os, "popen", blocked)
+    for name in ("execl", "execle", "execlp", "execlpe", "execv", "execve", "execvp", "execvpe"):
+        if hasattr(os, name):
+            monkeypatch.setattr(os, name, blocked)
+    for name in ("spawnl", "spawnle", "spawnlp", "spawnlpe", "spawnv", "spawnve", "spawnvp"):
+        if hasattr(os, name):
+            monkeypatch.setattr(os, name, blocked)
+
+    root = fixtures_dir / "fx07-incident"
+    scan_out = _scan(root, tmp_path / "scan")
+    assert scan_out.exit_code == 0
+    rank_out = run_rank(RankOptions(root=root, fmt="json", out_dir=tmp_path / "rank"))
+    assert rank_out.written
+    export_out = run_export(ExportOptions(root=root, fmt="dot", out_dir=tmp_path / "export"))
+    assert export_out.written
+    rep_path = tmp_path / "scan" / "report.json"
+    diff_out = run_diff(DiffOptions(base=rep_path, head=rep_path, formats=("json",)))
+    assert diff_out.exit_code == 0
+    plan_path = tmp_path / "plan.json"
+    plan_path.write_text(
+        '{"schema": "nhi-blast-interventions/1.0", "interventions": []}\n', encoding="utf-8"
+    )
+    whatif_out = execute_whatif(rep_path, plan_path, ("json",), tmp_path / "whatif")
+    assert whatif_out.written

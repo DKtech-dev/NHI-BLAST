@@ -37,11 +37,11 @@ def summary(harness: ModuleType) -> dict[str, Any]:
 
 def test_recovered_cases_match_expected_labels(summary: dict[str, Any]) -> None:
     assert summary["metrics"] == {
-        "sample": 14,
-        "TP": 8,
+        "sample": 52,
+        "TP": 27,
         "FP": 0,
         "FN": 0,
-        "TN": 6,
+        "TN": 25,
         "precision": 1.0,
         "recall": 1.0,
     }
@@ -62,7 +62,7 @@ def test_manifest_and_case_directories_agree() -> None:
     manifest = json.loads((FIXTURES / "cases.json").read_text(encoding="utf-8"))
     cases = manifest["cases"]
     names = [case["id"] for case in cases]
-    assert len(names) == len(set(names)) == 14
+    assert len(names) == len(set(names)) == 52
     directories = sorted(path.name for path in FIXTURES.iterdir() if path.is_dir())
     assert directories == sorted(names)
     for case in cases:

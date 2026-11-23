@@ -28,6 +28,9 @@ from nhi_blast.parsers.terraform.facts import (
     TfResource,
 )
 
+MAX_SUBSTITUTED_CHARS = 256_000
+MAX_RESOLVE_DEPTH = 64
+
 _INTERPOLATION = re.compile(r"\$\{([^{}]*)\}")
 _RESOURCE_LINE = re.compile(r'^\s*resource\s+"([^"]+)"\s+"([^"]+)"')
 _DATA_LINE = re.compile(r'^\s*data\s+"([^"]+)"\s+"([^"]+)"')
@@ -54,28 +57,51 @@ def _line_map(text: str) -> dict[str, int]:
     return lines
 
 
-def _substitute_variables(value: str, variables: Mapping[str, Any]) -> tuple[str, bool]:
+def _substitute_variables(value: str, variables: Mapping[str, Any]) -> tuple[str | None, bool]:
     """Replace ``${var.x}`` with a literal default; return (text, resolved)."""
-
+    parts: list[str] = []
+    last = 0
+    total = 0
     unresolved = False
 
-    def replace(match: re.Match[str]) -> str:
-        nonlocal unresolved
+    for match in _INTERPOLATION.finditer(value):
+        literal = value[last : match.start()]
+        total += len(literal)
+        if total > MAX_SUBSTITUTED_CHARS:
+            return None, False
+        parts.append(literal)
+        last = match.end()
+
         expression = match.group(1).strip()
+        piece: str | None = None
         if expression.startswith("var."):
             name = expression[len("var.") :]
             replacement = variables.get(name)
             if isinstance(replacement, str):
-                return replacement
-            if isinstance(replacement, (int, float, bool)):
-                return (
-                    str(replacement).lower() if isinstance(replacement, bool) else str(replacement)
-                )
-        unresolved = True
-        return match.group(0)
+                piece = replacement
+            elif isinstance(replacement, (int, float, bool)):
+                try:
+                    piece = (
+                        str(replacement).lower()
+                        if isinstance(replacement, bool)
+                        else str(replacement)
+                    )
+                except ValueError:
+                    return None, False
+        if piece is None:
+            unresolved = True
+            piece = match.group(0)
+        total += len(piece)
+        if total > MAX_SUBSTITUTED_CHARS:
+            return None, False
+        parts.append(piece)
 
-    substituted = _INTERPOLATION.sub(replace, value)
-    return substituted, not unresolved
+    tail = value[last:]
+    total += len(tail)
+    if total > MAX_SUBSTITUTED_CHARS:
+        return None, False
+    parts.append(tail)
+    return "".join(parts), not unresolved
 
 
 def _resolve_string(
@@ -86,11 +112,13 @@ def _resolve_string(
     match = _JSONENCODE.match(value.strip())
     if match is not None:
         inner, ok = _substitute_variables(match.group(1).strip(), variables)
-        if not ok:
+        if not ok or inner is None:
             return None, False
         try:
             return decode_json(inner), True
-        except json.JSONDecodeError:
+        except JsonDepthError:
+            raise
+        except ValueError:
             return None, False
     if (
         value.startswith("${")
@@ -113,7 +141,7 @@ def _resolve_string(
         return None, False
     if "${" in value:
         substituted, ok = _substitute_variables(value, variables)
-        if not ok:
+        if not ok or substituted is None:
             return None, False
         return substituted, True
     return value, True
@@ -147,7 +175,12 @@ def _resource_values(
     return values, tuple(sorted(unknown)), tuple(sorted(sensitive))
 
 
-def _resolve_value(value: Any, variables: Mapping[str, Any]) -> tuple[Any, bool]:
+def _resolve_value(
+    value: Any, variables: Mapping[str, Any], *, _depth: int = 0
+) -> tuple[Any, bool]:
+    if _depth > MAX_RESOLVE_DEPTH:
+        msg = f"HCL value nesting exceeds {MAX_RESOLVE_DEPTH} levels"
+        raise RecursionError(msg)
     if value is None or isinstance(value, (bool, int, float)):
         return value, True
     if isinstance(value, str):
@@ -156,7 +189,7 @@ def _resolve_value(value: Any, variables: Mapping[str, Any]) -> tuple[Any, bool]
         result: dict[str, Any] = {}
         known = True
         for key, item in value.items():
-            resolved, item_known = _resolve_value(item, variables)
+            resolved, item_known = _resolve_value(item, variables, _depth=_depth + 1)
             if not item_known:
                 known = False
                 continue
@@ -166,7 +199,7 @@ def _resolve_value(value: Any, variables: Mapping[str, Any]) -> tuple[Any, bool]
         items: list[Any] = []
         known = True
         for item in value:
-            resolved, item_known = _resolve_value(item, variables)
+            resolved, item_known = _resolve_value(item, variables, _depth=_depth + 1)
             if not item_known:
                 known = False
                 continue
@@ -177,13 +210,18 @@ def _resolve_value(value: Any, variables: Mapping[str, Any]) -> tuple[Any, bool]
 
 def _normalise_policy_value(value: Any) -> tuple[str | None, bool]:
     if isinstance(value, Mapping):
-        return json.dumps(value, sort_keys=True, separators=(",", ":")), True
+        try:
+            return json.dumps(value, sort_keys=True, separators=(",", ":")), True
+        except ValueError:
+            return None, False
     if isinstance(value, str):
         stripped = value.strip()
         if stripped.startswith("{"):
             try:
                 decode_json(stripped)
-            except json.JSONDecodeError:
+            except JsonDepthError:
+                raise
+            except ValueError:
                 return None, False
             return stripped, True
         return None, False
@@ -291,7 +329,12 @@ def _policy_document_json(raw: Mapping[str, Any], variables: Mapping[str, Any]) 
                 )
                 if not known or not identifiers_known:
                     return None
-                values = identifiers if isinstance(identifiers, Sequence) else (identifiers,)
+                values = (
+                    identifiers
+                    if isinstance(identifiers, Sequence)
+                    and not isinstance(identifiers, (str, bytes))
+                    else (identifiers,)
+                )
                 principal_map.setdefault(str(kind), []).extend(values)
             statement["Principal"] = principal_map
         conditions = entry.get("condition")
@@ -309,11 +352,14 @@ def _policy_document_json(raw: Mapping[str, Any], variables: Mapping[str, Any]) 
             if condition_map:
                 statement["Condition"] = condition_map
         statements.append(statement)
-    return json.dumps(
-        {"Version": "2012-10-17", "Statement": statements},
-        sort_keys=True,
-        separators=(",", ":"),
-    )
+    try:
+        return json.dumps(
+            {"Version": "2012-10-17", "Statement": statements},
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+    except ValueError:
+        return None
 
 
 def _variables(document: Mapping[str, Any]) -> dict[str, Any]:
@@ -384,14 +430,14 @@ def parse_tf_hcl(rel_path: str, text: str, *, limits: Limits) -> ParseResult[TfM
     try:
         validate_unicode(text)
         return _parse_tf_hcl(rel_path, text, limits=limits)
-    except (JsonDepthError, RecursionError, UnicodeEncodeError):
+    except (JsonDepthError, ValueError, RecursionError, UnicodeEncodeError):
         # Normalization and policy-string decoding can fail after the initial parse.
         return ParseResult(
             facts=None,
             diagnostics=(
                 error(
                     "D-TF-HCL-PARSE",
-                    "HCL configuration has invalid Unicode or excessive nesting",
+                    "HCL configuration has invalid Unicode, numeric size, or excessive nesting",
                     file=rel_path,
                 ),
             ),

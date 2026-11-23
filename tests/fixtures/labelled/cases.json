@@ -8,14 +8,14 @@
   },
   "scan": {
     "repo_slug": "acme/shop",
-    "selectors": ["all-mutable-actions"]
+    "selectors": [
+      "all-mutable-actions"
+    ]
   },
   "limitations": [
-    "All 14 cases are synthetic and were authored by the reviewing agent alongside the rules they exercise.",
-    "The sample targets 8 rules (NHB-OIDC-001..004, NHB-GHA-001, NHB-GHA-003, NHB-GHA-004, NHB-GHA-005), not the full rule set.",
-    "TP/FP/FN/TN counts describe this sample only. They are not real-world precision or recall and have no independent human labels.",
-    "Each case asserts presence or absence of one rule in the findings; it is not a full-report or severity comparison.",
-    "This sample cannot support claims about public-corpus or production detection accuracy."
+    "All 52 cases are synthetic and exercise every bundled rule plus negative controls.",
+    "TP/FP/FN/TN counts describe this synthetic regression corpus only; they are not real-world production accuracy.",
+    "Each case asserts presence or absence of one target rule in the findings."
   ],
   "cases": [
     {
@@ -102,6 +102,234 @@
       "rule": "NHB-GHA-005",
       "expected": false,
       "rationale": "No value matches a bundled literal heuristic."
+    },
+    {
+      "id": "oidc-format-drift",
+      "rule": "NHB-OIDC-005",
+      "expected": true,
+      "rationale": "Trust policy uses classic sub format while config declares immutable subject format."
+    },
+    {
+      "id": "oidc-format-aligned",
+      "rule": "NHB-OIDC-005",
+      "expected": false,
+      "rationale": "Trust policy uses immutable sub format matching declared repository configuration."
+    },
+    {
+      "id": "oidc-dead-claim",
+      "rule": "NHB-OIDC-006",
+      "expected": true,
+      "rationale": "Trust policy references an undocumented GitHub OIDC condition key."
+    },
+    {
+      "id": "oidc-valid-claims",
+      "rule": "NHB-OIDC-006",
+      "expected": false,
+      "rationale": "Trust policy uses only documented AWS GitHub OIDC condition keys."
+    },
+    {
+      "id": "oidc-env-claim",
+      "rule": "NHB-OIDC-007",
+      "expected": true,
+      "rationale": "Trust policy relies on a GitHub environment claim whose protection rules are unknown offline."
+    },
+    {
+      "id": "oidc-ref-no-env",
+      "rule": "NHB-OIDC-007",
+      "expected": false,
+      "rationale": "Trust policy binds to a branch ref without relying on an environment claim."
+    },
+    {
+      "id": "gha-prt-head-checkout",
+      "rule": "NHB-GHA-002",
+      "expected": true,
+      "rationale": "pull_request_target checks out pull_request.head.sha while holding a repository secret."
+    },
+    {
+      "id": "gha-unsafe-pr-flag",
+      "rule": "NHB-GHA-002",
+      "expected": true,
+      "rationale": "actions/checkout sets allow-unsafe-pr-checkout: true in a privileged job."
+    },
+    {
+      "id": "gha-prt-cache-write",
+      "rule": "NHB-GHA-002",
+      "expected": true,
+      "rationale": "pull_request_target writes to actions/cache in a privileged job."
+    },
+    {
+      "id": "gha-prt-base-checkout",
+      "rule": "NHB-GHA-002",
+      "expected": false,
+      "rationale": "pull_request_target checks out the default base ref without unsafe flags."
+    },
+    {
+      "id": "gha-explicit-secret",
+      "rule": "NHB-GHA-004",
+      "expected": false,
+      "rationale": "Explicitly referencing one named secret does not trigger wildcard secret exposure."
+    },
+    {
+      "id": "gha-ai-agent-issue-comment",
+      "rule": "NHB-GHA-006",
+      "expected": true,
+      "rationale": "AI coding agent runs on issue_comment while holding a repository secret."
+    },
+    {
+      "id": "gha-ai-agent-pr-oidc",
+      "rule": "NHB-GHA-006",
+      "expected": true,
+      "rationale": "AI coding agent runs on pull_request with id-token: write."
+    },
+    {
+      "id": "gha-ai-agent-dispatch-only",
+      "rule": "NHB-GHA-006",
+      "expected": false,
+      "rationale": "AI coding agent restricted to manual workflow_dispatch is not an untrusted PR/issue trigger."
+    },
+    {
+      "id": "gha-ai-agent-unprivileged",
+      "rule": "NHB-GHA-006",
+      "expected": false,
+      "rationale": "AI coding agent on issue_comment without secrets or OIDC authority does not trigger NHB-GHA-006."
+    },
+    {
+      "id": "gha-pkg-npm-install-secret",
+      "rule": "NHB-GHA-007",
+      "expected": true,
+      "rationale": "Unconstrained npm install runs in a job holding a repository secret."
+    },
+    {
+      "id": "gha-pkg-pip-install-oidc",
+      "rule": "NHB-GHA-007",
+      "expected": true,
+      "rationale": "Unconstrained pip install runs in a job holding id-token: write."
+    },
+    {
+      "id": "gha-pkg-npm-ignore-scripts",
+      "rule": "NHB-GHA-007",
+      "expected": false,
+      "rationale": "npm ci --ignore-scripts suppresses package lifecycle hooks."
+    },
+    {
+      "id": "gha-pkg-npm-unprivileged",
+      "rule": "NHB-GHA-007",
+      "expected": false,
+      "rationale": "npm install in a job with no secrets and no OIDC authority does not trigger NHB-GHA-007."
+    },
+    {
+      "id": "cred-static-aws-keys",
+      "rule": "NHB-CRED-001",
+      "expected": true,
+      "rationale": "configure-aws-credentials uses static AWS access keys instead of OIDC."
+    },
+    {
+      "id": "cred-oidc-no-static-keys",
+      "rule": "NHB-CRED-001",
+      "expected": false,
+      "rationale": "configure-aws-credentials uses OIDC role-to-assume without static AWS keys."
+    },
+    {
+      "id": "surv-persistent-secret",
+      "rule": "NHB-SURV-001",
+      "expected": true,
+      "rationale": "A persistent repository secret survives revocation of the mutable action entrypoint."
+    },
+    {
+      "id": "surv-ephemeral-only",
+      "rule": "NHB-SURV-001",
+      "expected": false,
+      "rationale": "Job holds only ephemeral GITHUB_TOKEN with no persistent credentials."
+    },
+    {
+      "id": "rot-missing-rotation",
+      "rule": "NHB-ROT-001",
+      "expected": true,
+      "rationale": "Reachable AWS Secrets Manager secret has no rotation resource configured."
+    },
+    {
+      "id": "rot-configured-rotation",
+      "rule": "NHB-ROT-001",
+      "expected": false,
+      "rationale": "Reachable AWS Secrets Manager secret has an attached rotation resource."
+    },
+    {
+      "id": "rot-role-can-modify-secret",
+      "rule": "NHB-ROT-002",
+      "expected": true,
+      "rationale": "Reachable role holds secretsmanager:PutSecretValue and can defeat rotation."
+    },
+    {
+      "id": "rot-role-readonly-secret",
+      "rule": "NHB-ROT-002",
+      "expected": false,
+      "rationale": "Reachable role has only secretsmanager:GetSecretValue and cannot modify the secret."
+    },
+    {
+      "id": "persist-create-access-key",
+      "rule": "NHB-PERSIST-001",
+      "expected": true,
+      "rationale": "Reachable role permits iam:CreateAccessKey to mint long-lived IAM credentials."
+    },
+    {
+      "id": "persist-update-trust-policy",
+      "rule": "NHB-PERSIST-001",
+      "expected": true,
+      "rationale": "Reachable role permits iam:UpdateAssumeRolePolicy to backdoor role trust."
+    },
+    {
+      "id": "persist-blocked-by-boundary",
+      "rule": "NHB-PERSIST-001",
+      "expected": false,
+      "rationale": "Permissions boundary restricts role to s3:GetObject, blocking iam:CreateAccessKey."
+    },
+    {
+      "id": "chain-sts-assume-role",
+      "rule": "NHB-CHAIN-001",
+      "expected": true,
+      "rationale": "Reachable role ci-role can assume prod-admin via sts:AssumeRole."
+    },
+    {
+      "id": "chain-untrusted-target",
+      "rule": "NHB-CHAIN-001",
+      "expected": false,
+      "rationale": "Target role does not trust ci-role, so no sts:AssumeRole chaining edge exists."
+    },
+    {
+      "id": "oidc-org-scoped-negative",
+      "rule": "NHB-OIDC-002",
+      "expected": false,
+      "rationale": "Exact org, repository, and branch subject does not use an organization wildcard."
+    },
+    {
+      "id": "oidc-repo-scoped-negative",
+      "rule": "NHB-OIDC-003",
+      "expected": false,
+      "rationale": "Exact repository and branch subject does not allow arbitrary repository contexts."
+    },
+    {
+      "id": "composite-untrusted-checkout",
+      "rule": "NHB-GHA-002",
+      "expected": true,
+      "rationale": "pull_request_target invokes a local composite action that checks out pull_request.head.sha while holding a secret."
+    },
+    {
+      "id": "persist-explicit-deny",
+      "rule": "NHB-PERSIST-001",
+      "expected": false,
+      "rationale": "An explicit IAM Deny statement blocks iam:CreateAccessKey on the reachable role."
+    },
+    {
+      "id": "literal-aws-access-key",
+      "rule": "NHB-GHA-005",
+      "expected": true,
+      "rationale": "A synthetic AWS access key ID literal matches the bundled AWS credential heuristic."
+    },
+    {
+      "id": "chain-multi-role-blocked",
+      "rule": "NHB-CHAIN-001",
+      "expected": false,
+      "rationale": "An explicit IAM Deny statement blocks sts:AssumeRole from ci-role to prod-admin."
     }
   ]
 }

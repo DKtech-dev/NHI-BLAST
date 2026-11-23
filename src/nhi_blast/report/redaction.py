@@ -22,8 +22,10 @@ def redact_payload(payload: dict[str, Any]) -> dict[str, Any]:
             if isinstance(identifier, str) and redact_literals(identifier) != identifier:
                 identifiers[identifier] = "redacted:" + _digest(identifier)
             pending.extend(current.values())
-        elif isinstance(current, list):
+        elif isinstance(current, (list, tuple)):
             pending.extend(current)
+
+    tuple_fixups: list[tuple[Any, Any, list[Any]]] = []
 
     def place(parent: Any, key: Any, child: Any, stack: list[tuple[Any, Any]]) -> None:
         if isinstance(child, str):
@@ -35,6 +37,11 @@ def redact_payload(payload: dict[str, Any]) -> dict[str, Any]:
         elif isinstance(child, list):
             items: list[Any] = [None] * len(child)
             parent[key] = items
+            stack.append((child, items))
+        elif isinstance(child, tuple):
+            items = [None] * len(child)
+            parent[key] = items
+            tuple_fixups.append((parent, key, items))
             stack.append((child, items))
         else:
             parent[key] = child
@@ -55,6 +62,8 @@ def redact_payload(payload: dict[str, Any]) -> dict[str, Any]:
         else:
             for index, child in enumerate(source):
                 place(target, index, child, stack)
+    for parent, key, items in reversed(tuple_fixups):
+        parent[key] = tuple(items)
     return result
 
 

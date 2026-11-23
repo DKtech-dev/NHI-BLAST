@@ -14,6 +14,21 @@ from typing import Any
 
 MIB = 1024 * 1024
 
+# Hard upper ceilings (10x defaults) enforced on config-supplied limits so an
+# untrusted repository's nhi-blast.toml cannot disable DoS protections.
+_INT_LIMIT_BOUNDS: dict[str, tuple[int, int]] = {
+    "max_yaml_policy_file_bytes": (1, 50 * MIB),
+    "max_tf_json_bytes": (1, 640 * MIB),
+    "max_files": (1, 200_000),
+    "max_yaml_nodes": (1, 2_000_000),
+    "max_yaml_depth": (1, 640),
+    "alias_expansion_factor": (1, 100),
+    "max_graph_nodes": (1, 5_000_000),
+    "max_closure_depth": (0, 30),
+    "max_composite_depth": (0, 50),
+}
+_MAX_SCENARIO_TIME_BUDGET_SECONDS = 600.0
+
 
 @dataclass(frozen=True, slots=True)
 class Limits:
@@ -35,19 +50,8 @@ class Limits:
         if unknown:
             msg = f"unknown limit(s): {', '.join(sorted(unknown))}"
             raise ValueError(msg)
-        int_minimums = {
-            "max_yaml_policy_file_bytes": 1,
-            "max_tf_json_bytes": 1,
-            "max_files": 1,
-            "max_yaml_nodes": 1,
-            "max_yaml_depth": 1,
-            "alias_expansion_factor": 1,
-            "max_graph_nodes": 1,
-            "max_closure_depth": 0,
-            "max_composite_depth": 0,
-        }
         parsed: dict[str, Any] = {}
-        for name, minimum in int_minimums.items():
+        for name, (minimum, maximum) in _INT_LIMIT_BOUNDS.items():
             if name not in values:
                 continue
             value = values[name]
@@ -56,6 +60,9 @@ class Limits:
                 raise TypeError(msg)
             if value < minimum:
                 msg = f"{name} must be at least {minimum}"
+                raise ValueError(msg)
+            if value > maximum:
+                msg = f"{name} must be at most {maximum}"
                 raise ValueError(msg)
             parsed[name] = value
         if "scenario_time_budget_seconds" in values:
@@ -73,6 +80,12 @@ class Limits:
                 raise ValueError(msg)
             if finite_budget < 0:
                 msg = "scenario_time_budget_seconds must be non-negative"
+                raise ValueError(msg)
+            if finite_budget > _MAX_SCENARIO_TIME_BUDGET_SECONDS:
+                msg = (
+                    f"scenario_time_budget_seconds must be at most "
+                    f"{_MAX_SCENARIO_TIME_BUDGET_SECONDS}"
+                )
                 raise ValueError(msg)
             parsed["scenario_time_budget_seconds"] = finite_budget
         return cls(**parsed)

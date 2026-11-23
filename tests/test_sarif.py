@@ -8,8 +8,9 @@ from pathlib import Path
 import jsonschema
 
 from nhi_blast import __version__
-from nhi_blast.core.models import Severity
-from nhi_blast.report.sarif import sarif_report, write_sarif
+from nhi_blast.core.evidence import Evidence, EvidenceClass
+from nhi_blast.core.models import Finding, Severity
+from nhi_blast.report.sarif import _fingerprint, sarif_report, write_sarif
 from tests.report_support import make_report
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -148,3 +149,36 @@ def test_write_sarif_is_sorted_json_with_trailing_newline(tmp_path: Path) -> Non
     assert text.endswith("\n")
     data = json.loads(text)
     assert text == json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+def test_sarif_uses_project_url_and_distinguishes_scenario_rule_fingerprints(
+    fixtures_dir: Path,
+) -> None:
+    from nhi_blast.pipeline import ScanOptions, run_scan  # noqa: PLC0415
+
+    outcome = run_scan(ScanOptions(root=fixtures_dir / "fx07-incident", selectors=("repo-write",)))
+    payload = sarif_report(outcome.report)
+    uri = payload["runs"][0]["tool"]["driver"]["informationUri"]
+    assert uri == "https://github.com/DKtech-dev/nhi-blast"
+
+    ev = (
+        Evidence(
+            cls=EvidenceClass.DERIVED,
+            rule="test",
+            file=".github/workflows/ci.yml",
+            line=1,
+        ),
+    )
+    f1 = Finding(
+        id="NHB-SURV-001-1",
+        rule="NHB-SURV-001",
+        severity=Severity.CRITICAL,
+        confidence=EvidenceClass.DERIVED,
+        title="Credentials survive",
+        message="survives",
+        path=("job:a", "cred:z"),
+        scenario="repo-write",
+        evidence=ev,
+    )
+    f2 = f1.model_copy(update={"id": "NHB-SURV-001-2", "scenario": "fork-pr"})
+    assert _fingerprint(f1) != _fingerprint(f2)

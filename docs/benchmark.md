@@ -58,7 +58,7 @@ External-only first-repeat observations: 56 findings, 591 nodes, 779 edges and 2
 
 These are robustness and determinism observations, **not measured detection accuracy**. Independently adjudicated public-corpus labels: zero, so precision, recall, F1 and accuracy confidence intervals are not reported. The selected tool/module repositories are not a representative random sample; findings within a repository are correlated. Any future labelled study must report actual positive/negative units, single-labeller limitations, and repository-cluster confidence intervals. Synthetic regression tests remain a separate tier.
 
-The maximum observed external scan was 5.73 seconds amid concurrent checks. Two repeats are insufficient to estimate a latency distribution or claim general performance. See the [current verification record](<release/verification-2026-11-03.md>) and the [portable result summary](<release/corpus-summary-2026-11-03.json>) for exact revisions, license metadata, run times and limits. No downloaded source was executed or redistributed.
+The maximum observed external scan was 5.73 seconds amid concurrent checks. Two repeats are insufficient to estimate a latency distribution or claim general performance. No downloaded source was executed or redistributed.
 
 ## How to reproduce
 

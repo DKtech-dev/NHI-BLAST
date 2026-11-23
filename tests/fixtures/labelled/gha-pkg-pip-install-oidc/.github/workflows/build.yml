@@ -1,0 +1,10 @@
+name: Build
+on: push
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: pip install -r requirements.txt

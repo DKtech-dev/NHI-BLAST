@@ -52,12 +52,20 @@ REQUIRED_WHEEL_ASSETS = frozenset(
         "nhi_blast/report/assets/icons/printer.svg",
         "nhi_blast/report/assets/vendor/MIT-Motion.txt",
         "nhi_blast/report/assets/vendor/motion-14.7.1.min.js",
+        "nhi_blast/report/templates/__init__.py",
+        "nhi_blast/report/templates/app.js",
+        "nhi_blast/report/templates/companion.css",
+        "nhi_blast/report/templates/report.css",
+        "nhi_blast/report/templates/report.html",
+        "nhi_blast/report/templates/theme.js",
     }
 )
 WINDOWS_EXE_NAME = "nhi-blast-windows-x64.exe"
 PROJECT_LICENCE_FILES = ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md")
 WINDOWS_REQUIRED_RESOURCES = (
-    REQUIRED_WHEEL_DATA | REQUIRED_WHEEL_ASSETS | frozenset(PROJECT_LICENCE_FILES)
+    REQUIRED_WHEEL_DATA
+    | frozenset(name for name in REQUIRED_WHEEL_ASSETS if not name.endswith(".py"))
+    | frozenset(PROJECT_LICENCE_FILES)
 )
 # Packages frozen into the executable. The embedded notice file must name every
 # one; the inventory is checked so an empty or stale notice cannot ship.
@@ -103,6 +111,7 @@ WINDOWS_FORBIDDEN_PARTS = (
     "docs/research/_cache/",
     "tests/fixtures/_validate_tmp.py",
     "nhi-blast-out/",
+    "nhi-blast-diff-out/",
     ".taste-skill/",
     ".agents/",
     ".claude/",
@@ -135,6 +144,8 @@ REQUIRED_SDIST = frozenset(
         "SECURITY.md",
         "CONTRIBUTING.md",
         "CHANGELOG.md",
+        "CITATION.cff",
+        ".pre-commit-hooks.yaml",
         "requirements.lock",
         "requirements-dev.lock",
         "requirements-windows-build.lock",
@@ -155,6 +166,8 @@ ALLOWED_SDIST_ROOTS = frozenset(
         "SECURITY.md",
         "CONTRIBUTING.md",
         "CHANGELOG.md",
+        "CITATION.cff",
+        ".pre-commit-hooks.yaml",
         "requirements.lock",
         "requirements-dev.lock",
         "requirements-windows-build.lock",
@@ -176,6 +189,7 @@ FORBIDDEN_PARTS = (
     "docs/research/_cache/",
     "tests/fixtures/_validate_tmp.py",
     "nhi-blast-out/",
+    "nhi-blast-diff-out/",
     ".taste-skill/",
     ".agents/",
     ".claude/",

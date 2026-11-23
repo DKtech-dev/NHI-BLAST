@@ -375,7 +375,11 @@ def test_rotation_after_closing_the_path_removes_the_credential_from_z() -> None
 def test_rotating_before_closing_the_path_is_flagged() -> None:
     payload = run(fx16_report(), rotate(DEPLOY_KEY), disable_job())
     assert "W-WHATIF-ROTATE-BEFORE-CLOSING-PATH" in warning_codes(payload)
-    assert scenario(payload, ACTION)["after"]["rotated"] == [DEPLOY_KEY]
+    assert scenario(payload, ACTION)["after"]["rotated"] == []
+    risk_ids = {
+        item["credential"] for item in scenario(payload, ACTION)["after"]["re_exposure_risk"]
+    }
+    assert DEPLOY_KEY in risk_ids
 
 
 def test_rotation_follows_the_dependency_order_and_flags_inversions() -> None:
@@ -426,3 +430,26 @@ def test_every_output_uses_only_permitted_language() -> None:
     )
     text = json.dumps(payload)
     assert FORBIDDEN.search(text) is None
+
+
+def test_rotate_before_containment_marks_re_exposure_risk_unless_re_rotated() -> None:
+    report = fx16_report()
+    # Rotate BEFORE disabling the job -> must stay in after.Z with re_exposure_risk
+    res_bad = run(report, rotate(DB_PASSWORD), disable_job())
+    sc_bad = scenario(res_bad, ACTION)
+    risk_creds = {item["credential"] for item in sc_bad["after"]["re_exposure_risk"]}
+    assert DB_PASSWORD in risk_creds
+    assert DB_PASSWORD not in sc_bad["after"]["rotated"]
+    assert DB_PASSWORD in z_ids(sc_bad["after"]["Z"])
+
+    # Rotate AFTER disabling the job -> clean
+    res_good = run(report, disable_job(), rotate(DB_PASSWORD))
+    sc_good = scenario(res_good, ACTION)
+    assert DB_PASSWORD in sc_good["after"]["rotated"]
+    assert DB_PASSWORD not in z_ids(sc_good["after"]["Z"])
+
+    # Rotate BEFORE, disable, then re-rotate AFTER -> clean
+    res_re = run(report, rotate(DB_PASSWORD), disable_job(), rotate(DB_PASSWORD))
+    sc_re = scenario(res_re, ACTION)
+    assert DB_PASSWORD in sc_re["after"]["rotated"]
+    assert DB_PASSWORD not in z_ids(sc_re["after"]["Z"])

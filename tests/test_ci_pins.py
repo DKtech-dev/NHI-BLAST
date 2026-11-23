@@ -149,9 +149,9 @@ def test_dependabot_tracks_python_and_actions_weekly() -> None:
     updates = document["updates"]
     assert isinstance(updates, list)
     ecosystems = {update["package-ecosystem"] for update in updates}
-    assert ecosystems == {"pip", "github-actions"}
+    assert ecosystems == {"pip", "github-actions", "npm"}
     for update in updates:
-        assert update["directory"] == "/"
+        assert update["directory"] in {"/", "/action", "/tests/ui"}
         assert update["schedule"]["interval"] == "weekly"
         assert update["open-pull-requests-limit"] <= 5
 

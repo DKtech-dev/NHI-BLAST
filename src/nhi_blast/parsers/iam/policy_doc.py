@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping, Sequence
 from typing import Any
+from urllib.parse import unquote
 
 from nhi_blast.core.diagnostics import Diagnostic, error, warning
 from nhi_blast.core.evidence import Evidence, EvidenceClass
@@ -57,6 +58,10 @@ def _conditions(raw: Any) -> dict[str, dict[str, tuple[str, ...]]]:
 
 def _principals(raw: Any) -> dict[str, tuple[str, ...]]:
     result: dict[str, tuple[str, ...]] = {}
+    if isinstance(raw, str):
+        if raw.strip() == "*":
+            return {"*": ("*",)}
+        return result
     if not isinstance(raw, Mapping):
         return result
     for principal_type, value in raw.items():
@@ -169,6 +174,25 @@ def parse_policy_text(
     return tuple(statements), ()
 
 
+def _unwrap_policy_doc(raw: Any) -> Mapping[str, Any] | None:
+    if isinstance(raw, Mapping):
+        return raw
+    if isinstance(raw, str):
+        text = raw.strip()
+        if not text:
+            return None
+        if not text.startswith("{"):
+            text = unquote(text)
+        try:
+            decoded = decode_json(text)
+            validate_unicode(decoded)
+        except (ValueError, RecursionError):
+            return None
+        if isinstance(decoded, Mapping):
+            return decoded
+    return None
+
+
 def parse_iam_document(
     text: str, *, label: str, kind: str = "iam_json"
 ) -> tuple[IamDocumentFact | None, tuple[Diagnostic, ...]]:
@@ -196,8 +220,8 @@ def parse_iam_document(
         role = payload["Role"]
         role_arn = str(role.get("Arn")) if role.get("Arn") else None
         role_name = str(role.get("RoleName")) if role.get("RoleName") else None
-        trust = role.get("AssumeRolePolicyDocument")
-        if isinstance(trust, Mapping):
+        trust = _unwrap_policy_doc(role.get("AssumeRolePolicyDocument"))
+        if trust is not None:
             assume_statements = statements_from_policy_object(
                 trust, file=label, line=None, rule="IAM.trust", detail="get-role trust policy"
             )
@@ -211,6 +235,21 @@ def parse_iam_document(
                 )
     if isinstance(payload.get("Policy"), Mapping):
         payload = payload["Policy"]
+    if "PolicyDocument" in payload:
+        unwrapped = _unwrap_policy_doc(payload.get("PolicyDocument"))
+        if unwrapped is not None:
+            if role_name is None and payload.get("RoleName"):
+                role_name = str(payload["RoleName"])
+            payload = unwrapped
+    elif isinstance(payload.get("PolicyVersion"), Mapping):
+        policy_version = payload["PolicyVersion"]
+        unwrapped = (
+            _unwrap_policy_doc(policy_version.get("Document"))
+            if "Document" in policy_version
+            else None
+        )
+        if unwrapped is not None:
+            payload = unwrapped
     statements = statements_from_policy_object(
         payload, file=label, line=None, rule="IAM.statement", detail=f"{kind} policy document"
     )

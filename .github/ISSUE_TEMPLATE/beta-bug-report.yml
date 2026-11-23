@@ -1,11 +1,11 @@
 name: Beta bug report
-description: Report a reproducible problem in the NHI-Blast 0.2.0 public beta
+description: Report a reproducible problem in the NHI-Blast 0.3.0 public beta
 title: "[beta] "
 body:
   - type: markdown
     attributes:
       value: |
-        NHI-Blast 0.2.0 is a public beta. Its analysis is not a substitute for an
+        NHI-Blast 0.3.0 is a public beta. Its analysis is not a substitute for an
         independent cloud security assessment, and no independent audit has been
         performed.
 
@@ -28,7 +28,7 @@ body:
     attributes:
       label: NHI-Blast version
       description: Paste the output of `nhi-blast version` or `nhi-blast-windows-x64.exe version`.
-      placeholder: "nhi-blast 0.2.0, schema ..., data ..."
+      placeholder: "nhi-blast 0.3.0, schema ..., data ..."
     validations:
       required: true
 

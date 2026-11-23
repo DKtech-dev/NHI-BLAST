@@ -1,0 +1,122 @@
+name: "NHI-Blast Scan"
+description: "Offline, deterministic Non-Human Identity blast-radius and revocation-survival analysis."
+inputs:
+  mode:
+    description: "Command mode: scan or diff"
+    required: false
+    default: "scan"
+  path:
+    description: "Repository or directory path to scan"
+    required: false
+    default: "."
+  repo:
+    description: "Repository slug (OWNER/REPO)"
+    required: false
+    default: "${{ github.repository }}"
+  out-dir:
+    description: "Directory for generated reports"
+    required: false
+    default: "nhi-blast-out"
+  fail-on:
+    description: "Severity threshold for scan and diff modes (critical, high, medium, low, never)"
+    required: false
+    default: "high"
+  base-report:
+    description: "Base JSON report path (required when mode=diff)"
+    required: false
+    default: ""
+  simulate-compromise:
+    description: "Optional compromise selector passed to --simulate-compromise"
+    required: false
+    default: ""
+  upload-sarif:
+    description: "Upload SARIF report to GitHub Code Scanning (skipped safely on fork PRs)"
+    required: false
+    default: "false"
+  python-version:
+    description: "Python version to install"
+    required: false
+    default: "3.12"
+  install-spec:
+    description: "Package specifier or local path for pip install"
+    required: false
+    default: "nhi-blast==0.3.0"
+
+outputs:
+  report-json:
+    description: "Path to report.json"
+    value: "${{ inputs.out-dir }}/report.json"
+  report-sarif:
+    description: "Path to report.sarif"
+    value: "${{ inputs.out-dir }}/report.sarif"
+  report-html:
+    description: "Path to report.html"
+    value: "${{ inputs.out-dir }}/report.html"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install nhi-blast
+      shell: bash
+      env:
+        NHB_INSTALL_SPEC: ${{ inputs.install-spec }}
+      run: python -m pip install --no-input "$NHB_INSTALL_SPEC"
+
+    - name: Run nhi-blast
+      shell: bash
+      env:
+        NHB_MODE: ${{ inputs.mode }}
+        NHB_PATH: ${{ inputs.path }}
+        NHB_REPO: ${{ inputs.repo }}
+        NHB_OUT: ${{ inputs.out-dir }}
+        NHB_FAIL_ON: ${{ inputs.fail-on }}
+        NHB_BASE: ${{ inputs.base-report }}
+        NHB_SIMULATE: ${{ inputs.simulate-compromise }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$NHB_OUT"
+        scan_args=(
+          "$NHB_PATH"
+          --repo-slug "$NHB_REPO"
+          --format json
+          --format sarif
+          --format html
+          --out "$NHB_OUT"
+        )
+        if [ -n "$NHB_SIMULATE" ]; then
+          scan_args+=(--simulate-compromise "$NHB_SIMULATE")
+        fi
+        rc=0
+        if [ "$NHB_MODE" = "diff" ]; then
+          if [ -z "$NHB_BASE" ]; then
+            echo "error: base-report input is required when mode=diff" >&2
+            exit 2
+          fi
+          nhi-blast scan "${scan_args[@]}" --fail-on never || rc=$?
+          if [ "$rc" -eq 0 ]; then
+            nhi-blast diff "$NHB_BASE" "$NHB_OUT/report.json" --fail-on "$NHB_FAIL_ON" --format json --format html --out "$NHB_OUT" || rc=$?
+          fi
+        else
+          if [ "$NHB_FAIL_ON" != "never" ]; then
+            scan_args+=(--fail-on "$NHB_FAIL_ON")
+          fi
+          nhi-blast scan "${scan_args[@]}" || rc=$?
+        fi
+        {
+          echo "## NHI-Blast Summary"
+          echo "- Mode: \`$NHB_MODE\`"
+          echo "- Output directory: \`$NHB_OUT\`"
+          echo "- Exit code: \`$rc\`"
+        } >> "$GITHUB_STEP_SUMMARY"
+        exit "$rc"
+
+    - name: Upload SARIF (fork-safe)
+      if: ${{ !cancelled() && inputs.upload-sarif == 'true' && github.event.pull_request.head.repo.fork != true }}
+      uses: github/codeql-action/upload-sarif@20b5a4d50410942703a400a3f573222a1d1f2e6d  # v3.28.11
+      with:
+        sarif_file: ${{ inputs.out-dir }}/report.sarif

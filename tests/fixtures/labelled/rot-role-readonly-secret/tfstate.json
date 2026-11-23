@@ -1,0 +1,45 @@
+{
+  "format_version": "1.2",
+  "values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_iam_openid_connect_provider.github",
+          "type": "aws_iam_openid_connect_provider",
+          "values": {
+            "url": "https://token.actions.githubusercontent.com",
+            "client_id_list": [
+              "sts.amazonaws.com"
+            ]
+          }
+        },
+        {
+          "address": "aws_iam_role.ci_role",
+          "type": "aws_iam_role",
+          "values": {
+            "name": "ci-role",
+            "arn": "arn:aws:iam::111122223333:role/ci-role",
+            "assume_role_policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Principal\": {\"Federated\": \"arn:aws:iam::111122223333:oidc-provider/token.actions.githubusercontent.com\"}, \"Action\": \"sts:AssumeRoleWithWebIdentity\", \"Condition\": {\"StringEquals\": {\"token.actions.githubusercontent.com:aud\": \"sts.amazonaws.com\", \"token.actions.githubusercontent.com:sub\": \"repo:acme/shop:ref:refs/heads/main\"}}}]}"
+          }
+        },
+        {
+          "address": "aws_iam_role_policy.ro_sec",
+          "type": "aws_iam_role_policy",
+          "values": {
+            "name": "ro-sec",
+            "role": "ci-role",
+            "policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Action\": [\"secretsmanager:GetSecretValue\"], \"Resource\": \"arn:aws:secretsmanager:us-east-1:111122223333:secret:db-pass\"}]}"
+          }
+        },
+        {
+          "address": "aws_secretsmanager_secret.db",
+          "type": "aws_secretsmanager_secret",
+          "values": {
+            "name": "db-pass",
+            "arn": "arn:aws:secretsmanager:us-east-1:111122223333:secret:db-pass"
+          }
+        }
+      ]
+    }
+  }
+}

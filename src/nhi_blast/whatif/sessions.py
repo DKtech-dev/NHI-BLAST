@@ -110,13 +110,16 @@ def _access(
         return "unknown", False
     if assessed_at is None:
         return "denied_by_revocation_policy", True
+    if revoked_at is not None:
+        if assessed_at < revoked_at:
+            return "not_denied", False
+        propagated_at = _add_seconds(revoked_at, PROPAGATION_SECONDS)
+        if assessed_at < propagated_at:
+            return "revocation_propagating", True
+        return "denied_by_revocation_policy", False
     if assessed_at >= cutoff:
         return "denied_by_revocation_policy", False
-    if revoked_at is None:
-        return "unknown", False
-    if assessed_at >= revoked_at:
-        return "revocation_propagating", False
-    return "not_denied", False
+    return "unknown", False
 
 
 def _display(validity: Validity, access: Access) -> DisplayState:

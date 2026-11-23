@@ -48,9 +48,9 @@ if (!raw) {
     `<style>\n${css}\n</style>`,
   );
   document = document
-    .replaceAll("__GEIST_WOFF2__", fontData("geist-latin.woff2"))
+    .replaceAll("__GEIST_WOFF2__", fontData("instrument-sans-latin.woff2"))
     .replaceAll("__GEIST_MONO_WOFF2__", fontData("geist-mono-latin.woff2"))
-    .replaceAll("__SERIF_WOFF2__", fontData("instrument-serif-latin.woff2"));
+    .replaceAll("__SERIF_WOFF2__", fontData("host-grotesk-latin.woff2"));
   if (document.includes("__REPORT_CROP__")) {
     if (!crop) throw new Error("this page requires --crop <report-crop.png>");
     const cropData =

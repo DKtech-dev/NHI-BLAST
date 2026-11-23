@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: "NHI-Blast: Offline Non-Human Identity Blast-Radius and Revocation-Survival Analyzer"
+message: "If you use NHI-Blast in research, security audits, or publications, please cite it using this metadata."
+type: software
+version: "0.3.0"
+license: MIT
+repository-code: "https://github.com/DKtech-dev/nhi-blast"
+url: "https://github.com/DKtech-dev/nhi-blast"
+authors:
+  - given-names: "Dinesh Karthick"
+    family-names: "B"
+    alias: "DKtech-dev"
+keywords:
+  - non-human-identity
+  - github-actions
+  - aws-iam
+  - oidc
+  - blast-radius
+  - static-analysis
+  - security

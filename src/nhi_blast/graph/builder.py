@@ -14,8 +14,10 @@ from dataclasses import dataclass, field
 from nhi_blast.aws.policy_eval import (
     CandidateFilter,
     action_filter,
+    can_assume_role,
     can_modify,
     can_read,
+    persistence_capabilities,
 )
 from nhi_blast.aws.sessions import effective_ttl, requested_duration
 from nhi_blast.aws.sinks import candidate_arns, modify_actions, read_actions
@@ -396,11 +398,13 @@ class _Builder:
         different offending Allow still needs its own provenance and weakest class.
         """
         for role in self.roles:
-            if role.id not in self.trust_audit:
+            if role.trust_unresolved:
                 continue
-            evaluation = self.no_match_evaluations.get(role.id)
-            if evaluation is None:
-                evaluation = no_match_evaluation(role, registry)
+            if role.id not in self.trust_audit:
+                evaluation = evaluate_trust_statements(role, (), registry=registry)
+            else:
+                cached = self.no_match_evaluations.get(role.id)
+                evaluation = cached if cached is not None else no_match_evaluation(role, registry)
             matched = self.trust_matched_statements.get(role.id, [])
             remaining = [
                 item
@@ -592,6 +596,12 @@ class _Builder:
                 "secrets_mode": item.job.secrets_mode,
                 "untrusted_checkout": item.job.untrusted_checkout,
                 "untrusted_checkout_line": item.job.untrusted_checkout_line,
+                "ai_agent_workflow": item.job.ai_agent_workflow,
+                "ai_agent_line": item.job.ai_agent_line,
+                "unconstrained_pkg_install": item.job.unconstrained_pkg_install,
+                "unconstrained_pkg_line": item.job.unconstrained_pkg_line,
+                "compiled_lock_workflow": item.job.compiled_lock_workflow,
+                "trigger_events": list(item.workflow.trigger_events()),
                 "id_token_write": effective.id_token_write,
                 "permissions": {
                     scope: level.value for scope, level in sorted(effective.levels.items())
@@ -1015,6 +1025,12 @@ class _Builder:
                     "managed_policy_arns": list(role.managed_policy_arns),
                     "has_boundary": role.boundary_supplied,
                     "inline_statement_count": len(role.inline_statements),
+                    "persistence_actions": [
+                        action
+                        for action, _ in persistence_capabilities(
+                            role, self.inputs.cloud.policy_context
+                        )
+                    ],
                     "trust_audit": self.trust_audit.get(role.id, []),
                     "trust_policy_audit": self.trust_policy_audit.get(role.id, []),
                     "repo_write_accepted": role.id in self.repo_write_roles,
@@ -1187,6 +1203,8 @@ class _Builder:
                 "credential_kind": "STS_SESSION",
                 "lifetime": Lifetime.SESSION_TTL.value,
                 "ttl_seconds": ttl,
+                "configured_ttl_seconds": session.configured_ttl_seconds,
+                "attacker_max_ttl_seconds": session.attacker_max_ttl_seconds,
                 "role": role.id,
                 "identity": identity_id,
                 "audience": audience,
@@ -1258,6 +1276,67 @@ class _Builder:
         )
         for assumption in session.assumptions:
             self._use(assumption)
+
+    def _r8_role_chaining(self) -> None:
+        """Bounded intra-input STS role chaining (Role A -> Role B, 1 h STS cap)."""
+        ctx = self.inputs.cloud.policy_context
+        for src_role in self.roles:
+            for dst_role in self.roles:
+                if src_role.id == dst_role.id or not dst_role.arn:
+                    continue
+                res = can_assume_role(src_role, dst_role, ctx)
+                if res.decision not in (Decision.ALLOW, Decision.CONDITIONAL_ALLOW):
+                    continue
+                ttl = min(3600, dst_role.max_session_duration or 3600)
+                ev = (
+                    *self._role_evidence(src_role),
+                    *self._role_evidence(dst_role),
+                    self._evidence(
+                        res.evidence_class,
+                        "R8.role-chaining",
+                        detail=(
+                            f"sts:AssumeRole chaining from {src_role.name} to "
+                            f"{dst_role.name} ({ttl} s cap)"
+                        ),
+                    ),
+                )
+                session_id = credential_node_id(src_role.id, f"sts-session:{dst_role.id}")
+                self._node(
+                    session_id,
+                    NodeKind.CREDENTIAL,
+                    f"STS session for {dst_role.name}",
+                    ev,
+                    {
+                        "credential_kind": "STS_SESSION",
+                        "lifetime": Lifetime.SESSION_TTL.value,
+                        "ttl_seconds": ttl,
+                        "configured_ttl_seconds": None,
+                        "attacker_max_ttl_seconds": ttl,
+                        "role": dst_role.id,
+                        "source_role": src_role.id,
+                        "chained": True,
+                        "criticality": credential_heuristics().criticality(
+                            CredentialKind.STS_SESSION
+                        ),
+                        "survival_window": f"up to {ttl} s",
+                        "ttl_provenance": f"chained sts:AssumeRole session capped at {ttl} s",
+                    },
+                )
+                self._edge(
+                    EdgeKind.CAN_ASSUME,
+                    src_role.id,
+                    dst_role.id,
+                    ev,
+                    lifetime=Lifetime.SESSION_TTL,
+                    attrs={
+                        "session_credential": session_id,
+                        "chained": True,
+                        "ttl_seconds": ttl,
+                        "max_session_duration": ttl,
+                        "decision": res.decision.value,
+                        "reasons": list(res.reasons),
+                    },
+                )
 
     # ----------------------------------------------------------------- R9
 
@@ -1371,7 +1450,9 @@ class _Builder:
         for role in self.roles:
             for sink in self.sinks:
                 candidates = filters[(role.id, sink.sink_type)]
-                if not self._may_act(role, arns_by_sink[sink.id], candidates):
+                if not sink.resource_policy_statements and not self._may_act(
+                    role, arns_by_sink[sink.id], candidates
+                ):
                     continue
                 result = can_read(
                     role,
@@ -1404,6 +1485,7 @@ class _Builder:
                     "arn": sink.arn,
                     "kms_key_id": sink.kms_key_id,
                     "rotation_interval_days": sink.rotation_interval_days,
+                    "has_resource_policy": bool(sink.resource_policy_statements),
                     "credential_bearing": sink.credential_kind is not None,
                     "credential_kind": (
                         sink.credential_kind.value if sink.credential_kind else None
@@ -1737,7 +1819,9 @@ class _Builder:
         for role in self.roles:
             for sink in self.sinks:
                 candidates = filters[(role.id, sink.sink_type)]
-                if not self._may_act(role, arns_by_sink[sink.id], candidates):
+                if not sink.resource_policy_statements and not self._may_act(
+                    role, arns_by_sink[sink.id], candidates
+                ):
                     continue
                 result = can_modify(
                     role,
@@ -1760,6 +1844,7 @@ class _Builder:
         self._r6_identities()
         self._r7_cloud_principals()
         self._r8_trust()
+        self._r8_role_chaining()
         self._r9_reads()
         self._r10_sinks()
         self._r11_static_keys()

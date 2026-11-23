@@ -20,6 +20,8 @@ from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 from nhi_blast.core.diagnostics import Diagnostic, error, warning
 from nhi_blast.core.limits import Limits
 
+_MAX_INT_SCALAR_CHARS = 100
+
 
 class _AbortWalkError(Exception):
     """Raised internally for structural limits or invalid Unicode scalars."""
@@ -82,6 +84,8 @@ def _construct_scalar(node: ScalarNode) -> Any:
         return value.strip().lower() in {"true", "yes", "on", "y", "1"}
     if tag.endswith(":int"):
         cleaned = value.replace("_", "")
+        if len(cleaned) > _MAX_INT_SCALAR_CHARS:
+            return value
         try:
             if len(cleaned) > 1 and cleaned.startswith("0") and cleaned[1:].isdigit():
                 return int(cleaned, 8)
@@ -154,6 +158,12 @@ class _Walker:
             result: dict[str, Marked] = {}
             key_lines: dict[str, int] = {}
             for key_node, value_node in node.value:
+                if not isinstance(key_node, ScalarNode):
+                    self._fail(
+                        "D-YAML-PARSE",
+                        "non-scalar YAML mapping key is not supported",
+                        line=key_node.start_mark.line + 1,
+                    )
                 key_marked = self.walk(key_node, depth + 1)
                 raw_key = key_marked.value
                 if isinstance(raw_key, bool):

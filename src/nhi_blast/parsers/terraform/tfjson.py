@@ -117,14 +117,37 @@ def _resource_entries(root_module: Mapping[str, Any]) -> tuple[Mapping[str, Any]
 
 def _expression_parameters(root_module: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
     parameters: dict[str, Mapping[str, Any]] = {}
-    for module in _iter_modules(root_module):
+    stack: list[tuple[Mapping[str, Any], str]] = [(root_module, "")]
+    while stack:
+        module, prefix = stack.pop()
         for resource in _as_sequence(module.get("resources")):
             if not isinstance(resource, Mapping):
                 continue
-            address = resource.get("address")
+            raw_address = resource.get("address")
             expressions = resource.get("expressions")
-            if isinstance(address, str) and isinstance(expressions, Mapping):
+            if isinstance(raw_address, str) and isinstance(expressions, Mapping):
+                if (
+                    prefix
+                    and not raw_address.startswith(f"{prefix}.")
+                    and not raw_address.startswith("module.")
+                ):
+                    address = f"{prefix}.{raw_address}"
+                else:
+                    address = raw_address
                 parameters[address] = expressions
+        for child in reversed(_as_sequence(module.get("child_modules"))):
+            if isinstance(child, Mapping):
+                child_addr = child.get("address")
+                child_prefix = child_addr if isinstance(child_addr, str) else prefix
+                stack.append((child, child_prefix))
+        module_calls = module.get("module_calls")
+        if isinstance(module_calls, Mapping):
+            for call_name, call_body in reversed(list(module_calls.items())):
+                if isinstance(call_body, Mapping) and isinstance(call_body.get("module"), Mapping):
+                    child_prefix = (
+                        f"{prefix}.module.{call_name}" if prefix else f"module.{call_name}"
+                    )
+                    stack.append((call_body["module"], child_prefix))
     return parameters
 
 
@@ -166,6 +189,25 @@ def _change_trees(payload: Mapping[str, Any], field: str) -> dict[str, Any]:
         if isinstance(address, str) and isinstance(change_block, Mapping):
             trees[address] = change_block.get(field)
     return trees
+
+
+def _deleted_addresses(payload: Mapping[str, Any]) -> frozenset[str]:
+    deleted: set[str] = set()
+    for change in _as_sequence(payload.get("resource_changes")):
+        if not isinstance(change, Mapping):
+            continue
+        address = change.get("address")
+        change_block = change.get("change")
+        if not isinstance(address, str) or not isinstance(change_block, Mapping):
+            continue
+        actions = change_block.get("actions")
+        if (
+            isinstance(actions, Sequence)
+            and not isinstance(actions, (str, bytes))
+            and list(actions) == ["delete"]
+        ):
+            deleted.add(address)
+    return frozenset(deleted)
 
 
 def parse_tf_json(label: str, text: str, *, limits: Limits) -> ParseResult[TfModelFact]:
@@ -241,6 +283,7 @@ def parse_tf_json(label: str, text: str, *, limits: Limits) -> ParseResult[TfMod
     lines = _address_lines(text)
     unknown_trees = _change_trees(payload, "after_unknown")
     sensitive_trees = _change_trees(payload, "after_sensitive")
+    deleted_addresses = _deleted_addresses(payload)
     configuration = payload.get("configuration")
     configuration_root = (
         configuration.get("root_module") if isinstance(configuration, Mapping) else None
@@ -258,7 +301,9 @@ def parse_tf_json(label: str, text: str, *, limits: Limits) -> ParseResult[TfMod
             return
         for resource in _resource_entries(root):
             address = resource.get("address")
-            if not isinstance(address, str) or (secondary and address in resources):
+            if not isinstance(address, str) or (
+                secondary and (address in resources or address in deleted_addresses)
+            ):
                 continue
             values = resource.get("values")
             plain_values = dict(values) if isinstance(values, Mapping) else {}

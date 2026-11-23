@@ -1,0 +1,10 @@
+on: push
+permissions:
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: "AKIA\u005A\u005A\u005A\u005A\u005A\u005A\u005A\u005A\u005A\u005A\u005A\u005A\u005A\u005A\u005A\u005A"
+    steps:
+      - run: true

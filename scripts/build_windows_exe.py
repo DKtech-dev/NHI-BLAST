@@ -24,6 +24,7 @@ EXE_NAME = "nhi-blast-windows-x64"
 ENTRY_SCRIPT = ROOT / "scripts" / "windows_entry.py"
 DATA_SOURCE = ROOT / "src" / "nhi_blast" / "data"
 ASSETS_SOURCE = ROOT / "src" / "nhi_blast" / "report" / "assets"
+TEMPLATES_SOURCE = ROOT / "src" / "nhi_blast" / "report" / "templates"
 DEFAULT_DIST = ROOT / "dist" / "windows"
 DEFAULT_WORK = ROOT / "build" / "windows"
 LICENCE_FILES = ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md")
@@ -48,6 +49,7 @@ def resource_pairs() -> list[tuple[Path, str]]:
     return [
         *_resource_root(DATA_SOURCE, "nhi_blast/data"),
         *_resource_root(ASSETS_SOURCE, "nhi_blast/report/assets"),
+        *_resource_root(TEMPLATES_SOURCE, "nhi_blast/report/templates"),
         *((ROOT / name, name) for name in LICENCE_FILES),
     ]
 

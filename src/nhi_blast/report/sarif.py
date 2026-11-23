@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
+from nhi_blast.analysis.findings import SCENARIO_RULES
 from nhi_blast.core.data import RuleDefinition, rules
 from nhi_blast.core.evidence import Evidence, dedupe_evidence, evidence_sort_key
 from nhi_blast.core.models import Edge, Finding, Report, Severity
@@ -78,13 +79,20 @@ def _physical_location(evidence: Evidence) -> dict[str, Any] | None:
 def _fingerprint(finding: Finding) -> str:
     primary = _primary_evidence(finding)
     file_name = "" if primary is None else primary.file or ""
-    payload = "|".join(
-        (
-            finding.rule,
-            ",".join(sorted(finding.path)),
-            file_name,
-        )
-    )
+    parts = [
+        finding.rule,
+        ",".join(sorted(finding.path)),
+        file_name,
+    ]
+    if not finding.path:
+        if primary is not None and primary.line is not None:
+            parts.append(f"line:{primary.line}")
+        parts.append(finding.title)
+        if primary is None or primary.line is None:
+            parts.append(finding.id)
+    if finding.rule in SCENARIO_RULES and finding.scenario:
+        parts.append(finding.scenario)
+    payload = "|".join(parts)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -114,10 +122,11 @@ def _code_flow(finding: Finding, edges: dict[str, Edge]) -> dict[str, Any] | Non
         edge = edges.get(edge_id_value)
         if edge is None:
             continue
+        ordered = _ordered_evidence(edge.evidence)
         evidence = next(
-            (item for item in _ordered_evidence(edge.evidence) if item.file and item.line),
+            (item for item in ordered if item.file and item.line is not None),
             None,
-        )
+        ) or next((item for item in ordered if item.file), None)
         if evidence is None:
             continue
         location = _physical_location(evidence)
@@ -180,7 +189,7 @@ def sarif_report(report: Report) -> dict[str, Any]:
             "driver": {
                 "name": report.tool.name,
                 "version": report.tool.version,
-                "informationUri": "https://example.invalid/nhi-blast",
+                "informationUri": "https://github.com/DKtech-dev/nhi-blast",
                 "rules": [_rule_payload(definition) for definition in definitions],
             }
         },

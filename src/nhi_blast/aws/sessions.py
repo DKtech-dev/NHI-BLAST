@@ -41,6 +41,8 @@ class SessionTtl:
     outcome: Outcome = "issued"
     assumptions: tuple[str, ...] = ()
     requested_kind: str = "unknown"
+    configured_ttl_seconds: int | None = None
+    attacker_max_ttl_seconds: int | None = None
 
 
 def requested_duration(
@@ -76,6 +78,7 @@ def effective_ttl(
         "unknown": f"role maximum unknown, bounded by the STS limit {STS_MAX_SECONDS} s",
     }.get(role_max_source, "role maximum session duration (1 h when unset)")
     chain_cap = CHAINED_MAX_SECONDS if chained else None
+    attacker_ceiling = min(ceiling, chain_cap or STS_MAX_SECONDS)
     kind = requested.kind
 
     if kind == "declared" and requested.seconds is not None:
@@ -94,12 +97,16 @@ def effective_ttl(
                 "AssumeRole fails as declared, so this session is only potential",
                 outcome="fails_as_declared",
                 requested_kind=kind,
+                configured_ttl_seconds=seconds,
+                attacker_max_ttl_seconds=attacker_ceiling,
             )
         return SessionTtl(
             bound,
             cls,
             f"role-duration-seconds {seconds} s declared in the workflow, within the {role_text}",
             requested_kind=kind,
+            configured_ttl_seconds=bound,
+            attacker_max_ttl_seconds=attacker_ceiling,
         )
 
     if kind == "action_default_verified":
@@ -109,6 +116,8 @@ def effective_ttl(
             EvidenceClass.DERIVED,
             f"role-duration-seconds not set; the action default is {action_default_seconds} s",
             requested_kind=kind,
+            configured_ttl_seconds=bound,
+            attacker_max_ttl_seconds=attacker_ceiling,
         )
 
     if kind == "action_default_unverified":
@@ -122,6 +131,8 @@ def effective_ttl(
             f"and may request more; upper bound is the {role_text}{chain_text}",
             assumptions=("A-CAC-DEFAULT",),
             requested_kind=kind,
+            configured_ttl_seconds=bound,
+            attacker_max_ttl_seconds=attacker_ceiling,
         )
 
     bound = min(ceiling, chain_cap or STS_MAX_SECONDS)
@@ -137,6 +148,8 @@ def effective_ttl(
         f"{why}; upper bound is the {role_text}",
         assumptions=("A-STS-TTL",),
         requested_kind=kind,
+        configured_ttl_seconds=None,
+        attacker_max_ttl_seconds=attacker_ceiling,
     )
 
 

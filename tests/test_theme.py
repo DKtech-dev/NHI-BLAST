@@ -318,7 +318,7 @@ def test_theme_colour_meta_values_follow_the_theme_backgrounds() -> None:
     assert match is not None
     assert match.group(1) == RAW["light"]["--dp-ground"]
     assert match.group(2) == RAW["dark"]["--dp-ground"]
-    assert '<meta name="theme-color" content="' + match.group(2) + '">' in html_report(
+    assert '<meta name="theme-color" content="' + match.group(1) + '">' in html_report(
         make_report()
     )
 
@@ -379,12 +379,12 @@ def test_theme_script_resolves_stored_choice_then_system_then_dark_without_hard_
     None
 ):
     assert 'var KEY = "nhb-theme";' in THEME_JS
-    assert '"(prefers-color-scheme: light)"' in THEME_JS
-    assert 'return lightQuery && lightQuery.matches ? "light" : "dark";' in THEME_JS
+    assert '"(prefers-color-scheme: dark)"' in THEME_JS
+    assert 'return darkQuery && darkQuery.matches ? "dark" : "light";' in THEME_JS
     assert 'root.setAttribute("data-theme", theme);' in THEME_JS
     assert 'root.setAttribute("data-theme-choice", choice);' in THEME_JS
-    assert 'lightQuery.addEventListener("change", onSystemChange)' in THEME_JS
-    assert "lightQuery.addListener(onSystemChange)" in THEME_JS
+    assert 'darkQuery.addEventListener("change", onSystemChange)' in THEME_JS
+    assert "darkQuery.addListener(onSystemChange)" in THEME_JS
     assert 'if (choice === "system") { apply(); }' in THEME_JS
     assert 'CHOICES.indexOf(stored) >= 0 ? stored : "system"' in THEME_JS
 

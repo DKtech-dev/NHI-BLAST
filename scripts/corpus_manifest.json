@@ -18555,7 +18555,7 @@
       "license_files": {
         "LICENSE": "db9cd01aea3e974c8bafcad4fc124713a2b77e4cbb72815f88214f7e8e94f091"
       },
-      "license_note": "Current 0.2.0 source licence; self-scan control excluded from external corpus count.",
+      "license_note": "Current 0.3.0 source licence; self-scan control excluded from external corpus count.",
       "repository": "https://github.com/DKtech-dev/nhi-blast",
       "retrieved_on": "2026-10-28",
       "revision": "7ea7c19289e21cafd1abd8d672ca6169ed31f840",

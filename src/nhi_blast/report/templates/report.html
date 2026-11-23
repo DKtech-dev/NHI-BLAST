@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en" class="booting">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="__CSP__">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="Offline incident exposure report: what a compromised CI entrypoint could reach, what survives its revocation and the order to rotate.">
+<meta name="theme-color" content="#fcfcfd">
+__THEME_SCRIPT__
+<title>NHI-Blast report</title>
+<style>
+__REPORT_CSS__
+</style>
+<noscript><style>html.booting body > :not(#boot-status):not(script) { visibility: visible; } #boot-status { display: none; }</style></noscript>
+</head>
+<body>
+__ICON_SPRITE__
+<div id="boot-status" role="status" aria-live="polite">Reading the embedded report data…<div class="boot-skeleton" aria-hidden="true"><i class="sk sk-title"></i><i class="sk sk-title short"></i><i class="sk sk-line"></i><div class="sk-row"><i class="sk sk-stat"></i><i class="sk sk-stat"></i><i class="sk sk-stat"></i><i class="sk sk-stat"></i><i class="sk sk-stat"></i></div></div></div>
+<a class="skip-link" href="#main">Skip to report content</a>
+<div class="viewer-bar" role="region" aria-label="Report controls">
+  <div class="viewer-inner">
+    <a class="brand" href="#top">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="2.2" fill="currentColor"></circle>
+        <path d="M12 5.4a6.6 6.6 0 0 1 0 13.2M12 2.2a9.8 9.8 0 0 1 0 19.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".55"></path>
+      </svg>
+      <span class="brand-name">NHI-Blast</span>
+      <span class="brand-sub">Incident exposure report</span>
+    </a>
+    <div class="viewer-meta">
+      <span class="viewer-chip">Offline</span>
+      <span class="viewer-schema mono" id="schema-line"></span>
+    </div>
+    <div class="theme-host" id="theme-switch-host"></div>
+    <div class="motion-host" id="motion-switch-host"></div>
+    <button type="button" class="button quiet" id="print-button">Print / PDF</button>
+  </div>
+</div>
+<header class="page-head" id="top">
+  <div class="hero-field" data-fx-halftone="hero" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-copy">
+        <h1>Incident exposure report</h1>
+        <p class="hero-sub">What a compromised entrypoint could reach, what survives its revocation and the order to rotate.</p>
+        <ul class="scan-facts" id="source-line" aria-label="Scan facts"></ul>
+        <div id="finding-lead"></div>
+        <div class="hero-actions">
+          <div class="pick">
+            <label class="field-label" for="scenario-picker">Entrypoint</label>
+            <div class="select-wrap"><select id="scenario-picker"></select></div>
+            <span class="field-hint" id="scenario-count"></span>
+          </div>
+          <a class="button primary" href="#rotation">Review rotation order</a>
+          <a class="button secondary" id="all-findings" href="#findings" hidden>All findings</a>
+        </div>
+      </div>
+      <figure class="hero-figure" id="hero-diagram" aria-labelledby="hero-diagram-text">
+        <div id="hero-diagram-host"></div>
+        <figcaption class="sr-only" id="hero-diagram-text"></figcaption>
+      </figure>
+    </div>
+  </div>
+</header>
+<div class="nav-bar" id="nav-bar">
+  <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-panel">
+    <span class="nav-current" id="nav-current">Summary</span>
+    <span class="nav-burger" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="sr-only">Menu</span>
+  </button>
+  <nav class="toc" id="nav-panel" aria-label="Report sections">
+    <div class="toc-track" id="toc-track">
+        <a href="#summary">Summary</a>
+        <a href="#read-guide">How to read</a>
+        <a id="completeness-link" href="#completeness" hidden>Completeness</a>
+        <a href="#survival">Survival</a>
+        <a href="#rotation">Rotation</a>
+        <a id="matrix-link" href="#matrix" hidden>Exposure matrix</a>
+        <a href="#graph">Graph</a>
+        <a href="#findings">Findings</a>
+        <a href="#scenario">Scenario</a>
+        <a href="#assumptions">Assumptions</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#scope">Scope</a>
+        <span class="nav-indicator" aria-hidden="true"></span>
+    </div>
+  </nav>
+</div>
+<main id="main">
+  <svg class="journey-svg" data-fx-journey aria-hidden="true" focusable="false"></svg>
+  <noscript><p class="notice">This report needs JavaScript enabled to display its embedded data. It makes no network requests.</p></noscript>
+  <div class="band band-facts"><div class="wrap">
+    <section id="summary" aria-labelledby="summary-title">
+      <h2 class="sr-only" id="summary-title">Summary</h2>
+      <p class="sr-only" id="summary-context"></p>
+      <div class="summary-band" id="summary-grid" data-light></div>
+      <p class="summary-brief" id="summary-brief"></p>
+    </section>
+  </div></div>
+  <div class="band band-pale"><div class="wrap">
+    <section id="read-guide" aria-labelledby="read-guide-title">
+      <div class="section-head" data-fx-stop>
+        <span class="sec-no" aria-hidden="true">01</span>
+        <div class="sec-title"><span class="sec-label">Orientation</span><h2 id="read-guide-title">How to read this report</h2></div>
+        <p class="section-meta">Three outcomes, four evidence classes</p>
+      </div>
+      <div class="guide-grid">
+        <div class="guide-card">
+          <h3><span class="code code-R">R</span>Ends with the entrypoint</h3>
+          <p>Credentials tied to the compromised job or run. They end with the job or at token expiry, not necessarily when entrypoint access is revoked.</p>
+        </div>
+        <div class="guide-card">
+          <h3><span class="code code-E">E</span>Expires on its own</h3>
+          <p>Credentials with a recorded lifetime, such as a role session with a time-to-live. They lapse without action, but stay usable until they do.</p>
+        </div>
+        <div class="guide-card">
+          <h3><span class="code code-Z">Z</span>Potentially survives</h3>
+          <p>Stored credentials that are potentially reachable from the entrypoint and stay valid after it is revoked, if the recorded path was exercised. The rotation plan is ordered around these.</p>
+        </div>
+      </div>
+      <div class="evidence-guide">
+        <div>
+          <h3>Evidence classes</h3>
+          <p>Every node and edge carries an evidence class. Severity is a label for ordering, not a verdict. In the graph, solid lines are declared or derived, dashed lines are assumed and dotted lines are unknown.</p>
+        </div>
+        <ul class="class-list">
+          <li><strong>DECLARED</strong><span>Stated directly in a scanned file such as a workflow, Terraform or IAM document.</span></li>
+          <li><strong>DERIVED</strong><span>Computed from declared facts by a documented rule, for example by evaluating a trust policy as written.</span></li>
+          <li><strong>ASSUMED</strong><span>Filled in from a listed assumption where the files are silent. Assumptions are listed in the report.</span></li>
+          <li><strong>UNKNOWN</strong><span>Could not be resolved. Shown separately as potential and never counted in R, E or Z.</span></li>
+        </ul>
+      </div>
+    </section>
+    <section id="completeness" aria-labelledby="completeness-title" hidden>
+      <div class="section-head" data-fx-stop>
+        <span class="sec-no" aria-hidden="true">02</span>
+        <div class="sec-title"><span class="sec-label">Coverage</span><h2 id="completeness-title">Analysis completeness</h2></div>
+        <p class="section-meta">Which inputs each family of checks could read</p>
+      </div>
+      <div id="completeness-content"></div>
+    </section>
+  </div></div>
+  <div class="band band-plain band-tagline"><div class="wrap">
+    <section id="tagline" class="tagline" aria-label="What this report is for">
+      <div class="tagline-grid">
+        <p class="tagline-text" id="tagline-text">Know what survives revocation. Rotate in the order that keeps the next secret safe. Every claim carries its evidence, and every gap is listed.</p>
+        <svg class="tagline-rings" viewBox="0 0 360 360" aria-hidden="true" focusable="false"><circle cx="180" cy="180" r="172"></circle><circle cx="180" cy="180" r="128"></circle><circle cx="180" cy="180" r="84"></circle><circle class="core" cx="180" cy="180" r="12"></circle></svg>
+      </div>
+    </section>
+  </div></div>
+  <div class="band band-dark passage" id="passage-survival" data-fx-spotlight><div class="passage-field" data-fx-halftone="field" aria-hidden="true"></div><div class="wrap">
+    <section id="survival" aria-labelledby="survival-title">
+      <div class="section-head" data-fx-stop>
+        <span class="sec-no" aria-hidden="true">03</span>
+        <div class="sec-title"><span class="sec-label">Outcome</span><h2 id="survival-title">Survival panel</h2></div>
+        <p class="section-meta">R / E / Z as recorded by the analysis</p>
+      </div>
+      <div id="survival-content"></div>
+    </section>
+    <section id="rotation" aria-labelledby="rotation-title">
+      <div class="section-head" data-fx-stop>
+        <span class="sec-no" aria-hidden="true">04</span>
+        <div class="sec-title"><span class="sec-label">Action plan</span><h2 id="rotation-title">Rotation plan</h2></div>
+        <p class="section-meta">Contain, rotate, verify</p>
+      </div>
+      <div id="rotation-content"></div>
+      <div id="containment-sim" class="containment-sim" aria-label="Interactive offline containment preview"></div>
+    </section>
+    <section id="matrix" aria-labelledby="matrix-title" hidden>
+      <div class="section-head">
+        <div class="sec-title"><span class="sec-label">Across entrypoints</span><h2 id="matrix-title">Cross-scenario exposure</h2></div>
+        <p class="section-meta">One credential per row, one entrypoint per column</p>
+      </div>
+      <p class="muted matrix-summary" id="matrix-summary"></p>
+      <div class="matrix-legend" role="group" aria-label="Credential status codes">
+        <span><b class="code code-R">R</b> ends with the revoked entrypoint</span>
+        <span><b class="code code-E">E</b> expires on its own</span>
+        <span><b class="code code-Z">Z</b> potentially survives revocation</span>
+        <span><b class="code code-P">P</b> potential only through an UNKNOWN-class edge</span>
+      </div>
+      <div class="toolbar">
+        <label class="field-label">
+          <input type="checkbox" id="matrix-shared">
+          Only credentials listed in more than one scenario
+        </label>
+      </div>
+      <div id="matrix-content"></div>
+    </section>
+  </div></div>
+  <div class="band band-plain"><div class="wrap">
+    <section id="graph" aria-labelledby="graph-title">
+      <div class="graph-head">
+        <div class="section-head" data-fx-stop>
+        <span class="sec-no" aria-hidden="true">05</span>
+        <div class="sec-title"><span class="sec-label">Map</span><h2 id="graph-title">Graph</h2></div>
+          <p class="section-meta" id="graph-count">Authority paths by stage</p>
+        </div>
+        <div class="graph-toolbar">
+          <div class="graph-legend" role="group" aria-label="Evidence line styles and entrypoints">
+            <span class="solid"><i></i>DECLARED / DERIVED</span>
+            <span class="dashed"><i></i>ASSUMED</span>
+            <span class="dotted"><i></i>UNKNOWN</span>
+            <span class="entry"><i></i>ENTRYPOINT</span>
+          </div>
+          <div class="graph-actions" role="group" aria-label="Graph view controls">
+            <button class="button quiet" id="graph-zoom-out" type="button" aria-label="Zoom out">&minus;</button>
+            <button class="button quiet" id="graph-zoom-level" type="button" aria-label="Reset zoom to 100 percent">100%</button>
+            <button class="button quiet" id="graph-zoom-in" type="button" aria-label="Zoom in">+</button>
+            <button class="button quiet" id="graph-fit" type="button" aria-label="Reset and fit graph to view" title="Fit and reset graph view">Reset</button>
+            <button class="button quiet" id="graph-table-toggle" type="button" aria-expanded="false" aria-controls="graph-table-panel">Table view</button>
+          </div>
+        </div>
+      </div>
+      <div class="graph-frame">
+        <div class="graph-stage" id="graph-stage" role="group"
+          aria-label="Authority graph. Keyboard: arrow keys move between nodes, Enter selects, Escape clears.">
+          __GRAPH_SVG__
+        </div>
+      </div>
+      <div id="graph-table-panel" class="graph-table-panel" hidden></div>
+      <p id="graph-note">The selected entrypoint's reachable path is highlighted; unrelated nodes are dimmed. Tab into the graph; arrow keys move, Enter selects, Escape clears. Drag or pinch to pan and zoom; Ctrl + wheel also zooms; the controls set an exact level. Fit shows the whole graph; dense graphs open at 100% on the first entrypoint. The graph is a visual aid; the scenario, survival and findings sections carry the same evidence as text.</p>
+      <div id="entity-details" aria-live="polite"></div>
+    </section>
+    <section id="findings" aria-labelledby="findings-title">
+      <div class="section-head" data-fx-stop>
+        <span class="sec-no" aria-hidden="true">06</span>
+        <div class="sec-title"><span class="sec-label">Triage</span><h2 id="findings-title">Findings</h2></div>
+        <p class="section-meta">Ordered by severity, then rule and identifier</p>
+      </div>
+      <div class="toolbar findings-toolbar" role="group" aria-label="Filter findings">
+        <div class="field field-search" id="finding-search">
+          <label for="findings-search">Search findings <kbd class="kbd" aria-hidden="true">/</kbd></label>
+          <input type="search" id="findings-search" autocomplete="off" spellcheck="false"
+            placeholder="Rule, title, scenario, evidence">
+        </div>
+        <div class="field field-pills">
+          <span class="field-label" id="finding-severity-pills-label">Severity</span>
+          <div class="severity-pills" id="finding-severity-pills" role="group" aria-labelledby="finding-severity-pills-label">
+            <button type="button" class="sev-pill is-active" data-severity="" aria-pressed="true">All</button>
+            <button type="button" class="sev-pill sev-CRITICAL" data-severity="CRITICAL" aria-pressed="false">Critical</button>
+            <button type="button" class="sev-pill sev-HIGH" data-severity="HIGH" aria-pressed="false">High</button>
+            <button type="button" class="sev-pill sev-MEDIUM" data-severity="MEDIUM" aria-pressed="false">Medium</button>
+            <button type="button" class="sev-pill sev-LOW" data-severity="LOW" aria-pressed="false">Low</button>
+          </div>
+        </div>
+        <div class="field field-select sr-only">
+          <label for="finding-severity">Severity</label>
+          <select id="finding-severity"></select>
+        </div>
+        <div class="field field-select">
+          <label for="finding-scenario">Scenario</label>
+          <select id="finding-scenario"></select>
+        </div>
+        <button type="button" class="button quiet" id="finding-clear">Reset</button>
+        <span id="findings-count" class="toolbar-status" role="status" aria-live="polite"></span>
+      </div>
+      <div id="findings-content"></div>
+    </section>
+  </div></div>
+  <div class="band band-pale"><div class="wrap">
+    <section id="scenario" class="section-disclosure" aria-labelledby="scenario-title">
+      <details class="disclosure">
+        <summary data-fx-stop>
+          <span class="sec-no" aria-hidden="true">07</span>
+          <span class="sec-title"><span class="sec-label">Inputs</span><h2 id="scenario-title">Scenario</h2></span>
+          <span class="section-meta">Start nodes and recorded inputs</span>
+        </summary>
+        <div class="disclosure-body">
+
+          <div id="scenario-content"></div>
+          <div id="trace-content" aria-live="polite"></div>
+        </div>
+      </details>
+    </section>
+    <section id="assumptions" class="section-disclosure" aria-labelledby="assumptions-title">
+      <details class="disclosure">
+        <summary data-fx-stop>
+          <span class="sec-no" aria-hidden="true">08</span>
+          <span class="sec-title"><span class="sec-label">Limits</span><h2 id="assumptions-title">Assumptions and Unknowns</h2></span>
+          <span class="section-meta">VERIFY items remain assumed until confirmed</span>
+        </summary>
+        <div class="disclosure-body">
+
+          <div id="assumptions-content"></div>
+        </div>
+      </details>
+    </section>
+    <section id="diagnostics" class="section-disclosure" aria-labelledby="diagnostics-title">
+      <details class="disclosure">
+        <summary data-fx-stop>
+          <span class="sec-no" aria-hidden="true">09</span>
+          <span class="sec-title"><span class="sec-label">Parser notes</span><h2 id="diagnostics-title">Diagnostics</h2></span>
+          <span class="section-meta">Parse and analysis messages</span>
+        </summary>
+        <div class="disclosure-body">
+
+          <div id="diagnostics-content"></div>
+        </div>
+      </details>
+    </section>
+  </div></div>
+  <div class="band band-dark passage" id="passage-scope" data-fx-spotlight><div class="passage-field" data-fx-halftone="field" aria-hidden="true"></div><div class="wrap">
+    <section id="scope" aria-labelledby="scope-title">
+      <div class="section-head" data-fx-stop>
+        <span class="sec-no" aria-hidden="true">10</span>
+        <div class="sec-title"><span class="sec-label">Boundary</span><h2 id="scope-title">Scope and Limits</h2></div>
+        <p class="section-meta">Inputs, coverage and the analysis boundary</p>
+      </div>
+      <div id="scope-content"></div>
+    </section>
+  </div></div>
+</main>
+<footer class="site-footer passage">
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="final-cta">
+        <h2>Start with the credentials that survive.</h2>
+        <p>The rotation plan orders them so that a surviving credential cannot re-read a freshly rotated one.</p>
+        <a class="button primary" href="#rotation">Review rotation order</a>
+      </div>
+      <ol class="footer-questions" aria-label="What the report answers">
+        <li><a href="#graph"><span class="fq-no" aria-hidden="true">A</span>What could the compromised entrypoint reach?</a></li>
+        <li><a href="#survival"><span class="fq-no" aria-hidden="true">B</span>What survives its revocation?</a></li>
+        <li><a href="#rotation"><span class="fq-no" aria-hidden="true">C</span>In what order do I rotate?</a></li>
+      </ol>
+      <div class="footer-mark" aria-hidden="true">NHI-Blast</div>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-group">
+        <h2>Report</h2>
+        <p id="tool-line"></p>
+        <p id="repo-line"></p>
+        <p class="mono" id="footer-schema"></p>
+      </div>
+      <div class="footer-group">
+        <h2>Inputs digest</h2>
+        <p class="mono" id="footer-digest"></p>
+        <p id="footer-copy-host"></p>
+        <p>Offline: no network requests. The theme and motion choices stay in this tab only.</p>
+      </div>
+      <div class="footer-group">
+        <h2>Data files</h2>
+        <ul id="footer-data"></ul>
+      </div>
+      <div class="footer-group">
+        <h2>Go to</h2>
+        <div class="footer-links">
+          <a href="#completeness" id="footer-completeness" hidden>Analysis completeness</a>
+          <button type="button" class="button quiet" id="footer-print">Print / PDF</button>
+          <a href="#top" class="button secondary">Back to top</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-note">
+      <p>Offline report generated by NHI-Blast. Evidence classes are labels, not proof of exploitation.</p>
+    </div>
+  </div>
+</footer>
+__SCRIPTS__
+</body>
+</html>

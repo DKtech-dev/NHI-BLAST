@@ -11,7 +11,7 @@ tool results and residual risk, and it states its own limits.
 ## 1. Review target
 
 - Project: NHI-Blast, version `0.1.1`, tag `v0.1.1` (the `v0.1.0` materials remain
-  available for comparison). The current source line is 0.2.0 under the MIT License and
+  available for comparison). The current source line is 0.3.0 under the MIT License and
   is a public beta; it has not been independently reviewed, and reviewers who prefer the
   exact audited code should use the `v0.1.1` tag, which is also MIT-licensed.
 - Repository: `DKtech-dev/nhi-blast`, public at
@@ -29,7 +29,6 @@ inside the sdist, so it cannot contain the sdist's own digest without invalidati
 | Material | Location |
 | --- | --- |
 | Normative requirements | `docs/SPEC.md` |
-| Operating rules | `AGENTS.md` |
 | Architecture | `docs/architecture.md` |
 | Rule catalogue and per-rule pages | `src/nhi_blast/data/rules.yaml`, `docs/rules/` |
 | Threat model and controls | `docs/security-audit.md` |

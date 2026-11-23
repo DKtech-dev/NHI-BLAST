@@ -170,7 +170,7 @@ def test_project_is_mit_licensed() -> None:
     assert set(project["license-files"]) == set(LICENCE_FILES)
     licence = (ROOT / "LICENSE").read_text(encoding="utf-8")
     assert licence.startswith("MIT License\n")
-    assert "Copyright (c) 2026 NHI-Blast Maintainers" in licence
+    assert "Copyright (c) 2026 Dinesh Karthick B" in licence
     notice = (ROOT / "NOTICE").read_text(encoding="utf-8")
     assert "MIT License" in notice
     assert "proprietary" not in notice.lower()

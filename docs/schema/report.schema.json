@@ -317,6 +317,30 @@
     "ECredential": {
       "additionalProperties": false,
       "properties": {
+        "attacker_max_ttl_seconds": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attacker Max Ttl Seconds"
+        },
+        "configured_ttl_seconds": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Configured Ttl Seconds"
+        },
         "credential": {
           "title": "Credential",
           "type": "string"

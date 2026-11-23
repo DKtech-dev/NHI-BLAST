@@ -6,7 +6,7 @@ from nhi_blast.aws.conditions import ConditionTruth
 from nhi_blast.aws.trust import evaluate_trust_statements, is_github_oidc_statement
 from nhi_blast.core.data import condition_keys
 from nhi_blast.core.evidence import EvidenceClass
-from nhi_blast.core.models import PolicyEffect
+from nhi_blast.core.models import PolicyEffect, Statement
 from tests.support import ASSUME_ACTION, candidate, role, statement
 
 REGISTRY = condition_keys()
@@ -218,3 +218,93 @@ def test_no_relevant_statement_returns_empty_evaluation() -> None:
     assert evaluation.matches == ()
     assert evaluation.sub_patterns == ()
     assert evaluation.confidence is EvidenceClass.DERIVED
+
+
+def test_trust_explicit_deny_blocks_matching_candidate() -> None:
+    allow = statement(
+        actions=(ASSUME_ACTION,),
+        conditions={"StringLike": {"token.actions.githubusercontent.com:sub": ("repo:org/*",)}},
+    )
+    deny = statement(
+        effect=PolicyEffect.DENY,
+        actions=(ASSUME_ACTION,),
+        conditions={
+            "StringLike": {"token.actions.githubusercontent.com:sub": ("repo:org/sandbox:*",)}
+        },
+    )
+    r = role(statements=(allow, deny))
+    sandbox = candidate("repo:org/sandbox:ref:refs/heads/main")
+    prod = candidate("repo:org/prod:ref:refs/heads/main")
+
+    result = evaluate_trust_statements(r, (sandbox, prod), registry=REGISTRY)
+    matched_subs = [m.candidate.subject for m in result.matches]
+    assert "repo:org/sandbox:ref:refs/heads/main" not in matched_subs
+    assert "repo:org/prod:ref:refs/heads/main" in matched_subs
+
+
+def test_trust_conditional_deny_downgrades_allow_to_assumed() -> None:
+    allow = statement(
+        actions=(ASSUME_ACTION,),
+        conditions={"StringLike": {"token.actions.githubusercontent.com:sub": ("repo:org/app:*",)}},
+    )
+    deny = statement(
+        effect=PolicyEffect.DENY,
+        actions=(ASSUME_ACTION,),
+        principals={"*": ("*",)},
+        conditions={"StringEquals": {"aws:SourceIp": ("203.0.113.1/32",)}},
+    )
+    r = role(statements=(allow, deny))
+    cand = candidate("repo:org/app:ref:refs/heads/main")
+
+    result = evaluate_trust_statements(r, (cand,), registry=REGISTRY)
+    assert len(result.matches) == 1
+    assert result.matches[0].conditional is True
+    assert result.confidence is EvidenceClass.ASSUMED
+
+
+def test_trust_deny_with_not_action_and_wildcard_principal_blocks_candidate() -> None:
+    allow = statement(
+        actions=(ASSUME_ACTION,),
+        conditions={"StringLike": {"token.actions.githubusercontent.com:sub": ("repo:org/app:*",)}},
+    )
+    deny = Statement(
+        effect=PolicyEffect.DENY,
+        not_actions=("s3:GetObject",),
+        principals={"*": ("*",)},
+        conditions={"StringLike": {"token.actions.githubusercontent.com:sub": ("repo:org/app:*",)}},
+    )
+    r = role(statements=(allow, deny))
+    cand = candidate("repo:org/app:ref:refs/heads/main")
+
+    result = evaluate_trust_statements(r, (cand,), registry=REGISTRY)
+    assert result.matches == ()
+
+
+def test_concrete_oidc_numeric_ids_match_and_leave_additional_constraints() -> None:
+    allow = statement(
+        actions=(ASSUME_ACTION,),
+        conditions={
+            "StringEquals": {
+                "token.actions.githubusercontent.com:aud": ("sts.amazonaws.com",),
+                "token.actions.githubusercontent.com:repository_owner_id": ("12345",),
+                "token.actions.githubusercontent.com:repository_id": ("67890",),
+            },
+            "StringLike": {"token.actions.githubusercontent.com:sub": ("repo:org/app:*",)},
+        },
+    )
+    r = role(statements=(allow,))
+    matching = candidate(
+        "repo:org/app:ref:refs/heads/main",
+        claims={"repository": "org/app", "repository_owner_id": "12345", "repository_id": "67890"},
+    )
+    mismatch = candidate(
+        "repo:org/app:ref:refs/heads/main",
+        claims={"repository": "org/app", "repository_owner_id": "99999", "repository_id": "67890"},
+    )
+    res_ok = evaluate_trust_statements(r, (matching,), registry=REGISTRY)
+    assert len(res_ok.matches) == 1
+    assert "repository_owner_id" not in res_ok.additional_constraints
+    assert "repository_id" not in res_ok.additional_constraints
+
+    res_bad = evaluate_trust_statements(r, (mismatch,), registry=REGISTRY)
+    assert res_bad.matches == ()

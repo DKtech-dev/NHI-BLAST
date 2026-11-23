@@ -33,7 +33,17 @@ from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 
-from nhi_blast.aws.glob import glob_intersects, glob_match, has_wildcard
+from nhi_blast.aws.glob import GlobRelation, glob_match, glob_relation, has_wildcard
+from nhi_blast.aws.solver import (
+    CidrPredicate,
+    IntervalPredicate,
+    SolverStatus,
+    StringPredicate,
+    parse_iso8601_decimal,
+    solve_cidr_predicates,
+    solve_correlated_oidc_predicates,
+    solve_interval_predicates,
+)
 
 POLICY_VARIABLE = "${"
 
@@ -42,6 +52,7 @@ CODE_MALFORMED = "D-COND-MALFORMED"
 CODE_POLICY_VARIABLE = "D-COND-POLICY-VARIABLE"
 CODE_AMBIGUOUS = "D-COND-AMBIGUOUS"
 CODE_UNKNOWN_KEY = "D-COND-UNKNOWN-KEY"
+CODE_BUDGET = "D-COND-BUDGET"
 
 
 class ConditionMode(StrEnum):
@@ -83,6 +94,7 @@ class ConditionEvaluation:
     reasons: tuple[str, ...] = ()
     unresolved_keys: tuple[str, ...] = ()
     dead_keys: tuple[str, ...] = ()
+    witnesses: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -317,9 +329,15 @@ def _compare(relation: str, left: Decimal, right: Decimal) -> bool:
 
 def _string_pair_matches(
     spec: _Operator, policy_value: str, context_value: str, mode: ConditionMode
-) -> bool:
+) -> bool | None:
     if mode is ConditionMode.CANDIDATE:
-        return glob_intersects(policy_value, context_value, fold=spec.relation == "fold")
+        is_glob = spec.relation == "like" or spec.family == "arn"
+        if not is_glob:
+            return glob_match(context_value, policy_value, fold=spec.relation == "fold")
+        rel = glob_relation(policy_value, context_value, fold=spec.relation == "fold")
+        if rel is GlobRelation.BUDGET_EXCEEDED:
+            return None
+        return rel is GlobRelation.INTERSECTS
     if spec.family == "arn":
         return _arn_match(policy_value, context_value)
     if spec.relation == "fold":
@@ -331,7 +349,7 @@ def _string_pair_matches(
 
 def _pair_matches(
     spec: _Operator, policy_value: _Parsed, context_value: _Parsed, mode: ConditionMode
-) -> bool:
+) -> bool | None:
     if isinstance(policy_value, str) and isinstance(context_value, str):
         return _string_pair_matches(spec, policy_value, context_value, mode)
     if isinstance(policy_value, Decimal) and isinstance(context_value, Decimal):
@@ -367,7 +385,7 @@ def required_positive_patterns(
     for operator_raw, key_map in conditions.items():
         _, operator, _ = _split_operator(operator_raw)
         for raw_key, expected in key_map.items():
-            if str(raw_key).strip() != key:
+            if str(raw_key).strip().lower() != key.lower():
                 continue
             saw_key = True
             if operator not in _FILTERABLE_OPERATORS:
@@ -434,10 +452,19 @@ def _present_truth(
         context_values = [_parse_context_value(spec, value) for value in values]
     except _MalformedError as error:
         return ConditionTruth.UNRESOLVED, f"{CODE_MALFORMED}: {label} context value {error}"
-    satisfied = [
-        any(_pair_matches(spec, item, value, mode) for item in policy) != spec.negated
-        for value in context_values
-    ]
+    satisfied: list[bool] = []
+    for value in context_values:
+        results = [_pair_matches(spec, item, value, mode) for item in policy]
+        if any(r is True for r in results):
+            matched = True
+        elif any(r is None for r in results):
+            return (
+                ConditionTruth.UNRESOLVED,
+                f"{CODE_BUDGET}: {label} pattern exceeded glob length budget",
+            )
+        else:
+            matched = False
+        satisfied.append(matched != spec.negated)
     if qualifier == _FOR_ALL or (qualifier is None and spec.negated):
         outcome = all(satisfied)
     else:
@@ -531,6 +558,150 @@ def _coerce_state(raw: KeyState | frozenset[str] | None) -> KeyState:
     return raw
 
 
+def _joint_candidate_solve(
+    conditions: Mapping[str, Mapping[str, Sequence[str]]],
+    context: Mapping[str, KeyState | frozenset[str]],
+    supported_keys: frozenset[str] | None,
+) -> tuple[bool, bool, list[str], tuple[tuple[str, str], ...]]:
+    """Run bounded shared-witness solver across conjunctive clauses in CANDIDATE mode.
+
+    Returns (is_unsat, hit_budget, reasons, witnesses).
+    """
+    lower_context = {str(k).strip().lower(): v for k, v in context.items()}
+    lower_supported = (
+        frozenset(k.lower() for k in supported_keys) if supported_keys is not None else None
+    )
+    str_preds: dict[str, list[StringPredicate]] = {}
+    cidr_preds: dict[str, list[CidrPredicate]] = {}
+    interval_preds: dict[str, list[IntervalPredicate]] = {}
+    seeded_keys: set[str] = set()
+    unknown_keys: set[str] = set()
+    strict_positive_keys: set[str] = set()
+
+    for operator_raw, key_map in conditions.items():
+        qualifier, operator, if_exists = _split_operator(str(operator_raw))
+        if qualifier is not None or operator == _NULL:
+            continue
+        spec = _OPERATORS.get(operator)
+        if spec is None:
+            continue
+        for raw_key, expected in key_map.items():
+            key = str(raw_key).strip()
+            key_lower = key.lower()
+            if (
+                lower_supported is not None
+                and key_lower not in lower_supported
+                and not is_request_context_key(key)
+            ):
+                continue
+            state = _coerce_state(lower_context.get(key_lower))
+            if isinstance(state, Absent) or (isinstance(state, Present) and not state.values):
+                continue
+            raw_vals = _values(expected)
+            if any("${" in v for v in raw_vals):
+                continue
+            label = f"{str(operator_raw).strip()}({key})"
+            if spec.family in _GLOB_FAMILIES:
+                if not isinstance(state, Present) or not state.values:
+                    continue
+                if key_lower not in seeded_keys:
+                    seeded_keys.add(key_lower)
+                    str_preds.setdefault(key_lower, []).append(
+                        StringPredicate(
+                            label=f"candidate({key})",
+                            patterns=state.values,
+                            negated=False,
+                            fold=False,
+                            is_glob=True,
+                        )
+                    )
+                str_preds.setdefault(key_lower, []).append(
+                    StringPredicate(
+                        label=label,
+                        patterns=raw_vals,
+                        negated=spec.negated,
+                        fold=spec.relation == "fold",
+                        is_glob=spec.relation == "like" or spec.family == "arn",
+                    )
+                )
+            elif spec.family == "ip":
+                if isinstance(state, Unknown):
+                    unknown_keys.add(key_lower)
+                if not spec.negated and not if_exists:
+                    strict_positive_keys.add(key_lower)
+                try:
+                    cidr_preds.setdefault(key_lower, []).append(
+                        CidrPredicate(label=label, cidrs=raw_vals, negated=spec.negated)
+                    )
+                except ValueError:
+                    continue
+            elif spec.family in {"numeric", "date"}:
+                if isinstance(state, Unknown):
+                    unknown_keys.add(key_lower)
+                if not spec.negated and not if_exists:
+                    strict_positive_keys.add(key_lower)
+                try:
+                    parsed_nums = tuple(
+                        parse_iso8601_decimal(v) if spec.family == "date" else Decimal(v.strip())
+                        for v in raw_vals
+                    )
+                except (InvalidOperation, ValueError):
+                    continue
+                rel = "ne" if spec.negated and spec.relation == "eq" else spec.relation
+                interval_preds.setdefault(key_lower, []).append(
+                    IntervalPredicate(label=label, relation=rel, values=parsed_nums)
+                )
+
+    return _solve_collected_predicates(
+        str_preds, cidr_preds, interval_preds, unknown_keys, strict_positive_keys
+    )
+
+
+def _solve_collected_predicates(
+    str_preds: Mapping[str, Sequence[StringPredicate]],
+    cidr_preds: Mapping[str, Sequence[CidrPredicate]],
+    interval_preds: Mapping[str, Sequence[IntervalPredicate]],
+    unknown_keys: set[str],
+    strict_positive_keys: set[str],
+) -> tuple[bool, bool, list[str], tuple[tuple[str, str], ...]]:
+    reasons: list[str] = []
+    witnesses: dict[str, str] = {}
+    if str_preds:
+        res = solve_correlated_oidc_predicates(str_preds)
+        if res.status is SolverStatus.UNSAT:
+            reasons.append("joint solver UNSAT: " + ", ".join(res.mus_labels))
+            return True, False, reasons, ()
+        if res.status is SolverStatus.BUDGET:
+            reasons.append(f"{CODE_BUDGET}: joint condition solver exceeded state budget")
+            return False, True, reasons, ()
+        witnesses.update(res.witnesses)
+
+    for key in sorted(cidr_preds):
+        if key in unknown_keys and key not in strict_positive_keys:
+            continue
+        try:
+            cres = solve_cidr_predicates(cidr_preds[key])
+        except ValueError:
+            continue
+        if cres.status is SolverStatus.UNSAT:
+            reasons.append("joint solver UNSAT: " + ", ".join(cres.mus_labels))
+            return True, False, reasons, ()
+        if cres.witness is not None:
+            witnesses[key] = cres.witness
+
+    for key in sorted(interval_preds):
+        if key in unknown_keys and key not in strict_positive_keys:
+            continue
+        ires = solve_interval_predicates(interval_preds[key])
+        if ires.status is SolverStatus.UNSAT:
+            reasons.append("joint solver UNSAT: " + ", ".join(ires.mus_labels))
+            return True, False, reasons, ()
+        if ires.witness is not None:
+            witnesses[key] = str(ires.witness)
+
+    return False, False, reasons, tuple(sorted(witnesses.items()))
+
+
 def evaluate_conditions(
     conditions: Mapping[str, Mapping[str, Sequence[str]]],
     context: Mapping[str, KeyState | frozenset[str]],
@@ -544,6 +715,10 @@ def evaluate_conditions(
     from that provider and reported in ``dead_keys``. Namespaced AWS/service request
     keys are outside this claim allowlist: missing offline information stays Unknown.
     """
+    lower_context = {str(k).strip().lower(): v for k, v in context.items()}
+    lower_supported = (
+        frozenset(k.lower() for k in supported_keys) if supported_keys is not None else None
+    )
     dead: list[str] = []
     unresolved: list[str] = []
     reasons: list[str] = []
@@ -551,22 +726,33 @@ def evaluate_conditions(
     for operator_raw, key_map in conditions.items():
         for raw_key, expected in key_map.items():
             key = str(raw_key).strip()
+            key_lower = key.lower()
             if (
-                supported_keys is not None
-                and key not in supported_keys
+                lower_supported is not None
+                and key_lower not in lower_supported
                 and not is_request_context_key(key)
             ):
                 dead.append(key)
                 reasons.append(f"{key} is not a documented AWS condition key for this provider")
                 state: KeyState = ABSENT
             else:
-                state = _coerce_state(context.get(key))
+                state = _coerce_state(lower_context.get(key_lower))
             truth, reason = _evaluate_key(key, str(operator_raw), expected, state, mode=mode)
             reasons.append(reason)
             if truth is ConditionTruth.FALSE:
                 saw_false = True
             elif truth is ConditionTruth.UNRESOLVED:
                 unresolved.append(key)
+    witnesses: tuple[tuple[str, str], ...] = ()
+    if not saw_false and mode is ConditionMode.CANDIDATE and conditions:
+        unsat, hit_budget, joint_reasons, witnesses = _joint_candidate_solve(
+            conditions, context, supported_keys
+        )
+        reasons.extend(joint_reasons)
+        if unsat:
+            saw_false = True
+        elif hit_budget:
+            unresolved.append("*")
     if saw_false:
         overall = ConditionTruth.FALSE
     elif unresolved:
@@ -578,4 +764,5 @@ def evaluate_conditions(
         reasons=tuple(reasons),
         unresolved_keys=tuple(sorted(set(unresolved))),
         dead_keys=tuple(sorted(set(dead))),
+        witnesses=witnesses,
     )

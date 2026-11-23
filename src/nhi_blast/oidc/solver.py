@@ -10,9 +10,9 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from nhi_blast.aws.glob import has_wildcard
-from nhi_blast.aws.trust import TrustEvaluation, evaluate_trust_statements
+from nhi_blast.aws.trust import TrustCandidateMatch, TrustEvaluation, evaluate_trust_statements
 from nhi_blast.core.data import ConditionKeyRegistry, condition_keys
-from nhi_blast.core.evidence import Evidence, EvidenceClass, dedupe_evidence, weakest
+from nhi_blast.core.evidence import Evidence, EvidenceClass, dedupe_evidence, rank, weakest
 from nhi_blast.core.models import (
     Breadth,
     RoleFact,
@@ -81,11 +81,19 @@ def _unresolved_reasons(evaluation: TrustEvaluation) -> tuple[str, ...]:
     return tuple(sorted(reasons))
 
 
+def _match_confidence(match: TrustCandidateMatch) -> EvidenceClass:
+    eval_cls = EvidenceClass.DERIVED if not match.conditional else EvidenceClass.ASSUMED
+    classes = [eval_cls, match.candidate.evidence_class]
+    classes.extend(entry.cls for entry in match.statement.evidence)
+    classes.extend(entry.cls for entry in match.candidate.evidence)
+    return weakest(*classes)
+
+
 def _evidence(
-    role: RoleFact, evaluation: TrustEvaluation, confidence: EvidenceClass
+    role: RoleFact, matches: Sequence[TrustCandidateMatch], confidence: EvidenceClass
 ) -> tuple[Evidence, ...]:
     entries: list[Evidence] = list(role.evidence)
-    for match in evaluation.matches:
+    for match in matches:
         entries.extend(match.statement.evidence)
         entries.extend(match.candidate.evidence)
     if not entries:
@@ -143,11 +151,12 @@ def trust_match_from_evaluation(
         and SubFormat.IMMUTABLE not in formats
         and SubFormat.CLASSIC in formats
     )
-    confidence = weakest(
-        evaluation.confidence,
-        *(match.candidate.evidence_class for match in evaluation.matches),
-    )
-    evidence = _evidence(role, evaluation, confidence)
+    match_confidences = [(match, _match_confidence(match)) for match in evaluation.matches]
+    best_rank = min(rank(cls) for _, cls in match_confidences)
+    strongest_matches = [match for match, cls in match_confidences if rank(cls) == best_rank]
+    strongest_cls = min((cls for _, cls in match_confidences), key=rank)
+    confidence = weakest(evaluation.confidence, strongest_cls)
+    evidence = _evidence(role, strongest_matches, confidence)
     confidence = weakest(confidence, *(entry.cls for entry in evidence))
     return TrustMatch(
         job_id=job_id,

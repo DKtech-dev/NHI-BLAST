@@ -286,6 +286,7 @@ class _Resolution:
     head_budget: dict[str, bool]
     head_files: frozenset[str]
     base_sha: dict[str, str]
+    base_by_sha: dict[str, frozenset[str]]
     head_by_sha: dict[str, frozenset[str]]
 
 
@@ -315,6 +316,9 @@ def _statuses(report: Report) -> dict[str, CompletenessStatus]:
 
 
 def _resolution(base: Report, head: Report) -> _Resolution:
+    base_by_sha: dict[str, set[str]] = {}
+    for item in base.inputs.files:
+        base_by_sha.setdefault(item.sha256, set()).add(item.path)
     head_by_sha: dict[str, set[str]] = {}
     for item in head.inputs.files:
         head_by_sha.setdefault(item.sha256, set()).add(item.path)
@@ -335,6 +339,7 @@ def _resolution(base: Report, head: Report) -> _Resolution:
         head_budget=budget,
         head_files=frozenset(item.path for item in head.inputs.files),
         base_sha={item.path: item.sha256 for item in base.inputs.files},
+        base_by_sha={key: frozenset(value) for key, value in base_by_sha.items()},
         head_by_sha={key: frozenset(value) for key, value in head_by_sha.items()},
     )
 
@@ -394,7 +399,12 @@ def _file_reasons(finding: Finding, res: _Resolution) -> list[str]:
         reasons.append("evidence_file_missing")
     for name in files:
         sha = res.base_sha.get(name)
-        if sha is not None and res.head_by_sha.get(sha, frozenset()) - {name}:
+        if sha is None:
+            continue
+        other_head = res.head_by_sha.get(sha, frozenset()) - {name}
+        if not other_head:
+            continue
+        if name not in res.head_files or (other_head - res.base_by_sha.get(sha, frozenset())):
             reasons.append("possible_rename")
             break
     return reasons

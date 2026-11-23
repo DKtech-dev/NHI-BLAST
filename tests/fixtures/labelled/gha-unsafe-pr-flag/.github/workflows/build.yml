@@ -1,0 +1,12 @@
+name: PR
+on: pull_request_target
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@abcdef0123456789abcdef0123456789abcdef01
+        with:
+          allow-unsafe-pr-checkout: true
+      - run: echo ok
+        env:
+          TOKEN: ${{ secrets.DEPLOY_TOKEN }}
