@@ -57,7 +57,7 @@ jobs:
         env:
           REF_NAME: ${{ github.ref_name }}
         run: |
-          python -c 'import os, nhi_blast; v = f"v{nhi_blast.__version__}"; assert os.environ["REF_NAME"] == v, f"tag {os.environ[\"REF_NAME\"]} != {v}"'
+          python -c 'import os, nhi_blast; ref = os.environ["REF_NAME"]; v = f"v{nhi_blast.__version__}"; assert ref == v, f"tag {ref} != {v}"'
       - name: Smoke-test the wheel in a clean environment
         run: |
           python -m venv "$RUNNER_TEMP/smoke"
