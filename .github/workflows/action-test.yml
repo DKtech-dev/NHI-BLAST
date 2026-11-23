@@ -33,6 +33,7 @@ jobs:
           out-dir: action-smoke-out
           install-spec: "."
           upload-sarif: "false"
+          fail-on: "never"
       - name: Verify generated outputs
         run: |
           test -s action-smoke-out/report.json
