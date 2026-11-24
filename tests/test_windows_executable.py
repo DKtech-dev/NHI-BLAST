@@ -361,7 +361,7 @@ def test_exit_codes_and_error_boundaries_match_the_reference_cli(tmp_path: Path)
         (["scan", str(FX07), "--fail-on", "high", "--format", "json", "--out", str(blocking)], 4),
         (["scan", str(malformed), "--strict"], 3),
         ([], 2),
-        (["export", str(FX07)], 2),
+        (["export", str(FX07), "--format", "sarif"], 2),
         (["rank", str(FX07), "--format", "sarif"], 2),
         (["explain", "missing", "--report", str(missing)], 2),
     ]
@@ -398,6 +398,14 @@ def test_unwritable_output_directory_reports_an_output_error(tmp_path: Path) -> 
     if principal is None:
         pytest.skip("cannot create a deny-write ACL in this environment")
     try:
+        probe = target / ".acl-probe"
+        try:
+            probe.write_text("probe", encoding="utf-8")
+        except OSError:
+            pass
+        else:
+            probe.unlink(missing_ok=True)
+            pytest.skip("deny-write ACL does not block privileged runner account")
         result = _run(
             _exe(),
             ["scan", str(FX07), "--format", "json", "--out", str(target)],
